@@ -439,7 +439,6 @@ def describe_installed(show: bool = True) -> Dict:
     READ (each model with the runtime's own fields; an empty list means the runtime holds none), NOT READ because
     the local runtime is disabled here, and NOT READ because it did not answer. Not read is not nothing installed.
     `show=False` lists without describing each model (the candidate register needs only the names)."""
-    import hashlib
     at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     base = _ollama_base()
     if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
@@ -479,30 +478,7 @@ def describe_installed(show: bool = True) -> Dict:
                "show_read": False,
                "show_basis": None if show else "not asked: this read lists the models and describes none of them"}
         if show:
-            try:
-                s = httpx.post(f"{base}/api/show", json={"model": name}, timeout=20.0)
-                if s.status_code != 200:
-                    raise ValueError(f"HTTP {s.status_code}")
-                sj = s.json() or {}
-                info = sj.get("model_info") if isinstance(sj.get("model_info"), dict) else {}
-                pc = info.get("general.parameter_count")
-                row["parameter_count"] = pc if isinstance(pc, int) and not isinstance(pc, bool) else None
-                caps = sj.get("capabilities")
-                row["capabilities"] = [str(c) for c in caps] if isinstance(caps, list) and caps else None
-                lic = sj.get("license")
-                if isinstance(lic, list):
-                    lic = "\n".join(str(x) for x in lic)
-                if isinstance(lic, str) and lic.strip():
-                    row["licence"] = {
-                        "first_line": next(ln.strip() for ln in lic.splitlines() if ln.strip())[:200],
-                        "chars": len(lic), "sha256": hashlib.sha256(lic.encode("utf-8")).hexdigest(),
-                        "basis": ("the licence text the runtime holds for this model: its first line, its length "
-                                  "and its hash. It is not a reading of what the licence permits")}
-                row["show_read"] = True
-            except Exception as e:                           # noqa: BLE001 - said on the row
-                row["show_basis"] = (f"the runtime's description of {name} could not be read "
-                                     f"({e.__class__.__name__}: {str(e)[:80]}), so its licence, parameter count "
-                                     f"and capabilities are not known")
+            row.update(_described(base, name))               # W1203 - the one parse of a description
         _asked = _LISTED_FIELDS + _DESCRIBED_FIELDS if row["show_read"] else _LISTED_FIELDS
         row["not_reported"] = [f for f in _asked if row.get(f) is None]
         models.append(row)
@@ -513,6 +489,66 @@ def describe_installed(show: bool = True) -> Dict:
                       f"{'listed and described' if show else 'listed'} them at {at}. Every field is the runtime's "
                       f"own; a field it did not report is null and named under not_reported, never filled in"
                       + ("" if models else ". The runtime answered and lists no model"))}
+
+
+#  W1203 (review) - THE MOST OF A DESCRIPTION THIS READS. The runtime is local, but a description is parsed and its
+#  licence hashed whole: one over this many bytes is said as not read (never as no licence).
+_DESCRIPTION_MAX_BYTES = 32 * 1024 * 1024
+
+
+def _described(base: str, name: str) -> Dict[str, Any]:
+    """W1203 (FU-1852) - ONE model as the local runtime describes it: one /api/show call, parsed into the described
+    fields (parameter_count, capabilities, licence) with show_read and show_basis. describe_installed takes each
+    model's description from here and describe_installed_one asks for one, so the licence a promotion reads is the
+    one the installed list shows. A description that could not be read is said on show_basis: it is not 'no licence'."""
+    import hashlib
+    row: Dict[str, Any] = {"parameter_count": None, "capabilities": None, "licence": None,
+                           "show_read": False, "show_basis": None}
+    try:
+        import httpx
+        s = httpx.post(f"{base}/api/show", json={"model": name}, timeout=20.0)
+        if s.status_code != 200:
+            raise ValueError(f"HTTP {s.status_code}")
+        _body = getattr(s, "content", None)
+        if isinstance(_body, (bytes, bytearray)) and len(_body) > _DESCRIPTION_MAX_BYTES:
+            raise ValueError(f"the description is {len(_body)} bytes, over the {_DESCRIPTION_MAX_BYTES} this reads")
+        sj = s.json() or {}
+        info = sj.get("model_info") if isinstance(sj.get("model_info"), dict) else {}
+        pc = info.get("general.parameter_count")
+        row["parameter_count"] = pc if isinstance(pc, int) and not isinstance(pc, bool) else None
+        caps = sj.get("capabilities")
+        row["capabilities"] = [str(c) for c in caps] if isinstance(caps, list) and caps else None
+        lic = sj.get("license")
+        if isinstance(lic, list):                            # W1203 review: text only if every item is text
+            lic = "\n".join(lic) if lic and all(isinstance(x, str) for x in lic) else None
+        if isinstance(lic, str) and lic.strip():
+            row["licence"] = {
+                "first_line": next(ln.strip() for ln in lic.splitlines() if ln.strip())[:200],
+                "chars": len(lic), "sha256": hashlib.sha256(lic.encode("utf-8")).hexdigest(),
+                "basis": ("the licence text the runtime holds for this model: its first line, its length "
+                          "and its hash. It is not a reading of what the licence permits")}
+        row["show_read"] = True
+    except Exception as e:                                   # noqa: BLE001 - said on the row
+        row["show_basis"] = (f"the runtime's description of {name} could not be read "
+                             f"({e.__class__.__name__}: {str(e)[:80]}), so its licence, parameter count "
+                             f"and capabilities are not known")
+    return row
+
+
+def describe_installed_one(name: str) -> Dict[str, Any]:
+    """W1203 (FU-1852) - one installed model's description, read now: ONE /api/show call, without describing every
+    model. It answers the described fields describe_installed gives that model (licence, parameter_count,
+    capabilities, show_read, show_basis), with the name, when it was read and from where. It lists nothing, so the
+    listed fields (digest, size and the rest) are not in it. show_read False means the description was not read,
+    which says nothing about whether the runtime holds licence text."""
+    at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    base = _ollama_base()
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return {"name": name, "read_at": at, "read_from": None, "parameter_count": None, "capabilities": None,
+                "licence": None, "show_read": False,
+                "show_basis": (f"NOT READ: AI_DISABLE_LOCAL is set, so the local runtime is not asked for its "
+                               f"description of {name}")}
+    return {"name": name, "read_at": at, "read_from": f"{base}/api/show", **_described(base, name)}
 
 
 # -- P3.32 (W745) - CANDIDATES ARE REGISTERED, NOT DOWNLOADED ---------------------------------------------------

@@ -140,7 +140,7 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
     """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:
     query_meta with owned-resource provenance recorded per call (the Board was previously the only
     AI-driven governance tier without served_by/any_external)."""
-    _t0 = time.time()
+    _t0 = time.perf_counter()
     try:
         # W488 (sweep S2.3, C5) — augment=False. Without it the gateway injects cross-request memory
         # recall into the prompt, so the Chief's directive — presented as 'Faithfully interpreted →
@@ -167,7 +167,7 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
             from agentic_core.api.operational_excellence import record_outcome
             record_outcome("ai_call", f"agent:{agent}", served_by=res.get("served_by", "native"),
                            is_external=bool(res.get("is_external")),
-                           duration_ms=int((time.time() - _t0) * 1000),
+                           duration_ms=int((time.perf_counter() - _t0) * 1000),
                            # W495 (FU-125, S7.3) — no gate assesses a board directive, so the run is
                            # recorded as having produced output, with no verdict claimed
                            success=bool((res.get("output") or "").strip()),
@@ -179,7 +179,7 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
         try:
             from agentic_core.api.operational_excellence import record_outcome
             record_outcome("ai_call", f"agent:{agent}", served_by="none", is_external=False,
-                           duration_ms=int((time.time() - _t0) * 1000), success=False)
+                           duration_ms=int((time.perf_counter() - _t0) * 1000), success=False)
         except Exception:
             pass
         return f"[{agent} unavailable: {e}]"

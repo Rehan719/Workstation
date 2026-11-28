@@ -1,11 +1,16 @@
 # Letter: asking the King Fahd Glorious Qur'an Printing Complex for written permission to use its recitations and fonts
 
-DRAFTED FOR THE OWNER TO SEND (W948, FU-1066). Nothing has been sent. Fill in the lines in square brackets, read the
-letter through, and send it from your own address through the contact route the Complex gives on qurancomplex.gov.sa.
-If you would rather send it in Arabic, have a person translate it; this platform does not write it. Until a written
-answer granting permission is held, or a person has read the Complex's own terms and entered them, nothing from the
-Complex is used. The register of sources (docs/SOURCES.json, row kfgqpc-recitations-fonts) says it permits nothing
-yet, and scripts/sources_check.py fails if any code reaches the Complex's address.
+DRAFTED FOR THE OWNER TO SEND (W948, FU-1066). SENT BY THE OWNER ON 2026-11-27, at 11:05:08 UK time, from the
+Owner's own address to the address in the footer of qurancomplex.gov.sa (FU-1188's note records it), with no copy
+and no attachment (W1259). The e-mail was the text below the line with the Owner's name filled in; its body did not
+carry the To, From and Reply to lines, which stay here as the record of whom it went to, with the From and Reply to
+placeholders left as they were. The draft it was sent from was saved through a mail connector that stamps a header
+marking the drafts it creates as AI-generated, so the recipients may see that mark. No answer had arrived at the
+first check after sending, and FU-1188 stays open until a written answer is held. It went in English: this platform
+writes no Arabic, and a translation would be a person's. Until a written answer granting permission is held, or a
+person has read the Complex's own terms and entered them, nothing from the Complex is used. The register of sources
+(docs/SOURCES.json, row kfgqpc-recitations-fonts) says it permits nothing yet, and scripts/sources_check.py fails if
+any code reaches the Complex's address.
 
 ---
 
@@ -28,8 +33,9 @@ We would like to use, if you permit it:
    when it is played and not kept;
 2. the Complex's Qur'an fonts, to show the text as it is printed in the Madinah mushaf.
 
-We have not been able to open the Complex's website from our machine, so we have not read the terms that apply to
-either. We are asking before we use anything.
+We read the Complex's website on 22 November 2026. No page of it states terms for these uses: its fonts, its audio
+recitations and its developer platform are each marked as coming soon, and its footer reserves all rights. So we
+are asking for written permission before we use anything.
 
 If you permit it, please tell us:
 
@@ -43,3 +49,4 @@ We will credit the Complex as you ask, change nothing we are given, and stop usi
 With thanks,
 
 [your name]
+Workstation

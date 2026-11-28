@@ -576,16 +576,16 @@
    ],
    "status": "current",
    "page": "https://api-docs.quran.foundation/legal/developer-terms/",
-   "read_on": "2026-10-12",
-   "read_by": "round W683, by the delivery assistant through a fetch that summarises the page",
-   "says": "Shown as last updated 2026-10-11. Content includes Quran text, translations, metadata, audio and reflections. Nothing may be cached or stored longer than one week except through the Content Sync route or as a font file or mushaf image; no prepackaged database. Free, donation-funded, paid and advertising-funded apps are allowed; the content may not be sold, sublicensed or redistributed. Building machine-learning models from the content or user data needs written consent. Audio calls need credentials held on a server; production use needs approval.",
-   "not_read": "the privacy guidelines; whether the audio files' own addresses may be fetched without credentials; the terms' full text",
+   "read_on": "2026-11-22",
+   "read_by": "the Owner, whole, on 2026-11-22, with the developer privacy packet (https://api-docs.quran.foundation/legal/developer-privacy/), recorded in round W1234 from the Owner's report; first read on 2026-10-12 in round W683, by the delivery assistant through a fetch that summarises the page",
+   "says": "Shown as last updated 2026-11-20. PERMITS: the API, free of charge; free, paid, advertising-funded or donation-funded apps, provided the content is shown inside the app; the app's own backend; and retrieval-augmented generation shown inside the app. FORBIDS: altering the Quran text; selling or redistributing the content, including in a public repository; using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception; advertising profiles; biometric identifiers; and scraping. CACHING: one week at most, except Content Sync (re-synced every 7 days), fonts and Mushaf images, and audio a user asks to keep on their own device. ATTRIBUTION: the Quran Foundation is credited for social videos and for cached fonts or Mushaf images; offline or direct audio also credits the reciter. PRODUCTION: not in the terms; the publisher's quickstart says to begin in pre-live and to move only after approval. DATA (the developer privacy packet): a public Privacy Policy and Terms of Use, a separate opt-in for religious data, token revocation, deletion within 30 days (90 for backups), and a breach reported within 24 hours. As read on 2026-10-12 this row said that building machine-learning models from the content or user data needed written consent; the terms now offer no consent and no exception.",
+   "not_read": "whether the audio files' own addresses may be fetched without credentials",
    "used_by": [
     "agentic_core/religious_domain/quran_foundation.py",
     "agentic_core/religious_domain/api.py"
    ],
-   "how_each_condition_is_kept": "Nothing fetched is written to disk and each answer is fetched for its request (no copy, nothing kept a week); the credentials are read from the server's environment at the call and are never returned or logged; the answer goes to the caller only (no model is trained); the environment is pre-production unless the Owner sets production, which needs the publisher's approval.",
-   "not_yet_established": "the two content paths are from the publisher's reference pages and had not been called from this machine with real credentials when this row was written",
+   "how_each_condition_is_kept": "Nothing fetched is written to disk and each answer is fetched for its request (no copy, nothing kept a week); the credentials are read from the server's environment at the call and are never returned or logged; the answer goes to the caller only (no model is trained on it; whether every use the platform makes of the content keeps the whole clause, train, fine-tune, evaluate or develop, is a row of P5.17); the environment is pre-production unless the Owner sets production, which needs the publisher's approval.",
+   "not_yet_established": "the two content paths are from the publisher's reference pages; the Owner reports that the pre-production credentials, held only on the Owner's machine, worked on 2026-10-13, and they have not been retested since; no round has recorded what the two paths answer",
    "hosts": [
     "apis.quran.foundation",
     "oauth2.quran.foundation",
@@ -593,9 +593,18 @@
     "prelive-oauth2.quran.foundation"
    ],
    "permits": [
-    "fetch text, translations, metadata, audio and reflections for an app, free or paid, with the credentials held on a server",
-    "keep nothing longer than one week, except through Content Sync or as a font file or mushaf image",
-    "serve audio in production only once the publisher has approved it"
+    "fetch text, translations, metadata, audio and reflections for an app, free, paid, advertising-funded or donation-funded, with the content shown inside the app and the credentials held on a server",
+    "keep nothing longer than one week, except through Content Sync (re-synced every 7 days), fonts and Mushaf images, and audio a user asks to keep on their own device",
+    "retrieval-augmented generation over the content, shown inside the app",
+    "serve in production only after the publisher's approval, beginning in pre-live (the publisher's quickstart)"
+   ],
+   "forbids": [
+    "altering the Quran text",
+    "selling or redistributing the content, including in a public repository",
+    "using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception",
+    "advertising profiles",
+    "biometric identifiers",
+    "scraping"
    ]
   },
   {
@@ -612,7 +621,7 @@
    "read_on": "2026-10-12",
    "read_by": "one research reader through a fetch that summarises the page; NOT re-read",
    "says": "Shown as last updated 14 June 2026. No key; a soft limit per address; caching encouraged. Credit Tanzil and Quran Academy, and name translators. Recitations are described as free for non-commercial redistribution. The reader's summary was inconsistent on commercial use.",
-   "not_read": "the page itself by a second reader - re-read before any audio from this source is used",
+   "not_read": "the page itself by a second reader - re-read before any audio from this source is used; and which mushaf layout its page and juz metadata follow (W1236: the Owner ruled on 2026-11-22 that alquran.cloud is accepted as the layout source only if its terms and metadata, re-read, state the 604-page Madinah layout)",
    "used_by": [
     "agentic_core/religious_domain/api.py"
    ],
@@ -653,10 +662,10 @@
    ],
    "status": "current",
    "page": "https://qul.tarteel.ai/",
-   "read_on": "2026-10-12",
-   "read_by": "one research reader; NOT re-read",
-   "says": "The library offers mushaf page layouts, recitations with word timings, similar-verse lists, morphology and fonts. Its code repository is under an open licence. NO licence for the DATA was found on any page read.",
-   "not_read": "any terms for the data - none was found. NOT TO BE USED until written permission is held (a letter is drafted for the Owner to send)",
+   "read_on": "2026-11-22",
+   "read_by": "the Owner, on 2026-11-22: the code repository, its README and licence, the FAQ, 144 per-resource licence tabs and Tarteel's terms, recorded in round W1234 from the Owner's report; first read on 2026-10-12 by one research reader",
+   "says": "The library offers mushaf page layouts, recitations with word timings, similar-verse lists, morphology and fonts. Its code (https://github.com/TarteelAI/quranic-universal-library) is under the MIT licence, copyright Tarteel, Inc, covering the software and its documentation; the README states no licence for the data, and the MIT licence is not read as covering it. The FAQ (https://qul.tarteel.ai/faq) says commercial use is possible but rights vary by resource, some may be restricted or need attribution, and each resource's licensing is to be checked. All 144 per-resource licence tabs checked (12 Mushaf layouts, 1 mutashabihat, 1 similar-ayah and 130 recitations, audio and word timings) say: We don't have copyright information for this resource. The terms at https://tarteel.ai/terms (updated 2026-11-03) do not mention the library. Rights may sit with Mushaf publishers and reciters.",
+   "not_read": "any terms for the data - none is stated. NOT TO BE USED until written permission is held (a letter was sent by the Owner on 2026-11-27, with no answer yet held, docs/letters/QUL_DATA_PERMISSION_REQUEST.md, asking where each resource came from and who holds its rights)",
    "hosts": [
     "qul.tarteel.ai"
    ],
@@ -673,15 +682,17 @@
    "nation": [
     "any"
    ],
-   "status": "named_not_read",
-   "says": "NOT READ. A search summary says recordings are offered for free general use in applications and websites; that is a summary of a page nobody here opened.",
-   "not_read": "everything. NOT TO BE USED until the page is read or written permission is held (a letter is drafted for the Owner to send)",
-   "where_to_read": "https://qurancomplex.gov.sa/",
+   "status": "current",
+   "says": "No page states terms or permissions for the Complex's recitations or fonts. Its terms, privacy, licence, copyright, fonts and developers paths answer 404. The footer reserves all rights to the Complex (2026) and marks the privacy policy as coming soon. Every font listed on the home page, the audio recitations, and the developer platform and content embedding are each marked coming soon. The old fonts site redirects to the main site, and its old pages answer 404. The Mushaf printing page describes its digital Mushaf as available for institutions and companies to print, with no licence terms, and says nothing of apps, credit, redistribution or commercial use. So no permission can be read from the site.",
+   "not_read": "a third-party record of an older font licence requiring written approval, which search results point to and which could not be opened, so it is not relied on. NOT TO BE USED until written permission is held (a letter was sent by the Owner on 2026-11-27, with no answer yet held, docs/letters/KFGQPC_PERMISSION_REQUEST.md)",
    "hosts": [
     "qurancomplex.gov.sa"
    ],
    "permits": [],
-   "permits_basis": "nothing: no terms permitting a use were read, so it is not to be used until written permission is held or its terms are read and entered"
+   "permits_basis": "nothing: the site, read on 2026-11-22, states no terms for these uses and reserves all rights, so it is not to be used until written permission is held",
+   "page": "https://qurancomplex.gov.sa/",
+   "read_on": "2026-11-22",
+   "read_by": "the Owner, on 2026-11-22: the home page and its four Mushaf product pages (the sitemap lists five pages in all), recorded in round W1234 from the Owner's report"
   },
   {
    "id": "everyayah-audio",
@@ -1390,7 +1401,7 @@
    "read_on": "2026-11-19",
    "read_by": "the cloud session, at the dataset's card and the paper's page (arXiv 2405.02675); NOT re-read",
    "says": "Recordings by 1,287 volunteer participants, beginner learners from more than 11 non-Arabic countries, in 6,828 examples. Each example has a reciter_age field, which reads 'Unknown' in the card's own example, and a correct/incorrect label. The card states no licence for the data; the paper's page shows CC BY 4.0, the paper's own licence.",
-   "not_read": "any licence for the recordings, and whether every participant was an adult who consented to reuse. NOT TO BE USED until a written answer grants it (a letter is drafted for the Owner to send, docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md)",
+   "not_read": "any licence for the recordings, and whether every participant was an adult who consented to reuse. NOT TO BE USED until a written answer grants it (a letter was sent by the Owner on 2026-11-27, with no answer yet held, docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md)",
    "hosts": [
     "huggingface.co/datasets/RetaSy"
    ],

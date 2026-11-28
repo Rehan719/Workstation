@@ -59,7 +59,11 @@ def scan(dd: Path) -> dict:
         report["memory_json"] = {"total": len(rows), "untagged_legacy": len(untagged)}
     chroma = dd / "chroma"
     if chroma.exists():
-        report["chroma"] = {"present": True, "note": "unscoped memory_v01 collection — quarantine to reset"}
+        #  W1196 - memory_v01, the retired avatar and upload memory, kept its collection in process only and never
+        #  wrote this folder; a chroma folder here is an earlier persistent store's
+        report["chroma"] = {"present": True, "note": ("a chroma folder left by an earlier persistent store "
+                                                     "(the retired memory_v01 never wrote here) — quarantine to "
+                                                     "reset")}
     repos = dd / "vsb_repos"
     if repos.exists():
         for root in repos.iterdir():

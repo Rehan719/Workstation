@@ -26,7 +26,7 @@ document gives all three. A search of a register is not legal clearance, and not
 - The one similar live mark found, in two of the four classes of interest, belongs to a pet-products business. [observed, 2026-10-14: `docs/business/BUSINESS_PLAN.md`]
 - The Owner chose Workstation IDBO on 2026-10-14, after those searches. [owner-defined, 2026-10-14]
 - The other five names were suggestions, labelled unverified when they were made on 2026-10-11, and no register, trade mark or domain search has been run for any of them. [observed: `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md`, section 17.1, row 13]
-- No clearance opinion has been obtained, no mark has been applied for, and no domain is held. [observed: `docs/business/BUSINESS_PLAN.md`]
+- No clearance opinion has been obtained and no mark has been applied for. The ratified business plan says "no mark has been applied for, and no domain is held", which was true until 2026-11-22, when the Owner registered the domain the release machine answers on (row FU-1289). [observed: `docs/business/BUSINESS_PLAN.md`]
 - A fresh reading of Companies House and the UK and EU trade mark registers was tried on 2026-11-20, and this environment's network refused each site (403 at the proxy), so the searches above stand at their October dates. [observed]
 - Before the name is used in public, a search of the US register and of domains, and a clearance opinion from a qualified person, are the Owner's to commission. [owner decision]
 
@@ -35,10 +35,10 @@ document gives all three. A search of a register is not legal clearance, and not
 - The chosen name, with no mark applied for or registered for it. [owner-defined, 2026-10-14]
 - No company or other legal form: the formation workpack compares four routes and chooses none. [observed: `docs/business/FORMATION_WORKPACK.md`]
 - The project's licence names its copyright holder in the line "Copyright 2026 Virtual Sovereign Business"; no company or other legal form is held under that name, and who holds the copyright is question 6 for a solicitor in `docs/business/FORMATION_WORKPACK.md`. [observed: `LICENSE`]
-- No domain: the release machine needs one before anyone signs in over HTTPS, and buying it is the Owner's (row FU-1289). [observed: `docs/DEPLOYMENT.md`]
-- No cloud project for the release yet: the deploy is written step by step, nothing in it has been run against a Google account, and the project and its billing are the Owner's. [observed: `docs/DEPLOYMENT.md`]
+- A domain, registered by the Owner on 2026-11-22 and renewing on 2027-11-22: its A record names the release machine's fixed address, and the machine answers on it over HTTPS with sign-in on (row FU-1289). [observed: `docs/DEPLOYMENT.md`]
+- The release machine, deployed in the Owner's cloud project, whose billing is the Owner's: an uptime check from outside it e-mails the Owner when `/health` fails, set up and driven on 2026-11-22 (row FU-1095). [observed: `docs/DEPLOYMENT.md`]
 - The platform's source, in this repository, and the machine it runs on now, the Owner's own, with a local model. [observed: `docs/business/BUSINESS_MODEL_CANVAS.md`]
-- No permission beyond what each source's own terms grant: the register of sources records what each permits, and the three letters asking for more are drafted and unsent (rows FU-1188 and FU-1283). [observed: `docs/SOURCES.json`]
+- No permission beyond what each source's own terms grant: the register of sources records what each permits, and the three letters asking for more were sent by the Owner on 2026-11-27 and await written answers (rows FU-1188 and FU-1283). [observed: `docs/SOURCES.json`, `docs/FOLLOWUPS.json`]
 - Accounts, payment details and anything else the Owner holds are not recorded in this repository, by design: [the Owner lists them, outside the repository]. [owner decision]
 
 ## 3. Each public claim, with its evidence
@@ -57,10 +57,10 @@ beside it, and the numbered sections of the drafts that make it.
 | A plan needs a subject, a topic and a level; feedback needs the work, the task, the level and the subject | test_education_feedback_contract | 2 |
 | Every teaching route refuses a religious subject | test_w659_every_teaching_route_refuses_a_religious_subject | 2, 5 |
 | Every test the drafts name runs on the platform's own engine, without an outside model | test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model | 3 |
-| Demand, the price and the buyer are not measured | `docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |
+| Whether teachers would use it again, and how often the need recurs, are not measured | `docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |
 
 - The suite fails when a draft cites evidence this register does not list, or cites it in a section the register does not name, and when a row's evidence is cited nowhere (test_w1153). [observed]
-- No claim in the drafts is about a customer, a price, a partner or an endorsement, because there is none. [observed: `docs/business/public/FIRST_OFFER_DRAFTS.md`]
+- No claim in the drafts is about a customer, a partner or an endorsement, because there is none; what the drafts say of cost is that the Domain tools are free and that the Owner's charges fall only on generating an enterprise and on its profit; they name no amount for any charge. [observed: `docs/business/public/FIRST_OFFER_DRAFTS.md`]
 - The register covers what the public drafts claim. What the product's own pages say is held by the plan's truth passes (plan item P2.40) and the final audit (plan item P5.22), not by this document. [observed]
 
 ## What this document does not do

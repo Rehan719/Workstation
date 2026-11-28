@@ -122,7 +122,7 @@ async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
       {"done": true, "run_id": "...", "duration_ms": N, "served_by": "...", "is_external": bool}
       {"error": "..."}
     """
-    start = time.time()
+    start = time.perf_counter()
 
     async def stream() -> AsyncIterator[str]:
         try:
@@ -130,7 +130,7 @@ async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
             for chunk in _chunk_for_stream(sim["output"]):
                 safe = chunk.replace("\n", "\\n")
                 yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
-            duration_ms = int((time.time() - start) * 1000)
+            duration_ms = int((time.perf_counter() - start) * 1000)
             yield (f'data: {{"done": true, "run_id": "{sim["run_id"]}", "duration_ms": {duration_ms}, '
                    f'"served_by": {json.dumps(sim["served_by"])}, "is_external": {json.dumps(sim["is_external"])}}}\n\n')
         except Exception as exc:
@@ -185,7 +185,7 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
     Stream production of a real AI-generated artefact — driven by the OWNED native swarm (§6).
     SSE format same as reactor/run (done event carries served_by / is_external provenance).
     """
-    start = time.time()
+    start = time.perf_counter()
 
     async def stream() -> AsyncIterator[str]:
         try:
@@ -207,7 +207,7 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
                 except Exception:
                     pass
 
-            duration_ms = int((time.time() - start) * 1000)
+            duration_ms = int((time.perf_counter() - start) * 1000)
             output_id = uuid.uuid4().hex
             yield (f'data: {{"done": true, "run_id": "{prod["run_id"]}", "output_id": "{output_id}", '
                    f'"duration_ms": {duration_ms}, "served_by": {json.dumps(prod["served_by"])}, '
@@ -255,6 +255,17 @@ async def run_generator(artefact_type: str, spec: str, domain: str = "general",
     """Generate one targeted artefact on the OWNED native swarm (§6), returning it with provenance.
     Shared by the live endpoint and the §7 fabric composition dispatch, so a composed Generator runs
     the genuine generation engine — never a generic prompt stage."""
+    #  W1195b (P5.18 clause 4, its ACCEPT) - THE GENERATOR'S WORDS, READ FOR AN EXPLICIT ASK TO PREPARE A RESERVED
+    #  DOCUMENT. The specification, the artefact type, the format and the domain all reach the prompt below, and the
+    #  route and a fabric composition's Generator stage both come here. Each is read on its own, then all together
+    #  (the specification first), so an ask split across them is read too. An ask W1195's screen reads is refused
+    #  with 409 before anything is composed; a request it does not read is composed as before, not cleared
+    from agentic_core.legal import specialist as _sp1195b
+    _sp1195b.refuse_reserved(artefact_type, (("the specification", spec), ("the artefact type", artefact_type),
+                                             ("the format", fmt), ("the domain", domain),
+                                             ("the specification, artefact type, format and domain read together",
+                                              " ".join(str(x or "") for x in (spec, artefact_type, fmt, domain)))),
+                             "generator")
     from agentic_core.ai.native import orchestrator
     tmpl = _GENERATOR_TEMPLATES.get(artefact_type.lower().strip(), _GENERATOR_TEMPLATES["content"])
     prompt = (f"You are an artefact generator. {tmpl.format(format=fmt)}\n\n"

@@ -10,7 +10,7 @@ in `integration_tests/test_mvp_spine.py` that runs on the platform's own engine,
 ## How to read this document
 
 - Every statement carries a label: [observed: test] is shown by the named test; [hypothesis] is what the interviews are meant to test; [owner decision] is the Owner's to make. [observed]
-- No price, customer, school, partner or endorsement is named in any draft, because none exists. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
+- No customer, school, partner or endorsement is named in any draft, because none exists, and no amount is named for any charge: the Domain tools are free, and the Owner's charges fall only on generating an enterprise and on its profit. [observed: `docs/business/COST_MODEL.md`]
 - Each piece is headed DRAFT - NOT APPROVED FOR PUBLICATION, so that none can be lifted out and published on its own. [observed]
 
 ## 1. Landing copy — DRAFT - NOT APPROVED FOR PUBLICATION
@@ -29,7 +29,7 @@ in `integration_tests/test_mvp_spine.py` that runs on the platform's own engine,
 - What it says about itself: every answer carries what served it, and on the platform's own engine it says so. [observed: test_domains_in_house_provenance]
 - What it does not do: it does not give a final mark, since the marking sections are withheld when no model is on, and it does not present general next steps as drawn from the work. [observed: test_w823_education_feedback_on_the_floor_says_its_next_steps_are_not_drawn_from_the_work]
 - What it refuses: a teaching request on a religious subject, which every teaching route refuses. [observed: test_w659_every_teaching_route_refuses_a_religious_subject]
-- What is not known: whether teachers find a draft good enough to start from, whether anyone would pay, and who would buy it. NOT MEASURED. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
+- What is not known: whether teachers find a draft good enough to start from, whether they would come back to it, and how often the need recurs. NOT MEASURED. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
 
 ## 3. Deck outline — DRAFT - NOT APPROVED FOR PUBLICATION
 
@@ -37,7 +37,7 @@ in `integration_tests/test_mvp_spine.py` that runs on the platform's own engine,
 2. What the tool drafts, and that the teacher checks every line before using it. [observed: test_domains_in_house_provenance]
 3. What it will not do: give a final mark on the floor, speak to children, or keep what is typed before sign-in. [observed: test_w823_education_feedback_on_the_floor_says_its_next_steps_are_not_drawn_from_the_work]
 4. How it was tested: the tests this document names, which run on the platform's own engine. [observed: test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_that_runs_without_an_outside_model]
-5. What is not yet known: demand, the price and the buyer, each NOT MEASURED. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
+5. What is not yet known: whether teachers would use it again, and how often the need recurs, each NOT MEASURED. [observed: `docs/business/FIRST_OFFER_CANDIDATES.md`]
 6. The ask: thirty minutes of a teacher's time, trying it on invented material. [owner decision]
 
 ## 4. Demonstration script on invented data — DRAFT - NOT APPROVED FOR PUBLICATION
@@ -56,7 +56,7 @@ in `integration_tests/test_mvp_spine.py` that runs on the platform's own engine,
 - Does it keep what I type? Not before you sign in. [observed: test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_sign_in]
 - Does anything I type go to an outside AI company? Not by default: answers are served on the platform's own engine, and outside models stay off unless the Owner switches them on. [observed: test_domains_in_house_provenance]
 - Will it plan a lesson on a religious subject? No: every teaching route refuses one. [observed: test_w659_every_teaching_route_refuses_a_religious_subject]
-- What does it cost? No price is set; a price is the Owner's to set, by the formula the Owner ruled. [owner decision]
+- What does it cost? Nothing is charged for using a Domain tool: the Domain tools are free, for individuals and for institutions, by the Owner's ruling of 2026-10-12 (plan item P5.16). The Owner's charges fall only on generating an enterprise, a price paid once that is set and not yet charged, and on the profit of an enterprise generated here, a quarter of it taken first. [owner-defined, 2026-10-12 and 2026-10-13]
 
 ## 6. Outreach templates — DRAFT - NOT APPROVED FOR PUBLICATION
 

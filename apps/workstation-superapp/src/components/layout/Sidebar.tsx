@@ -12,7 +12,8 @@ import {
 import { useStore, RealmType } from '@workstation/shared';
 import { useT } from '../../lib/i18n';
 import { getPinned, togglePinned } from '../../lib/userPrefs';
-import { whoami, clearToken, type WhoAmI } from '../../lib/auth';
+import { clearToken } from '../../lib/auth';
+import { useIdentity } from '../../lib/useIdentity';
 
 interface NavItem {
   name: string;
@@ -168,9 +169,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
   // §14 (W317) — the real session state (auth-off / anonymous / authenticated)
-  const [identity, setIdentity] = useState<WhoAmI | null>(null);
-  //  W930 - whoami says an unknown session itself; a throw it never makes is said the same way, not dropped
-  useEffect(() => { whoami().then(setIdentity).catch(e => setIdentity({ mode: 'unknown', basis: String(e) })); }, []);
+  //  W1237 - read again on every sign-in and sign-out, in this tab or another: read once on mount, the sidebar still
+  //  offered "Sign in" after a sign-in made in the page, which does not reload it
+  const identity = useIdentity();
 
   // §9 — user-customisable interface: a personal "Pinned" quick-access section (persisted locally).
   const [pinned, setPinned] = useState<string[]>(getPinned());

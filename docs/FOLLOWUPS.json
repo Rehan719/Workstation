@@ -11695,7 +11695,7 @@
       "slot": "OWNER",
       "status": "done",
       "closed_by": "W640",
-      "note": "",
+      "note": "W1236 (2026-11-22): this row's title, \"no Qur'an translation edition is served\", is superseded by the rulings in its close note: one edition is served, Pickthall (1930), fetched from alquran.cloud. The title is kept as it was written.",
       "slot_source": "an Owner decision with no build work until it is taken; parked with the Owner's hand items",
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
@@ -21347,7 +21347,7 @@
     {
       "id": "FU-1067",
       "title": "The private test the Owner asked for before ruling on listening has not been run",
-      "why": "Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): if no written permission for lawful recordings has come by 2026-12-15, this row stays open into January, and P5.17 with it; the test is never run on recordings whose terms were not granted.",
+      "why": "Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner. OWNER RULING 2026-11-21 (afternoon; the recommendation accepted): if no written permission for lawful recordings has come by 2026-12-15, this row stays open into January, and P5.17 with it; the test is never run on recordings whose terms were not granted. OWNER RULING 2026-11-22 (W1236, the QEP restart; the recommendation accepted): the test uses no Quran Foundation content, whose developer terms, read whole by the Owner on 2026-11-22, forbid using it to evaluate or develop AI models; Tanzil's text is considered only after its terms are read for research use, and that reading is recorded before any test.",
       "source": "W683 (the authentication-readiness round; assessment section 30)",
       "found": "2026-10-12",
       "files": [
@@ -21926,11 +21926,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1234",
       "note": "",
       "slot_source": "the deploy pre-flight is this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234 from the Owner's report: an uptime check on /health over HTTPS from outside the release machine, every five minutes from five regions with the certificate checked, and an alerting policy e-mailing the Owner, set up that day from the cloud session. The Owner drove the drill: the platform was stopped at 19:57:18 UTC, the alert e-mail came at 20:10, the platform was started at 20:11:44, the e-mail that the alert had cleared came at 20:16, and /health answered 200 after. README.md now says route failures are recorded, not alerted, and an outage is; docs/DEPLOYMENT.md records the check and its drill at step 10."
     },
     {
       "id": "FU-1096",
@@ -22578,7 +22581,7 @@
       "slot": "P4.3",
       "status": "done",
       "closed_by": "W755",
-      "note": "",
+      "note": "OWNER RULING 2026-11-22 (W1242), amending the ruling of 2026-11-06 recorded in slot_source and close_note above, which are kept: the Owner wrote, in chat, after the recommendations were put, \"I want to go with all your recommendations\". With the external switch on and no in-house model reachable, both the query and the stream path try the external provider before the floor; the in-house model is still tried first wherever one is up, except for a query that asks for an external (prefer_external, the native-AI console's and the resource fabric's own option), which still has the allowed externals ahead of it, as before; the W899 class check and the hourly cap still apply to every call. Built in W1242 (gateway.py, orchestrator.py, genesis.py).",
       "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: option (a), the in-house-first order, built in P4.3 before the switch flips",
       "tier": 3,
       "because": "built",
@@ -23954,7 +23957,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": "",
+      "note": "Read by the Owner on 2026-11-22, nothing sent or posted (W1234). The King Fahd Glorious Qur'an Printing Complex: its site now opens; https://qurancomplex.gov.sa/ and its four Mushaf product pages state no terms or permissions for its recitations or fonts; its terms, privacy, licence, copyright, fonts and developers paths answer 404; the footer reserves all rights to the Complex and marks the privacy policy as coming soon; its fonts, its audio recitations and its developer platform are each marked coming soon; the old fonts site redirects to the main site; and the footer gives info@qurancomplex.gov.sa. So no permission can be read from the site, and the letter asks for written permission first. The Quranic Universal Library: its code (https://github.com/TarteelAI/quranic-universal-library) is under the MIT licence, copyright Tarteel, Inc, which covers the software and its documentation, and its README states no licence for the data; its FAQ (https://qul.tarteel.ai/faq) says rights vary by resource; each of the 144 per-resource licence tabs checked (12 Mushaf layouts, 1 mutashabihat, 1 similar-ayah and 130 recitations) says it has no copyright information for the resource; and the terms at https://tarteel.ai/terms (updated 2026-11-03) do not mention it. The MIT licence is not read as covering the data, rights may sit with Mushaf publishers and reciters, and the letter asks where each resource came from and who holds its rights. QUL publishes no e-mail address of its own: the letter goes to info@tarteel.ai, Tarteel's public address, asking for it to reach the QUL maintainers, and Tarteel's community Discord, asking there for a private message, is the alternative. A public GitHub issue, which would make the request public, and the address for security reports are not used. 2026-11-27: sent by the Owner (the letters to the King Fahd Complex and to the Quranic Universal Library, at 11:05:08 and 11:06:06 UK); no answer at the first check; open until a written answer is held.",
       "slot_source": "FU-1066 says the two letters are drafted for the Owner to send",
       "tier": 2
     },
@@ -26112,7 +26115,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "Read again by the Owner on 2026-11-22 (W1234): the paper (https://arxiv.org/html/2405.02675v1) lists four authors with institutional addresses and marks no corresponding author, so the letter is addressed to all four, its first author first: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly (Innopolis University) and Manuel Mazzara (Innopolis University). CC BY 4.0 is the paper's licence; the dataset card (https://huggingface.co/datasets/RetaSy/quranic_audio_dataset) shows none for the recordings. No author's address is written in the tree. 2026-11-27: sent by the Owner (the request to the Quranic Audio Dataset's four authors, at 11:05:27 UK); no answer at the first check; open until a written answer is held."
     },
     {
       "id": "FU-1284",
@@ -26217,9 +26220,12 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234 from the Owner's report: the domain is registered and renews on 2027-11-22, its A record names the release machine's fixed address, and the machine answers on it over HTTPS with a Let's Encrypt certificate, with sign-in on. No personal detail of the registration is recorded. docs/DEPLOYMENT.md (step 12) and the name and brand screen say so."
     },
     {
       "id": "FU-1290",
@@ -26756,7 +26762,7 @@
     {
       "id": "FU-1817",
       "title": "OWNER: one solicitor's engagement before anyone but you is invited - the Law pages before any public release, and where other people's data may be kept",
-      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. OWNER RULING 2026-11-22 (the recommendations accepted): the engagement also carries written questions on the project's licence and title - who holds the copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit shares or any valuation would be a financial promotion or a collective investment scheme. Both are among docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8). W1193 (2026-11-22): the recommendation the Owner accepted for these questions also holds an interim: until the solicitor answers, each entity repository's README says that no terms have been chosen; building it is row FU-1880. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the solicitor is also to be asked in writing about retention and erasure, and the Owner is to approve a record of processing once the solicitor has answered. The deletion-drill rounds go ahead either way, with every retention period marked \"not decided: the Owner's\".",
+      "why": "Two questions the plan leaves to you: P5.11 rules that a qualified person's view of the Law pages comes before any public release, and P4.5 that where another person's data may be kept - the free Google Cloud regions are in the United States - is a solicitor's question, answered before anyone else's data is stored there. RECOMMENDED (accepted 2026-11-20, evening): one engagement covering both, booked once the first deploy is up; nothing is public, and no one but you is invited, until it has answered. OWNER RULING 2026-11-21 (the recommendations accepted): P5.18 clause 4's comparison of named finance products stays closed: no named finance product is compared. If a comparison is ever wanted, whether showing named finance offers is credit broking is put to this engagement first: PERG 2, read in W1182, does not say whether it is effecting an introduction or presenting or offering an agreement. OWNER RULING 2026-11-22 (the recommendations accepted): the engagement also carries written questions on the project's licence and title - who holds the copyright LICENSE names (\"Virtual Sovereign Business\", which is not a legal person), what the public Apache-2.0 grant already permits, what a contributor grants with no agreement, and on what terms a founder receives an entity repository - and on the investment-side perimeter: whether the capital fund, the profit shares or any valuation would be a financial promotion or a collective investment scheme. Both are among docs/business/FORMATION_WORKPACK.md's questions for a solicitor. It is also to review, with the Owner, the data protection impact assessment a round is to draft before any health-related wellbeing entry (P5.8). W1193 (2026-11-22): the recommendation the Owner accepted for these questions also holds an interim: until the solicitor answers, each entity repository's README says that no terms have been chosen; building it is row FU-1880. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the solicitor is also to be asked in writing about retention and erasure, and the Owner is to approve a record of processing once the solicitor has answered. The deletion-drill rounds go ahead either way, with every retention period marked \"not decided: the Owner's\". OWNER RULING 2026-11-22 (evening; the recommendation accepted): the Law page's partnership_deed template is added to this engagement as a written question, and it stays held meanwhile; and NICE's terms on quoting NG249 1.1.1 verbatim are put to the solicitor here; nothing changes now. Proposed by the round design, not ruled: the first question asks whether the Law page may keep offering partnership_deed before the solicitor answers, since the Legal Services Act 2007, Schedule 2, paragraph 5(1)(c), reserves preparing an instrument relating to real or personal estate, and asks the same of an IP assignment made as a deed; partnership_deed is already held at the draft form (agentic_core/legal/specialist.py, HELD_FOR_A_QUALIFIED_READ). The second asks whether quoting recommendation 1.1.1 word for word, as the retired falls entry's record and the Care calibration set do, is within NICE's terms or needs NICE's permission.",
       "source": "W1174 (the Owner's decisions of the evening of 2026-11-20, recommendation 3)",
       "found": "2026-11-20",
       "files": [],
@@ -26845,7 +26851,7 @@
     {
       "id": "FU-1822",
       "title": "The reviewer is shown no published table, so C03 and C10 measure recall of NEWS2",
-      "why": "The reviewer is shown the register's rows and the answer, never the NEWS2 chart, so the two planted score cases, C03 and C10, test whether the model remembers the chart. The tree's NEWS2 table is held to the chart by test_w1122; whether it may be shown to the reviewer turns on the college's reuse terms in the rcp-news2 row (no copyright restriction provided the stated acknowledgement is given, the material is not modified, and the charts are reproduced in colour). NEXT: read those terms against showing the table to a model as text, and show it, with the acknowledgement, only if they allow it. W1190, a note and not a ruling: what the reviewer is shown is part of the agent's digest (FU-1821), so this row is settled before the Owner's second calibration run (FU-1831), or a pass on that run would stop counting when it lands. W1195c, a note: the digest is taken over a fixed probe (care_reviewer.PROBE_ANSWERS and PROBE_ROWS: answers of every type a case's is, drawn as a case's is, and a row in each status a case is shown, carrying between them every field a row can show, listed out of sorted order), and test_w1195c holds that every line the reviewer is shown for a case, other than the answer and the register's rows, is a line of the probe's prompts. So the table is to be shown by prompt_for outside a row's line, where the probe shows it too, and never carried in a register row's says or another field a row is drawn with: shown beside the rcp-news2 row that way, it turns that leg red until the probe shows the table too, and then the digest moves, so a run made before it stops counting. Which rows rows_for picks for a case, and what a row's own fields say, are not in the digest.",
+      "why": "The reviewer is shown the register's rows and the answer, never the NEWS2 chart, so the two planted score cases, C03 and C10, test whether the model remembers the chart. The tree's NEWS2 table is held to the chart by test_w1122; whether it may be shown to the reviewer turns on the college's reuse terms in the rcp-news2 row (no copyright restriction provided the stated acknowledgement is given, the material is not modified, and the charts are reproduced in colour). NEXT: read those terms against showing the table to a model as text, and show it, with the acknowledgement, only if they allow it. W1190, a note and not a ruling: what the reviewer is shown is part of the agent's digest (FU-1821), so this row is settled before the Owner's second calibration run (FU-1831), or a pass on that run would stop counting when it lands. W1195c, a note: the digest is taken over a fixed probe (care_reviewer.PROBE_ANSWERS and PROBE_ROWS: answers of every type a case's is, drawn as a case's is, and a row in each status a case is shown, carrying between them every field a row can show, listed out of sorted order), and test_w1195c holds that every line the reviewer is shown for a case, other than the answer and the register's rows, is a line of the probe's prompts. So the table is to be shown by prompt_for outside a row's line, where the probe shows it too, and never carried in a register row's says or another field a row is drawn with: shown beside the rcp-news2 row that way, it turns that leg red until the probe shows the table too, and then the digest moves, so a run made before it stops counting. Which rows rows_for picks for a case, and what a row's own fields say, are not in the digest. W1193d, a note recording the Owner's ruling of the evening of 2026-11-22 (the recommendation accepted): the second Care calibration run also waits for this row, which is settled first, in 0.5-1 round, before 2027-01-10. Proposed by the round design, not ruled: that round reads rcp-news2's reuse terms against showing the NEWS2 table to a model as text, then shows it with the acknowledgement, or records why not, and writes the second run's step into step 5 of the local notes.",
       "source": "W1184 (FU-1054's plan for its last two rounds, measured at d038f9da; W1183 built its first half)",
       "found": "2026-11-21",
       "files": [
@@ -27012,7 +27018,7 @@
     {
       "id": "FU-1831",
       "title": "The Care reviewer's first calibration run did not meet the bar: five planted cases missed and four clean ones flagged",
-      "why": "Run cal-8c7430765c, made on the Owner's machine on 2026-11-21 with llama3.2 served by ollama on the CPU, caught 5 of 10 planted cases (C04, C06, C07, C09 and C10) and flagged 4 of 6 clean ones (K01, K02, K04 and K05; K03 alone passed), against a bar of every planted case and at most one false alarm in six. Five cases (C01, C02, C03, C08 and K06) were answered with a bare 'FLAG:' line and the reasons as bullets beneath it, a form the reviewer does not read, so they were not reviewed and the run calibrates nothing; had the bullets been read, C01 would have been caught and K06 would have been a false alarm, 6 of 10 and 5 of 6, still below the bar. C05 was flagged, but not for its own reason. C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply. The model named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean case, so even its catches are weak evidence of a review. NEXT: before a second run, record what the reviewer is shown (FU-1821's digest of its prompt), so a run says which prompt it was made with, and make the reply's form harder to get wrong (a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons) without changing the set's cases or checklist; then a second run is the Owner's machine's to make, with a larger local model if one fits that machine. Nothing here moves the bar, and no line in another form is counted. OWNER RULING 2026-11-21 (afternoon; the recommendations accepted): the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as FU-1054 closed on the first's. W1195c, a note and not a ruling: the reply's form and the agent's digest are built (FU-1821, closed by W1195c). The reviewer's prompt states the one form. A reply in another form, such as a bare 'FLAG:' line with the reasons beneath it or 'FLAG: none' beside reasons, has no line read as a flag, is not reviewed, and the run keeps what put it out of the form; a run records the digest of what its reviewer was shown. Read that way, as its record shows, the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06, C04 (a reason beside a sentence of prose) and C06. A run that leaves any case not answered in the one form calibrates nothing, whatever the meets_bar of its exported score says, since such a case is counted there as not flagged; the statement's reason decides. A run through the agent's door now starts only when the context the local runtime reports for its model holds the longest prompt the set sends and the reply that flags each of the set's reasons once, counted as bytes (no token is shorter than a byte, so the figure is a bound, not the prompt's size), so no prompt is cut to fit; with Ollama the context is set with OLLAMA_CONTEXT_LENGTH. The bar did not move. W1195c built two of the three things the Owner's ruling of 2026-11-21 names for the second run; the third it names is FU-1820's re-read. The second run's step goes into step 5 of the local notes in a later round, once the Owner has answered whether the run also waits for FU-1822. W1195d, a note: the re-read FU-1820 asked for is done. gov-report-child-abuse, bapen-must-toolkit and nice-ng249 were read again at their publishers on 2026-11-22, each page whole and not through a summary, and each still says what the cases that rely on it rely on, so the set can be run from 2026-11-22 through 2027-02-17 as the register stands. The ruled date, before 2027-01-10, is unchanged. FU-1822 is still open, and W1190's note says it is settled before the second run; whether the run waits on it is the Owner's to say, so the second run's step is not yet in step 5 of the local notes.",
+      "why": "Run cal-8c7430765c, made on the Owner's machine on 2026-11-21 with llama3.2 served by ollama on the CPU, caught 5 of 10 planted cases (C04, C06, C07, C09 and C10) and flagged 4 of 6 clean ones (K01, K02, K04 and K05; K03 alone passed), against a bar of every planted case and at most one false alarm in six. Five cases (C01, C02, C03, C08 and K06) were answered with a bare 'FLAG:' line and the reasons as bullets beneath it, a form the reviewer does not read, so they were not reviewed and the run calibrates nothing; had the bullets been read, C01 would have been caught and K06 would have been a false alarm, 6 of 10 and 5 of 6, still below the bar. C05 was flagged, but not for its own reason. C06, counted caught, answered 'FLAG: none' and seven of the set's reasons in the same reply. The model named 'professional role claimed' on 15 of the 16 cases and flagged all nine reasons on K01, a clean case, so even its catches are weak evidence of a review. NEXT: before a second run, record what the reviewer is shown (FU-1821's digest of its prompt), so a run says which prompt it was made with, and make the reply's form harder to get wrong (a bare 'FLAG:' line with bullets beneath it; 'FLAG: none' beside reasons) without changing the set's cases or checklist; then a second run is the Owner's machine's to make, with a larger local model if one fits that machine. Nothing here moves the bar, and no line in another form is counted. OWNER RULING 2026-11-21 (afternoon; the recommendations accepted): the second run is the Owner's, on their own machine, before 2027-01-10, once the reply form here, the agent's digest (FU-1821) and the re-read of FU-1820 have landed; it is run with a larger local model than the first run's, of seven to eight billion parameters such as llama3.1:8b if the Owner's machine has about 16 GB of memory, and the reviewer's reviews then run on that model; the bar does not move. If it fails too, the reviewer stays UNCALIBRATED and no round goes into calibrating it until a qualified person is engaged; P5.15 closes when its clauses are built and its rows closed, calibrated or not. This row closes on the second run's results, pass or fail, as FU-1054 closed on the first's. W1195c, a note and not a ruling: the reply's form and the agent's digest are built (FU-1821, closed by W1195c). The reviewer's prompt states the one form. A reply in another form, such as a bare 'FLAG:' line with the reasons beneath it or 'FLAG: none' beside reasons, has no line read as a flag, is not reviewed, and the run keeps what put it out of the form; a run records the digest of what its reviewer was shown. Read that way, as its record shows, the first run would have had seven cases out of the form: C01, C02, C03, C08 and K06, C04 (a reason beside a sentence of prose) and C06. A run that leaves any case not answered in the one form calibrates nothing, whatever the meets_bar of its exported score says, since such a case is counted there as not flagged; the statement's reason decides. A run through the agent's door now starts only when the context the local runtime reports for its model holds the longest prompt the set sends and the reply that flags each of the set's reasons once, counted as bytes (no token is shorter than a byte, so the figure is a bound, not the prompt's size), so no prompt is cut to fit; with Ollama the context is set with OLLAMA_CONTEXT_LENGTH. The bar did not move. W1195c built two of the three things the Owner's ruling of 2026-11-21 names for the second run; the third it names is FU-1820's re-read. The second run's step goes into step 5 of the local notes in a later round, once the Owner has answered whether the run also waits for FU-1822. W1195d, a note: the re-read FU-1820 asked for is done. gov-report-child-abuse, bapen-must-toolkit and nice-ng249 were read again at their publishers on 2026-11-22, each page whole and not through a summary, and each still says what the cases that rely on it rely on, so the set can be run from 2026-11-22 through 2027-02-17 as the register stands. The ruled date, before 2027-01-10, is unchanged. FU-1822 is still open, and W1190's note says it is settled before the second run; whether the run waits on it is the Owner's to say, so the second run's step is not yet in step 5 of the local notes. OWNER RULING 2026-11-22 (evening; the recommendation accepted): the second Care calibration run also waits for FU-1822, which is settled first, in 0.5-1 round, before 2027-01-10. Proposed by the round design, not ruled: the round that settles FU-1822 writes the second run's step into step 5 of the local notes, as the earlier note on the run's row says.",
       "source": "W1188 (FU-1054's first run, cal-8c7430765c, made on the Owner's machine on 2026-11-21; the Owner's ruling of that morning that its misses become a row)",
       "found": "2026-11-21",
       "files": [
@@ -27100,10 +27106,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1202",
       "note": "",
-      "slot_source": "P4.1: sign-in on, without which the tunnel's port acts as the administrator for any page in the Owner's browser (W1191's second review)"
+      "slot_source": "P4.1: sign-in on, without which the tunnel's port acts as the administrator for any page in the Owner's browser (W1191's second review)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1202: agentic_core/request_guard.py, a pure ASGI middleware made the outermost layer of agentic_core/app_mvp.py, acts only while WORKSTATION_PAGE_ORIGINS names origins, each exactly scheme://host[:port], a setting only deploy/gcp/startup.sh passes (http://localhost:8800 and http://127.0.0.1:8800 on the no-domain run, https://DOMAIN with WORKSTATION_SERVED_HOSTS=DOMAIN behind the front, and so the HTTPS drill's front). Unset or empty, it is off; set to an entry it cannot read, it is off and the log says so once, naming the entry, at startup or at the first request. So the Owner's own platform and the suite are unchanged (the local platform's row stays open). While on, it refuses a request of any method under a Host other than localhost, 127.0.0.1, ::1 or a served host (400, so a host name rebound to the machine is not served), and closes a stream socket under such a Host with 1008 before it is accepted; a POST, PUT, PATCH or DELETE whose Origin is not listed, null included, or that has no Origin but Sec-Fetch-Site: cross-site (403); a read under /api/ that the browser says a page of another site asked for without a link being followed, by an image or a fetch (Sec-Fetch-Site: cross-site, Sec-Fetch-Mode not navigate; 403); and a stream socket of an unlisted Origin, closed with 1008 before it is accepted. Nothing runs for a refused request, and the membrane does not observe it. It does not refuse a program, which sends no Origin and is stopped only by sign-in, nor a preflight, which CORS answers. A link followed from another site, and a read from a browser that sends no Sec-Fetch headers, still run: GET /api/v1/qep/adaptation/registry writes until W1220, and the forecasts and a change's impact make a gateway call, which W1202 registered as a row of their own on P4.1. Step 7 of docs/DEPLOYMENT.md says so. test_w1202 drives it through the real app."
     },
     {
       "id": "FU-1836",
@@ -27128,21 +27137,24 @@
     {
       "id": "FU-1837",
       "title": "OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this public repository has held, most of them since March 2026, or confirm each is dead, and record the date",
-      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word. W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py --history, is a later step, after the repository host's secret-scanning alert list. Its full run is made on a mirror clone on the Owner's machine, since the cloud session's clone is shallow; it lists each credential still in history by kind, path and commit, never by value, and rewrites nothing. A finding there that these values already cover is recorded under this row, not as a new row.",
+      "why": "W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text file in the tree. Its message says \"The values are to be revoked at their providers by the Owner - redaction does not remove them from history\". No row ever recorded this, and the Owner's Stripe key roll of 2026-10-09 covers none of these values. What they are, by provider and kind only: an AI provider key, a Google sign-in client secret, a Firebase key and a speech-to-text key; two reCAPTCHA secrets and two sign-in token secrets; two database addresses carrying a username and password, a database password and an e-mail password. With them goes the key in the openQuran archive's .env on the Owner's machine, never in the repository, which FU-268's ruling (closed by W505) left to the Owner: \"The Owner rotates that key separately; the platform never reads it.\" Measured in W1191 by blob and by count, never by value: copies carrying most of the same values were uploaded to the repository on 2026-03-05, earlier than the June that W729's message gives, and most of the repository's other branches still carry unredacted copies, since W729 redacted only the tree's own copies; removing them there would not undo their exposure, which only revoking does. W729 also redacted two Stripe lines that held only templates; in the March copies those two lines hold earlier values that W729 never redacted, a Stripe live secret key and a Stripe webhook signing secret: revoke those too, or confirm they no longer work, since nothing records whether the key roll of 2026-10-09 retired them. The steps: read the repository host's secret-scanning alert list; revoke or rotate each item at its provider, or confirm that it no longer works; then tell the session the date, which a later round records beside the Stripe line at the head of the plan's Owner list. Added to the Owner's list at the Owner's request on 2026-11-21, to be done soon; in the Owner's words: \"add to list of items for me, I will do this soon\". OWNER RULING 2026-11-22 (the recommendation accepted): the revocation is to be done on 2026-11-22, beginning with the repository host's secret-scanning alert list. The cloud session may list stale branches for deletion; no branch is deleted or changed without the Owner's explicit word. OWNER RULING 2026-11-22 (morning; the recommendation accepted): the Owner revokes the leaked keys first; then the cloud session lists the stale branches that hold them for the Owner to check, keeping main, main-l1fsqo, local-owner and anything else the Owner names, and deletes only on the Owner's explicit word. W1208 (2026-11-22, FU-1864): the privacy screen's read-only history mode, python scripts/privacy_check.py --history, is a later step, after the repository host's secret-scanning alert list. Its full run is made on a mirror clone on the Owner's machine, since the cloud session's clone is shallow; it lists each credential still in history by kind, path and commit, never by value, and rewrites nothing. A finding there that these values already cover is recorded under this row, not as a new row. THE OWNER'S CHECK, 2026-11-22 (night and late evening), by kind and never by value, as the Owner reported it (W1234). ALREADY DEAD: the Stripe live secret key (the account's only secret key is the one created on 2026-10-09), the AI provider key (every key at the provider is revoked or expired), the Google sign-in client secret (the client's one secret was created on 14 October), the speech-to-text key (the provider holds no key) and the MongoDB Atlas address (its project has no database users). REVOKED OR ROTATED THAT DAY: the Stripe webhook signing secret, rolled, its endpoint disabled (whether the old secret stopped working at once was not visible); the Firebase key, created on 2025-01-16, deleted; the two reCAPTCHA values, their site deleted; and the two sign-in token secrets, replaced in the two local .env files git ignores (the live server never held them). ON THE OWNER'S RECOLLECTION, NOT CHECKED INDEPENDENTLY: the e-mail password, changed on 2026-10-14. NOTHING TO REVOKE: the Redis address and the second MongoDB address name local containers and carry no credentials. FOUND ON THE ONEDRIVE DESKTOP AND SETTLED THAT EVENING: a Google service-account key file whose key was active with no expiry, now deleted at Google; an older .env copy holding a classic GitHub token, dead, since the account holds no classic tokens; and a second .env copy, in an old git checkout, holding copies of a live Google API key and the n8n encryption key, which the Owner retired rather than rotated: the Google API key, created on 2026-03-16, is deleted at Google, which can restore it for 30 days, and no tracked code or configuration outside _archive and docs names its setting; the n8n value was the encryption key, not an API key, and since the Owner does not use n8n it was blanked, with no service to revoke it at. The three files are gone from the OneDrive Desktop: the PC's Recycle Bin was checked and holds no items, and the OneDrive online bin, which could not be checked, is recorded as emptied on the Owner's word. The repository host's secret-scanning alerts 4, 6 and 7 were closed as Revoked, so none is open; alerts 1, 2, 3 and 5, closed on 2026-03-05 as false positives although their values were real, are all dead or rotated. The dead AI provider and Stripe values were blanked in both local .env files git ignores. As a precaution the Owner deleted the one remaining Firebase browser key in the old Quran project, a possible match for the openQuran key, not a proven one. UNCONFIRMED, on two points: the key in the openQuran archive's .env, whose archive is no longer on the machine, in its Recycle Bin or in OneDrive, so its provider is not identified and it is not confirmed revoked; and whether the leaked database passwords (the database password, and the password in the Postgres address, which names a local container) were used anywhere else, to which the Owner's answer, word for word, was: can not recall. Both stay UNCONFIRMED.",
       "source": "W1191 (the Owner's request of 2026-11-21, late evening)",
       "found": "2026-11-22",
       "files": [],
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed on the Owner's word on 2026-11-22: asked whether to keep it open or close it, the Owner replied close it. Recorded in W1234, by kind and never by value; the dated check above says each: the leaked credentials were revoked, rotated or found dead, the OneDrive Desktop's files settled (the service-account key deleted at Google, the GitHub token dead, the three files gone), the live Google API key and the n8n encryption key retired, and the secret-scanning alerts all closed as Revoked. Two points stay UNCONFIRMED: whether the leaked database password or the password in the Postgres address was used anywhere else (the Owner's words: can not recall); and the key in the openQuran archive's .env, whose provider could not be identified and which is not confirmed revoked. The credential history scan (W1208) on a full mirror clone stays the Owner's act, later, as accepted on the evening of 2026-11-22, and so does checking the stale branches the cloud session lists as holding the leaked values; neither is closed with this row. RECOMMENDED: if either password may be in use elsewhere, change it there."
     },
     {
       "id": "FU-1838",
       "title": "OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back for a named scholar",
-      "why": "P5.17 clause 7 puts it with the Owner: \"a named scholar or trusted institute, on which clauses 2 to 5 each wait in part\". The plan waits on one in more places: the review store's roster is empty until the Owner engages one; a composed religious answer is withheld until a named scholar approves its exact text; P5.20's clause 8 waits on a named scholar; and P5.21's tools open only on a scholar's decision on the current pack. The letters in the same clause had rows (FU-1188, FU-1283), and the scholar had none. OWNER RULING 2026-11-22 (the recommendation accepted): ask a scholar or a trusted institute now. The request covers the withheld adult curriculum and tajweed items, P5.17 clause 4's attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack. The children's gate stays closed until P5.12's four learner-facing headings are built and an independent safeguarding review is done (ruling of 2026-11-20). This row closes only with a dated plan record of the engagement, or with a ruling that defers it, never on the review store's roster.",
+      "why": "P5.17 clause 7 puts it with the Owner: \"a named scholar or trusted institute, on which clauses 2 to 5 each wait in part\". The plan waits on one in more places: the review store's roster is empty until the Owner engages one; a composed religious answer is withheld until a named scholar approves its exact text; P5.20's clause 8 waits on a named scholar; and P5.21's tools open only on a scholar's decision on the current pack. The letters in the same clause had rows (FU-1188, FU-1283), and the scholar had none. OWNER RULING 2026-11-22 (the recommendation accepted): ask a scholar or a trusted institute now. The request covers the withheld adult curriculum and tajweed items, P5.17 clause 4's attestation wording, and P5.21's tajwid rules, reflection prompts and approval pack. The children's gate stays closed until P5.12's four learner-facing headings are built and an independent safeguarding review is done (ruling of 2026-11-20). W1199 drafted the request for the Owner to send, in docs/letters/SCHOLAR_REVIEW_REQUEST.md: it offers the review to a scholar or a trusted institute, names what is withheld now, the five Religion research tools' composed answers among it, and names no one, whom it goes to being the Owner's to choose. RECOMMENDED: send it as drafted, once the Owner has filled in their name and address and whom it goes to, and read it through; nothing is sent until the Owner sends it. This row closes only with a dated plan record of the engagement, or with a ruling that defers it, never on the review store's roster.",
       "source": "W1192 (the Owner's decisions of 2026-11-22; found by the assessment of the inherited v40 prompt's body on 2026-11-21)",
       "found": "2026-11-22",
       "files": [],
@@ -27151,7 +27163,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "The Owner's choice of 2026-11-22 (W1234): Cambridge Muslim College is to be asked first; its contact page (https://www.cambridgemuslimcollege.ac.uk/about/contact/, read 2026-11-22) gives info@cambridgemuslimcollege.ac.uk. The Markfield Institute of Higher Education is the second candidate; Ebrahim College could not be verified. Neither page read mentions tajwid, and neither institute's scholarly fit has been assessed. Nothing has been sent and the College has agreed to nothing, so the row stays open. OWNER RULINGS 2026-11-22 (W1236, the QEP restart; the recommendations accepted): one engagement may cover several tracks, provided each approval is entered under the named person who gave it and that person is rostered for that track; and a hifz method source is reviewed, before any default portion is proposed, by the scholar or institute engaged under this row, recorded under a named person."
     },
     {
       "id": "FU-1839",
@@ -27177,10 +27189,13 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1234",
       "note": "",
-      "slot_source": "OWNER (the Owner's machine): the lessons are in the assistant's notes on the Owner's machine, which the cloud session never sees"
+      "slot_source": "OWNER (the Owner's machine): the lessons are in the assistant's notes on the Owner's machine, which the cloud session never sees",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act (the Owner's word: Accept all), recorded in W1234: a local session on the Owner's machine listed 38 lessons from the assistant's notes as derived since W677, and the Owner ratified 27 and did not ratify 11, each with its reason. The 27 are in the method as one batch, in docs/DELIVERY_METHOD.json (M-VERIF-14, M-VERIF-15, M-VERIF-16, M-EXEC-08, M-VERIF-17, M-EXEC-09, M-EXEC-10, M-EXEC-11, M-DIAG-07, M-EXEC-12, M-DELIV-09, M-VERIF-18, M-DELIV-10, M-VERIF-19, M-VERIF-20, M-EXEC-13, M-VERIF-21, M-DELIV-11, M-DELIV-12, M-VERIF-22, M-DELIV-13, M-SESS-13, M-SESS-14, M-EXCH-09, M-PREP-07, M-VERIF-23, M-EXCH-10), each carrying ratified: the Owner's ruling of 2026-11-22, as one batch. The 11 and their reasons are recorded at P5.14. So no lesson of those the local session listed cites a round later than the method's data without a stated reason, which is P5.14's ACCEPT for the notes. The 8-hour cycles and the six rules of how the work is done go in separately, as the Owner ruled. The record of the batch on the store that holds Change Control is FU-1907."
     },
     {
       "id": "FU-1841",
@@ -27219,10 +27234,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1209",
       "note": "",
-      "slot_source": "beside FU-1826 and FU-1829"
+      "slot_source": "beside FU-1826 and FU-1829",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1209: the fabric preview no longer compares the resource count with the grant for four parallel nodes (homeostasis.project(len(resolved))), so it no longer draws 'over capacity' in amber for a composition that runs one stage at a time. Its organism_capacity takes the posture, the organism and the work budget from homeostasis.snapshot(), read-only, and carries stage_concurrency 1 with a basis saying a composition's stages run one after another and its real resources one at a time, that no concurrency limit caps or refuses that sequence (only the declared ceiling of 12 stages bounds how many resources a run attempts), that a held work budget changes nothing about it, and that of its resources only the org cascade runs work at once under a concurrency grant (the model ensemble asks its members in parallel inside its one stage, ungoverned). For a composition holding vsb_org_swarm it carries the cascade's request, demand and grant: the grant comes from homeostasis.assess(demand, request, read_only=True), the roles are the resource's non-placeholder csuite_roles, and the demand and request come from swarm.cascade_demand, the formula cascade_orchestration now runs on. The basis says the grant is read now and can differ at the run. fits_current_capacity and admitted_max_parallel leave the payload; project() itself is unchanged. The chip reads '§8 capacity: {posture} · stages run one at a time', and for the cascade ' · the org cascade: up to {granted} C-Suite pairs at once', violet in both cases. The tooltip's energy clause and its last sentence say what governs the run, the work-budget span names the platform's work budget and says that in this composition it holds only the org cascade, and the budget-off block is kept. Two simulate answers captured from the live route are in ResourceFabric.fixture.json, and the rendered test draws the chip from them, reading the expected grant from the capture. test_w1209 holds it. Five sequential resources say stage_concurrency 1 and no fit, with and without a held budget. The cascade composition's request is 3, its demand 18, and its grant is assess(18, 3, read_only=True)'s, 3 with the controller's answer fixed at 3 (never the resource count), or 1 with the hold carried. No ATP simulator update is made on the test's thread by either preview. The cascade, driven with five roles and a stub that counts the C-Suite and CoE calls in flight, peaks at exactly 2 under a grant of 2 and at 1 under a grant of 1. The fixture carries only keys the live route gives, with the stage basis equal to the route's."
     },
     {
       "id": "FU-1843",
@@ -27236,10 +27254,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1196",
       "note": "",
-      "slot_source": "the ruling's item; the word 'avatar' would otherwise route the row to P2.40"
+      "slot_source": "the ruling's item; the word 'avatar' would otherwise route the row to P2.40",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1196, as the retirement the Owner ruled on 2026-11-22 (P3.32): MemoryV01, its instance and the chromadb import are removed from agentic_core/ai/ceo/memory_v01.py, which keeps the C-Suite meeting log and says in its docstring what was retired and the ruling's reason (any later memory built after sign-in, with a retention period and no outside download); ceo.py imports meeting_log only; the avatar chat and the upload no longer write the retired memory (the avatar chat's call still goes to the gateway's interaction log and VectorMemory), and their imports are gone; the comments that called memory_v01 a live store are restated in avatars/api.py, ingestion/api.py, ai/logger.py and the purge script's note. The upload's delete answer stays REMOVED and says what may remain elsewhere: a generation that read the file kept its prompt in the interaction log and in VectorMemory, which cannot be removed by file id; it never says that nothing remains, and for a file with nothing extracted it names the uploaded bytes only when they were removed. chromadb stays declared until W1230, and no stored data was deleted. test_w1196 holds it: while pyproject.toml declares chromadb, chromadb and onnxruntime installed so the measurement is real; no MemoryV01; by the syntax tree no module under agentic_core, scripts or products imports chromadb or the retired memory or calls add_exchange; a child with an empty HOME and USERPROFILE and every outside connection refused drives the avatar chat and an extracted upload and tries no outside host, makes no ~/.cache/chroma and loads neither chromadb nor onnxruntime; the delete answer names the interaction log and VectorMemory; and the plan's dated lines at P2.13, P3.22 and P3.32 are in place. the answer for a row whose bytes were not removed says so; and fifteen blinds turn it red."
     },
     {
       "id": "FU-1844",
@@ -27280,10 +27301,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1205",
       "note": "",
-      "slot_source": "P3.30, as FU-1297 was: the same whole-file ledger class"
+      "slot_source": "P3.30, as FU-1297 was: the same whole-file ledger class",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1205: the document-control store is dcms_ledger.jsonl, one JSON line per version (artifact_id, version, hash, actor, timestamp, the content capped at 16,000 characters or null, content_stored), appended in binary mode under store_lock with flush and fsync. An append that fails takes back only its own unfinished tail and raises; if that undo fails, the error says the version may be in the ledger and the instance refuses every later commit. No line written whole is rewritten. The registry in memory holds a stub per version with no content (200 versions: 1,455,855 resident bytes before, 120,705 after, by tracemalloc). The load, verify_artifact and get_audit_integrity read the file by one set of rules: a torn or unreadable line, a version out of order or repeated, or a content_stored flag that does not match its content refuses every commit with StoreUnavailable, saying how the Owner repairs the ledger. dcms_registry.json is carried in once behind a migration line naming its sha256 and counts, and kept untouched; one that cannot be read whole or is out of order stays the store, every commit refused; a marker records the ledger's creation, so a ledger that goes missing is refused, never carried in again. document_control_status says store_incomplete and writes_refused; assure_delivery and the workflow tree (agentic_core/ai/native/orchestrator.py, which keeps its QMS verdict) say a version that was not kept; the review-gate and review-decision routes (agentic_core/api/vsb.py) and POST /vbs/dcms/commit refuse with 503 and the reason and save nothing. The cascade's commits were already inside a try and are unchanged. The soak reads the ledger. Not detected, as before: a line rewritten with its hash, or the newest lines removed, since nothing outside the file anchors the ledger. test_w1205 holds each."
     },
     {
       "id": "FU-1846",
@@ -27298,10 +27322,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1206",
       "note": "",
-      "slot_source": "P5.10 clause 1"
+      "slot_source": "P5.10 clause 1",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1206: QualityManagementSystem._save_state (agentic_core/vbs/qms.py) raises StoreUnavailable while the store could not be read whole, so the write is refused and the store keeps its bytes. Every writer saves through _save_or_refuse: the gate's verdict still returns, each defect writer's answer says write_refused, and last_write_refused records the reason, the writer and when. defect_summary, which the defects route returns, says writes_refused with its basis, including that the state is read once, at first use, so the refusal lasts until the platform is restarted with the store repaired. POST /mgmt/nonconformance (agentic_core/api/management_systems.py) answers stored False and NOT STORED when the defect's write was refused, and POST /vbs/qms/gate (agentic_core/api/vbs_systems.py) says a run it could not record was NOT recorded, each lifting writes_refused. test_w1206 holds the attribute door over agentic_core (a tolerant read bound into an attribute, directly or through a method's return, and written back from another method, unless the writer raises on the reason the read bound), bounded by planted positive and negative sources (an inverted guard, a local alias and an annotated binding among the positives), and holds that in the QMS every save goes through _save_or_refuse and only _save_state writes. The DCMS's instance was closed by W1205. The except-default loader of agentic_core/auth/core.py is a third door this matcher does not see: it is left to P4.1, where FU-1834 is open. FU-395 is not reopened: the register has no reopen and its ten write paths still hold."
     },
     {
       "id": "FU-1847",
@@ -27320,10 +27347,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1210",
       "note": "",
-      "slot_source": "P3.30, as FU-1121; its avatars/ files would otherwise route it to P2.40"
+      "slot_source": "P3.30, as FU-1121; its avatars/ files would otherwise route it to P2.40",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1210: the 34 durations taken from the settable wall clock, in 22 files, are read from time.perf_counter(), start and end, with each file's own alias (34 ends and 33 starts edited; gateway.py's four attempt starts and the subtraction in _record among them, and native_ai.py's two probe timings, which the refutation added). perf_counter is a monotonic clock, chosen over time.monotonic() on host_observation.py's precedent (W746): on Windows before Python 3.13 monotonic() ticks in about 15.6 ms steps. recirculation_orchestrator.py takes two readings, the wall clock for cycle_id and perf_counter for the duration. created_at and every other stamp stays on the wall clock, and so do the eight ages of stored stamps or file times and the cutoffs against them (orchestrator.py, mesh/health/monitor.py, config.py, organism_status.py, products.py's cache age, economy.py, gaas/v5/circuit_breaker_rl.py, work_budget.py). S18.1's seconds actually spent are what a monotonic clock measures, so the ruling is untouched. test_w1210 holds it: a syntax-tree scan of agentic_core outside _archive finds no wall-clock duration (same or enclosing scope, aliases and tuples included, a helper's parameter, or two clocks mixed), and it found 34 before the round. The eight ages are named with their reasons. The scan flags planted shapes and leaves stored ages alone. With resource_fabric's clock moved an hour back, then forward, at every read, a floor composition run stores a duration within the test's own elapsed time and the work budget rises by exactly it. With gateway's clock moved back the stream's floor attempt row is within the same bounds."
     },
     {
       "id": "FU-1848",
@@ -27410,10 +27440,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1203",
       "note": "",
-      "slot_source": "P3.32, the licence half of model promotion, which FU-1087 rode"
+      "slot_source": "P3.32, the licence half of model promotion, which FU-1087 rode",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1203: promote_model (agentic_core/api/native_ai.py) reads this build's description from the runtime after the evaluation check, through describe_installed_one (agentic_core/ai/native/model_resource.py), one /api/show call parsed where describe_installed parses each model's description (a licence given as a list counts only when every item is text; a description over a stated size is said as not read), and then reads the build's digest again, refusing a build that changed during the read. A description that could not be read is refused with 409 on its own words, since whether the runtime holds licence text is then not known; a build whose runtime holds no licence text is refused with 409 that cites the Owner's ruling of 2026-11-22 (a model is made the serving default only with its licence read, with no override) and says that OLLAMA_MODEL, which the Owner sets on the machine, still names the model served, if it is installed and not retired, when nothing is promoted. No override is built and no research lead's licence stands in for the runtime's text. A promotion keeps default_local_licence (the text's first line, length and sha256) beside the build's digest and returns it, and retiring the default drops it. The lifecycle record is read again after the licence read and the evaluation checked on it, with nothing awaited before the write, so a retire or evaluation saved meanwhile is kept. The levels row for the promotion and the Native AI page's fixture say it rests on that licence text. test_w841's runtime holds a made-up licence text so its evaluated build is still promoted on purpose; test_w1203 holds each."
     },
     {
       "id": "FU-1853",
@@ -27428,10 +27461,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1203",
       "note": "",
-      "slot_source": "P4.1, the perimeter: its readiness instrument reads each route's mounted dependency"
+      "slot_source": "P4.1, the perimeter: its readiness instrument reads each route's mounted dependency",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1203: the six writes of the native-ai router (POST /lifecycle/evaluate, /baseline/run, /baseline/{run_id}/reproduce, /lifecycle/promote, /lifecycle/retire and /lifecycle/reinstate) each ask for require_admin, and its reads stay behind get_current_user, where the router is mounted (agentic_core/app_mvp.py). With sign-in off require_admin is a synthetic admin, so nothing changes there, and no switch is set in the tree. test_w1203, with sign-in on in its own test process only, refuses a signed-in user with 403 on each of the six, lets the user read the lifecycle, lets an administrator reach promote and reproduce, and reads each route's dependency. The round's security review found that the operations routes, which score rows a caller writes and ask for no administrator, still let a signed-in person change which model serves; that is registered open on P4.1, not built here."
     },
     {
       "id": "FU-1854",
@@ -27789,10 +27825,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P5.10 clause 1; integration_tests/ is a retired area"
+      "slot_source": "P5.10 clause 1; integration_tests/ is a retired area",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: _w703_faults, the guard every business document passes, now reads each row's status and each plan item's state from root/docs/FOLLOWUPS.json and the delivery plan, or from a register a test passes, so its sixteen call statements keep their arguments. (a) A bullet that begins 'Between this step and being relied on' names only open rows, a row it labels [owner decision] is slotted OWNER or owner-gated, and a plan item it names is not done. (b) A row a sentence or table cell calls open, still open, or the Owner's to rule or decide, is open. (c) A sentence or cell that says rows are, stay or remain open names at least one. A row named elsewhere, as evidence of what was built (METRICS_MEASURED.md's FU-1010, BUSINESS_PLAN.md's FU-1061), is not read for status, so the ratified documents are not edited. Every document under docs/business passes; W1193 had already restated the map and the cost model's P4.1 cell. test_w1201 plants each fault, labelled, and asserts each plant's own message; a done row cited as evidence, 'no open row' with no id and 'the register of open rows' stay clean; with a register copy in which the first open row the map's 'Between' lines name is done (FU-1095 today; the leg follows the map, so a round that closes that row and restates the map need not edit it), the map is a fault. A round that later closes a row a 'Between' line names (FU-417, FU-1072, FU-1036, FU-993, FU-1095, FU-1086) restates the map in that round."
     },
     {
       "id": "FU-1873",
@@ -27806,10 +27845,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P5.10 clause 2, a guard that holds its property over the whole document"
+      "slot_source": "P5.10 clause 2, a guard that holds its property over the whole document",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: one module-level pattern, _W703_MONEY, and its helper _w703_money count a money figure written before or after its number, with a multiplier, or in words: a code or symbol before a number; a number, with million, thousand, bn, m or k or none, then GBP, USD, EUR, pounds, dollars, euros, pence or sterling as a whole word, or a symbol after the number; and number words before pounds, dollars, euros or pence. 'GB' is not read as a currency. The rulings that let a figure stand are unchanged: the statement carries [owner-defined, or a provider's published price is marked SOURCED with its date and its pages (FU-1176). _w703_faults and test_w923's loop over the founder's guide both call _w703_money, so the guide's copy no longer keeps the currency-first pattern. No business document states money after its number or in words without a ruling; the cost model's ninety-nine pounds carries [owner-defined, 2026-10-13]. test_w1201 finds '750,000 GBP', '2.5 million pounds', 'two million pounds' and '5 €', each by its own message, and keeps '1 GB of memory' and the ruled amount in words clean."
     },
     {
       "id": "FU-1874",
@@ -27864,10 +27906,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "P3.30, a document restated so it no longer claims what a ruling refutes; P5.7 and P5.16 are done"
+      "slot_source": "P3.30, a document restated so it no longer claims what a ruling refutes; P5.7 and P5.16 are done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: the first-offer papers say the Domain tools are free, by the Owner's ruling of 2026-10-12 (plan item P5.16 clause 1), before FU-1818's interviews. FIRST_OFFER_CANDIDATES.md's 'How to read' says so and that the willingness-to-pay questions ask what a person spends today; its leading hypothesis says teachers will use the tool and come back to it, no longer that they will pay for it; its third refutation is a school that does not let its staff use a free outside tool; its first demand row is 'Would anyone use it again', NOT MEASURED in each column. The questions, W1192's guide that shows both outputs labelled, and the notes template are unchanged. FIRST_OFFER_DRAFTS.md asks whether teachers would come back and how often the need recurs, and answers 'What does it cost?' that nothing is charged for using a Domain tool and that the Owner's charges fall only on generating an enterprise (a price once, set and not yet charged) and on that enterprise's profit (a quarter, taken first), naming no amount; its :13 and the brand screen's register row and closing sentence say the same. P5.7 carries a dated note after W1192's ruling. test_w1201 holds that no sentence of the three papers pairs the tool with a money word unless a denial comes first, with the questions, the canvas's 'Nobody pays for a domain tool' and 'No school pays a licence for the tool' as controls and the brand screen's LICENSE bullet as a smoke check; test_w913 and test_w1151 read the new words."
     },
     {
       "id": "FU-1877",
@@ -27922,10 +27967,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1201",
       "note": "",
-      "slot_source": "the gate's guard; P5.7 is done"
+      "slot_source": "the gate's guard; P5.7 is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1201: test_w1126 computes the seventh investment gate with _w1201_first_offer_gate, to the Owner's ruling of 2026-11-22, and no longer reads any docs/ file named 'interview' as evidence. The gate is evidenced when at least five interviews are recorded, each a section '### Interview notes, YYYY-MM-DD' of a document under docs/business that fills every field of the notes template in FIRST_OFFER_CANDIDATES.md, one bullet each, and P5.7 carries a dated OWNER RULING that the first offer is a named candidate, with its reasons ('because'), dated on or after the fifth interview; when P5.7 records more than one such ruling, the latest dated is the one read. The cost model's bar is W1192's and is unchanged, and so are 'OWNER RULING 2026-11-19 (FU-1191)' and 'So no gate is evidenced today.' test_w1201 holds the template's seven fields and, on planted trees, that a file named 'interview' evidences nothing, five filled notes with a dated, reasoned choice evidence it, and four notes, a note missing a field, no choice, a choice with no reasons and a choice dated before the fifth interview do not, and of two dated choices the later is read; any real choice the Owner has recorded in P5.7 is taken out of the copied plan before the planted cases."
     },
     {
       "id": "FU-1880",
@@ -27979,9 +28027,12 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W1234",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done on 2026-11-22, the Owner's act, recorded in W1234: the Owner read the developer terms (https://api-docs.quran.foundation/legal/developer-terms/, last updated 2026-11-20) and the developer privacy packet (https://api-docs.quran.foundation/legal/developer-privacy/) whole that day, and opened no new account: the existing pre-production account is kept, its credentials only on the Owner's machine (they worked on 2026-10-13 and have not been retested, so this row's words that the content paths were never called with real credentials are out of date). docs/SOURCES.json's row quran-foundation-developer-terms records what the terms permit and forbid, their caching, attribution and data terms and what they say of production, and corrects what it said of AI use: the terms forbid using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception, where the row said written consent was needed. The three checks the reading leaves are rows of P5.17: FU-1908, FU-1909 and FU-1910."
     },
     {
       "id": "FU-1883",
@@ -28336,10 +28387,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W1195b",
       "note": "",
-      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and other free-text generators' routes, among them the Generator's and the Synthesis Studio's, are such routes"
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and other free-text generators' routes, among them the Generator's and the Synthesis Studio's, are such routes",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1195b: the screen W1195 built for the Law draft form and the clerk reads four more of the routes a person would use. The Generator's POST /api/v1/generator/produce reads a request's specification, artefact type, format and domain, each on its own and together, in run_generator, so a composition's Generator stage meets the same refusal and says it as a refusal, whole; the Synthesis Studio's POST /api/v1/synthesis/generate and /stream read its instructions after W659's ruling check, before anything is composed or saved and before a stream starts; POST /api/v1/refine reads the instruction to refine any tool's output, the Law page's draft among them, and the title it is given, not the draft; and a fabric composition's run reads its objective (or, with none, its name), its usage area, which reaches every resource as its domain, and each resource's settings and their names, before any stage is built, recording no run. An explicit ask the screen reads there is refused with 409, saying which route read it, the words, the field and the kind, that the screen misses most other ways of asking, and the reserved reason with where help is; the Generator and Synthesis Studio pages say it whole, held in their rendered tests against the routes' own captured refusals. The screen is W1195's, with its limits, and one change the legal review asked for: a reserved document named as another document's subject ('a TR1 explainer', 'a lesson on a legal charge', 'the TR1 summary') is no longer read as asked for. It reads only an explicit ask in the words it knows, so a request it does not read is composed, which is not a clearance, and P5.18 clause 4's ACCEPT is still not met. Not read: the studio's files and the topic it takes from their names, and the draft being refined. Precision, measured: on the builder's own 72 ordinary requests and requests about a document, written for the four doors before the screen was run on them (out of sample, not blind), none is refused; the legal review's 30 ordinary requests the screen refused before that change are labelled now and none is refused, in-sample since the change was made against them; and none of W1195's in-sample 168 labelled not-for phrasings and 116 corpus requests, nor of the final check's 80 ordinary drafts, is refused. Recall: 17 of 19 of the builder's explicit asks are read, a figure that is high because the builder had read the screen's patterns; the recall that generalises is W1195's, 27 of 87 on its corpus (in-sample) and 1 of 50 on the red team's cases (their fields read together). RESERVED_SCREEN, the Law page's screen_basis and the coverage row law-reserved-instruments say the four doors and what each does not read; the platform's other free-text routes are not screened, among them the deliverables, the Application Studio, the in-house assistant, the avatar and the AI CEO's chat, registered as one open row on P5.18 by its title (\"A reserved instrument asked for in a free-text route W1195b does not screen is composed\"). test_w1195b holds it, with sixty blinds, and four on the two rendered tests."
     },
     {
       "id": "FU-1903",
@@ -28358,6 +28412,679 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and most ways a person asks for one are not an explicit ask in the words the screen knows"
+    },
+    {
+      "id": "FU-1904",
+      "title": "With sign-in on, any signed-in person can push the promoted local model behind the native floor, or clear its scored history: the operations routes score rows a caller writes and ask for no administrator",
+      "why": "Found in W1203's security review, driven in a test process with sign-in on and a user-role token: POST /api/v1/operations/record (agentic_core/api/operational_excellence.py:488) takes a row a caller writes, kind model_attempt with served_by ollama and success false, stamped reported_by caller (W672), and model_health (:389) scores rows by kind and never reads reported_by, so after five such rows _reorder_by_health (agentic_core/ai/native/orchestrator.py:254) puts the owned model behind the floor; POST /api/v1/operations/model-health/rebaseline (:603) clears a model's scored history. The router is mounted behind get_current_user only (agentic_core/app_mvp.py:609). The promoted default's record is not changed, but which model serves is. The fix: rebaseline behind require_admin, and model_health scoring only the rows the platform records itself (or /record refusing the kinds model_attempt and model_quality).",
+      "source": "W1203 (the round's security review, measured)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1, the perimeter: a signed-in person changes which model serves through routes that ask for no administrator (W1203's security review)"
+    },
+    {
+      "id": "FU-1905",
+      "title": "Three GET routes act when a link from another site is followed through the tunnel while sign-in is off: the forecasts make a gateway call and rewrite their cache, a change's impact makes a gateway call, and the adaptation registry saves its store",
+      "why": "Found in W1202's security review, by a scan of every mounted GET handler. W1202's request guard refuses a read under /api/ that the browser says a page of another site asked for without a link being followed (Sec-Fetch-Site cross-site, Sec-Fetch-Mode not navigate), so an image or a fetch no longer triggers one. A link followed from another site, and a browser that sends no Sec-Fetch headers, still reach them: GET /api/v1/intelligence/forecasts (agentic_core/api/products.py) calls gateway.query_meta and writes forecasts_cache.json when its cache is missing or more than an hour old; GET /api/v1/cca/impact/CCA_ID (agentic_core/api/change_control.py) calls gateway.query_meta for a change whose id is known; and GET /api/v1/qep/adaptation/registry saves its store (W1220 fixes that one). The rule: a GET calls no gateway and writes nothing, so a model call or a cache refresh is a POST, or a GET only reads a cache a POST refreshes.",
+      "source": "W1202 (the round's security review)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.1: sign-in off, through whose tunnel a link from another site still runs a read that acts (W1202's security review)"
+    },
+    {
+      "id": "FU-1906",
+      "title": "A reserved instrument asked for in a free-text route W1195b does not screen is composed: among them the deliverables, the Application Studio, the Creator Studio, the Factory, the in-house assistant, the avatar, the AI CEO's chat and support read no request for an explicit ask",
+      "why": "P5.18 clause 4's ACCEPT says the reserved documents are refused through the route a person would use. W1195 screened the Law draft form and the clerk and W1195b the Generator, the Synthesis Studio, a refine and a fabric composition's run (closing FU-1902), each for an explicit ask only. W1195b's census read back the call sites that hand a person's words to the composer (user_text) to their routes and pages, and each route below was found among the routes the app mounts (W1195b's review, F2); among the free-text routes that compose whatever they are asked, with nothing reading for the four kinds, are: the deliverables, POST /api/v1/deliverables/produce and /{id}/regenerate (agentic_core/api/deliverables.py, reached from the Deliverables page, the entity cockpit, the spawn studio and the Genesis journey); the Application Studio, POST /api/v1/career/generate (agentic_core/api/career.py: once a document is recorded, an output type it does not list is composed as 'a professional <type> document'; with none recorded it refuses, so a bare probe composes nothing); the Creator Studio, POST /api/v290/ceo/generate-blueprint (agentic_core/api/v290/ceo_generate.py); the Factory, POST /api/v1/factory/produce, and the Incubator, the Reactor and the Petri dish (agentic_core/api/products.py); the business plan, POST /api/v1/business-plan/generate; an entity's own documents, POST /api/v1/vsb/{id}/website, /{id}/board-pack and /{id}/evolve; the Genesis journey, POST /api/v1/genesis/journey; the Forge, POST /api/v1/forge/run; the projects runner, POST /api/v1/projects/{id}/run; the Authorship engine, POST /api/v1/intelligence/authorship, and the mega-project synthesiser, POST /api/v1/mega-project/synthesise; the in-house assistant and the Native AI console, POST /api/v1/native-ai/complete, /swarm, /ensemble and /tree (agentic_core/api/native_ai.py); the avatar and the entity cockpit's chat, POST /api/v1/avatar/chat (agentic_core/avatars/api.py); the AI CEO's chat, POST /api/v138/ceo/chat (agentic_core/api/v138/ceo.py); the Solutions Platform, POST /api/v1/ai/query; support, POST /api/v1/support/ask (agentic_core/api/support.py); the swarm, POST /api/v1/swarm/delegate and /cascade, and the fabric's swarm runner, POST /api/v1/resources/swarm/run; and the Board's Chief, POST /api/v1/board/chief/instruct and /directive. Two spawning routes are retired and answer 410 before composing anything, so they compose nothing today, though their kept code reads none of the four kinds and restoring either needs the screen first: POST /api/v1/vsb/spawn (W695) and the Laboratory's POST /api/v1/studio/vsb/spawn. Probed on the tree before W1195b's edits, with no model, the floor answering: 'Draft the TR1 transfer of my flat to my son' was refused with 409 by POST /api/v1/law/generate, and POST /api/v1/deliverables/produce answered 200 with 1990 characters composed, POST /api/v1/native-ai/complete answered 200 with 949 characters composed and POST /api/v1/support/ask answered 200 with 954 characters composed; the other routes were read in the code, not probed. Medium, as FU-1902 was. THE WORK: legal/specialist.refuse_reserved over each route's free words before its composer is called, with a door sentence of its own in RESERVED_DOOR_SAID, as W1195b did for the Generator, and the route's own labelled phrasings in scripts/screen_phrasings.py first (W580's method); for a conversational route, decide first whether an explicit ask in a conversation is refused there or answered with where help is, since a person may be asking what the document is; the Application Studio also refuses an output type it does not list, as W1194 did at the draft form. Then RESERVED_SCREEN and the coverage row law-reserved-instruments say which are screened, keeping among them for the rest.",
+      "source": "W1195b (the census of free-text routes, P5.18 clause 4; left for a later round)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/deliverables.py",
+        "agentic_core/api/career.py",
+        "agentic_core/api/v290/ceo_generate.py",
+        "agentic_core/api/native_ai.py",
+        "agentic_core/avatars/api.py",
+        "agentic_core/api/v138/ceo.py",
+        "agentic_core/api/support.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.18 clause 4's ACCEPT: the reserved documents are refused through the route a person would use, and these are routes a person would use"
+    },
+    {
+      "id": "FU-1907",
+      "title": "OWNER: file the record of the batch of 27 lessons ratified on 2026-11-22 on the store that holds Change Control",
+      "why": "W1234 entered the 27 lessons the Owner ratified on 2026-11-22 into docs/DELIVERY_METHOD.json as one batch, each carrying ratified: the Owner's ruling of 2026-11-22, as one batch (FU-1840, closed W1234). The method says that the change record of such a batch is filed once for the whole batch, through POST /api/v1/method/amendment, on the store of whoever holds Change Control; the batch of 2026-10-13 was filed that way on the Owner's own store, with the Owner present. The step: on that store, file the 27 as the record of that ruling, with ruled_by set to it; the route refuses the whole batch, naming each fault, if a lesson in it does not carry the ruling.",
+      "source": "W1234 (the Owner's report of 2026-11-22, night; P5.14 clause 1)",
+      "found": "2026-11-27",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER (the Owner's store): the record is filed on the store that holds Change Control, not in the tree"
+    },
+    {
+      "id": "FU-1908",
+      "title": "The public repository is not checked for Quran Foundation content or raw API data, which the foundation's developer terms forbid redistributing",
+      "why": "The developer terms the Owner read whole on 2026-11-22 (last updated 2026-11-20; docs/SOURCES.json, row quran-foundation-developer-terms) forbid selling or redistributing the content, including in a public repository. This repository is public, and nothing has checked that it holds none of the foundation's content or raw API data: no text, translation, audio, timing or reflection fetched from it, and no saved answer of the API, in the code, the documents or a test's fixture. That the reading side writes nothing to disk (agentic_core/religious_domain/quran_foundation.py) is not a check of the tree. The check: search the tracked tree for the content the API serves and for saved API answers, record what was searched and what was found, by path, and say whether history was searched; anything found is taken out of the tree and named to the Owner, since history keeps it.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1909",
+      "title": "The platform has no Privacy Policy or Terms of Use of its own to check against the Quran Foundation's developer privacy packet before real users get its content",
+      "why": "The developer privacy packet the Owner read whole on 2026-11-22 (https://api-docs.quran.foundation/legal/developer-privacy/) lists a public Privacy Policy and Terms of Use, a separate opt-in for religious data, token revocation, deletion within 30 days (90 for backups) and a breach reported within 24 hours. No page of the platform in the tree is a Privacy Policy or Terms of Use of its own (the Law tool's two templates of those names draft a document for a person), so nothing has set the live site against the packet before real users get this content. The check is a round's, so the row is not Owner-gated: a check is a measurement, which a round makes and reports (the Owner's ruling of 2026-10-12 on how the work is done). The round reads what the live site and the tree publish, sets each requirement of the packet against it, and records each as met, not met or not assessable. What a Privacy Policy or Terms of Use says, and publishing one, are the Owner's, since they are about people and public release (the same ruling): the round drafts, and the Owner decides.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1910",
+      "title": "No use the platform makes of Quran Foundation content is checked against the developer terms' clause forbidding its use to train, fine-tune, evaluate or develop AI models",
+      "why": "The developer terms the Owner read whole on 2026-11-22 forbid using the foundation's content or user data to train, fine-tune, evaluate or develop AI models, with no exception; retrieval-augmented generation shown inside the app is permitted. The reading side's docstring says only that no model is trained on the content (agentic_core/religious_domain/quran_foundation.py), one of the four. Nothing has set the platform's own uses against the whole clause: for example a test, a calibration set, a baseline or a review that feeds the content to a model to evaluate or develop it, or a store of the content kept for that. The check: list every path by which the content reaches a model or a store, set each against the clause, refuse or remove any use it forbids, and make the module's docstring and the row's conditions name all four.",
+      "source": "W1234 (the Owner's reading of the Quran Foundation's developer terms, 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "agentic_core/religious_domain/api.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.17, clauses 6 and 7: the foundation's terms and its developer account are this item's, and the router names no item for the Quran platform's files"
+    },
+    {
+      "id": "FU-1911",
+      "title": "docker stop kills the platform's container after ten seconds, exit 137: the image's CMD runs uvicorn under sh -c, and sh as PID 1 does not pass SIGTERM on",
+      "why": "Found by the Owner on 2026-11-22 in FU-1095's drill on the release machine: docker stop ended the platform with exit 137, killed, not stopped on SIGTERM within Docker's ten seconds. The Dockerfile's CMD was sh -c with uvicorn inside it, so sh was PID 1 and uvicorn never received the signal. The fix is exec inside the sh -c, keeping the PORT expansion; every other way the tree starts the container uses the image's CMD.",
+      "source": "W1235 (the Owner's drill of 2026-11-22, FU-1095)",
+      "found": "2026-11-27",
+      "files": [
+        "Dockerfile"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "done",
+      "closed_by": "W1235",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W1235: the Dockerfile's CMD is now sh -c with exec uvicorn, so sh expands PORT and is replaced by uvicorn, which runs as PID 1 and takes the SIGTERM docker stop sends. The startup script's two docker runs, both drills and both compose files start the platform with the image's CMD, so nothing else changed. Not run here, since this environment has no Docker daemon: at the next deploy docker stop should end with exit 0 within seconds, which docs/DEPLOYMENT.md (step 10) says. agentic_core/app_mvp.py has no shutdown handler, and its two background loops are asyncio tasks; a request still running at ten seconds is still killed. test_w1235 holds the CMD."
+    },
+    {
+      "id": "FU-1912",
+      "title": "A store in agentic_core/ueg/ueg_manager.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: UEGManager._save writes meta/ueg_graph.json, the knowledge graph, with open(path, 'w') and json.dump. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ueg/ueg_manager.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1913",
+      "title": "A store in agentic_core/api/integration_surface.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: the activity log of each user (activity_<user>.json) and the bounty submissions are written back whole with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1914",
+      "title": "A store in agentic_core/api/digital_twin.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_twin writes each twin model's file with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/digital_twin.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1915",
+      "title": "A store in agentic_core/api/sovereign_evolution.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_roadmap writes the evolution roadmap with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/sovereign_evolution.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1916",
+      "title": "A store in agentic_core/api/vsb.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: an entity repository's versions.json hash chain, its website, web app, phone app and unified ship manifests and the stale mark on its ship.json are written with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1917",
+      "title": "A store in agentic_core/api/transformation_orchestration.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_run writes each transformation run's record with write_text. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1918",
+      "title": "A store in agentic_core/ingestion/api.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save_registry writes the ingestion registry with open(path, 'w') and json.dump. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ingestion/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1919",
+      "title": "A store in agentic_core/projects/api.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: _save writes each project's record, and _save_proposal each governance proposal, with write_text and model_dump_json. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/projects/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1920",
+      "title": "A store in agentic_core/api/v290/realms.py is written in place, so a kill or a crash mid-write can leave it truncated",
+      "why": "Found in W1235, from a search of agentic_core for JSON stores written without a temporary file and os.replace, after FU-1095's drill showed the container killed by docker stop on 2026-11-22: create_realm_v2 writes each realm's file with write_text, and discover_realms_v2 passes over a file it cannot read without saying so. A write in place truncates the file first, so a process killed or crashing before the write ends leaves the store partly written, and the next read fails or reads less. agentic_core/config.py's atomic_write_json writes a temporary file in the same folder and puts it in place with os.replace, and most stores use it. The fix: write this file's stores through it, or the same pattern, and refuse a store that cannot be read whole rather than replace it. W1235's exec makes a graceful stop finish requests in flight; it does not make these writes safe against a kill or a crash.",
+      "source": "W1235 (a search of agentic_core for stores written in place)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/v290/realms.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30, as FU-1845 and FU-1297: a store written whole, in place, is that item's class"
+    },
+    {
+      "id": "FU-1921",
+      "title": "The Quran platform's answers do not carry each source's credit, register row and permits, or a stable passage id (restart round R1)",
+      "why": "The plan's round R1, Source facts and provenance in answers: Do the following: - Update the quran_foundation.py header (:13,16-18) to the 2026-11-22 terms. - Add Tanzil and Quran Academy credit, link and notice to _corpus_provenance (api.py:123-152) and to the provenance lines in QEPStudio.tsx:341-376. - Add the rights_holder/attribution, the register row id and its permits to every answer. - Stamp a stable passage id (edition, riwayah, surah:ayah) on cards, portions and review items, using one helper shared with the later lesson catalogue. - Add a provenance block to /learner/{uid}/export (api.py:970-985). - Add guards: a served edition with no register row fails, and any test, calibration or evaluation script that reads Quran Foundation text, timings or audio fails. It depends on: R0 (register rows). The check of every use of Quran Foundation content against the developer terms' clause on AI models is FU-1910's (W1234); this round's guard is the code half of it.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R1",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "agentic_core/religious_domain/api.py",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1922",
+      "title": "Nothing records which edition, numbering, page and juz scheme and riwayah a passage is verified for, so a page or juz portion is not known to correspond (restart round R2)",
+      "why": "The plan's round R2, Edition, layout and coverage correspondence: Re-read the alquran.cloud terms and metadata docs at source, and record which layout its page and juz numbers follow. Then: - Add a correspondence record per edition: id, script, riwayah, numbering, page/juz scheme, and the register row each comes from. - Make every practice answer carry it. - Have page and juz portions answer 'boundaries not verified' until a permitted layout source is a register row. - Show the juz and page already returned by /ayah (api.py:613-614) beside the passage with their basis, plus a coverage line stating the Hafs counts used (api.py:77). It depends on: R1; the Owner decision on the layout source. OWNER RULING 2026-11-22 (the recommendation accepted): re-read the alquran.cloud terms and metadata first and accept it only if it states the 604-page Madinah layout; meanwhile page and juz portions stay settable but labelled not mapped; the QUL and KFGQPC letters (FU-1188) are pursued in parallel.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R2",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py",
+        "agentic_core/religious_domain/memorization/practice.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1923",
+      "title": "Typed recall is reached only from the review card and similar verses have no practice step (restart round R3)",
+      "why": "The plan's round R3, Recall inside practice: Do the following: - Offer the typed-recall check from the hidden-verse card (HifzPractice.tsx:47-76), using the same server route and the same fetched reference, and say it measures written recall. Optionally alias it as /hifz/recall and keep the /tajweed/analyse path. - Add a similar-verse pair drill: show one verse, hide where each continues (a_continues/b_continues, api.py:1101-1127), reveal on request, judge nothing. - Hide the 'my teacher set this' option until P5.17 clause 4 exists, or keep it with its 'stated, not verified' label (per the Owner decision). It depends on: R1. OWNER RULING 2026-11-22 (the recommendation accepted): the self-declared my-teacher-set-this label is hidden until P5.17 clause 4 exists.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R3",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/HifzPractice.tsx",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1924",
+      "title": "No driven journey covers adult memorisation end to end at phone and desktop width, keyboard only (restart round R4)",
+      "why": "The plan's round R4, Adult memorisation driven journey, phone and desktop, keyboard: Extend the existing Playwright probes (scripts/browser_smoke.mjs:53-55,115; scripts/_w439_probe.mjs; package.json:13). Add one end-to-end journey: 1. find a valid passage; 2. show its edition and coverage; 3. hide the verse and try typed recall; 4. reveal the sourced text; 5. mark a trouble spot; 6. return to it from the due card. Add failure cases for an invalid reference (422), a missing verse and a source outage (503). Run it at 375px and at desktop width, keyboard-only, with an accessible-name check on each control. Add the coverage row qep-adult-memorisation-journey. It depends on: R2, R3.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R4",
+      "found": "2026-11-27",
+      "files": [
+        "scripts/browser_smoke.mjs",
+        "docs/COVERAGE_REGISTER.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1925",
+      "title": "Reference listening is offered only beside a review card and the player does not show the recitation's riwayah (restart round R5)",
+      "why": "The plan's round R5, Reference listening beside practice: Do the following: - Offer the listen control from the hidden-verse card as well as the review card. - Show the reciter's name and the publisher's stated riwayah (or 'not declared') beside the player, and make the credit name the reciter. - Check that timing compatibility uses the word text, not only the count, and say 'timings for a different text' when they differ. - Add a client-side playback-speed control for human audio only. The Quran Foundation stays in pre-production until the Owner decides on FU-1882. The Owner, or a run the Owner allows, does the real-credential pre-production check locally. It depends on: R1; the Owner's real-credential check. OWNER RULING 2026-11-22 (the recommendation accepted): the Owner runs the real-credential pre-production check locally; the credentials stay in the Owner's .env, and only the outcome is recorded. FU-1882 was closed by W1234, and the production decision the plan's words wait on was ruled the same day, OWNER RULING 2026-11-22 (decision 7; the recommendation accepted): accept the duties; build the consent and privacy round first, and the Owner signs off the Privacy Policy and Terms as publisher; then apply for production; until then, listening stays in pre-production only (the restart's later item (b)).",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R5",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "agentic_core/religious_domain/quran_foundation.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1926",
+      "title": "No local record-and-replay exists beside the reference player (restart round R6, P5.17 clause 2)",
+      "why": "The plan's round R6, Local record and replay (P5.17 clause 2 slice): Build an on-device recorder beside the reference player: - explicit start, stop, replay and discard; - held in memory and never uploaded; - an on-device sound-level meter that offers the next-word button after a set silence, with no speech model. Narrow test_w717's banned list (integration_tests/test_mvp_spine.py:65724-65726) so capture is permitted in this component only. Add tests for microphone denied, discard, and no network call carrying audio. Add a guard that alternate paths (QEPReligionHub.tsx:99,114-185; /tajweed/analyse) carry the same provenance and no-score rules. It depends on: R5.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R6",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1927",
+      "title": "No named demo learner, content-role label or AI-assisted flag is carried on the Quran platform's answers (restart round R7)",
+      "why": "The plan's round R7, Evidence hygiene: demo data, content-role labels, AI-assisted flag: Do the following: - Reserve a named demo learner id whose answers carry demo: true and are excluded from any count. - Add a role label on every QEP response (scripture/translation/commentary/ai_assisted/teacher_note), with a guard test. - Add ai_assisted to POST /qep/curriculum (api.py:1513-1530), and render the approved-item label (sources, ai_assisted, reviewer, version) once anything is approved. It depends on: R1.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R7",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1928",
+      "title": "No practice history is kept as facts after sign-in (restart round R8)",
+      "why": "The plan's round R8, Practice history after sign-in (first-release tail): After sign-in, record practice events as facts: verse opened, revealed, returned to, trouble-spot reviewed. Each comes with a plain description of what the measure covers. Recall over time is stored as the Owner decides. It depends on: Sign-in on; the Owner decision on recall similarity. OWNER RULING 2026-11-22 (the recommendation accepted): after sign-in only factual events are stored (attempted, revealed, returned to); the written-recall similarity is shown at the moment of the check and not stored until the Owner rules.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: R8",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a first-release round of P5.17, the Quran platform's item; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1929",
+      "title": "The children's gate opens on sign-in and the pack's approval alone, with no dated Owner release record, and no tool's entry says what it receives and retains (restart later item a)",
+      "why": "The plan's later item (a), not first release: Children's gate hardening: a dated Owner release record as a third condition in children_tools_open() (approval_pack.py:250-262), plus receives/retains fields per tool, which reopens review. OWNER RULING 2026-11-22 (the recommendation accepted): the 2026-10-13 gate conditions (a named safeguarding lead, the regulator's children's-data code as a register row, then the Owner rules) stand beside the 2026-11-20 ones, and the dated Owner release record is added as a code condition so the gate cannot open on sign-in and pack approval alone.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: La",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/approval_pack.py",
+        "agentic_core/api/qep_children.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): both sets of gate conditions stand and a dated Owner release record is added as a condition of the gate, which is P5.21 clause 3"
+    },
+    {
+      "id": "FU-1930",
+      "title": "No religious-data opt-in record exists, and the Owner's order of consent and privacy first, production approval after, is not built into the listening path (restart later item b)",
+      "why": "The plan's later item (b), not first release: Consent and privacy: a religious-data opt-in record, and Privacy Policy and Terms pages checked against the Quran Foundation packet, before production audio. The check of a Privacy Policy and Terms of Use against the developer privacy packet is FU-1909's (W1234); this row holds the religious-data opt-in record and the order the Owner ruled. OWNER RULING 2026-11-22 (the recommendation accepted): accept the duties; build the consent and privacy round first, and the Owner signs off the Privacy Policy and Terms as publisher; then apply for production; until then, listening stays in pre-production only.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lb",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/quran_foundation.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1931",
+      "title": "Account recovery is not in the sign-in readiness work (restart later item c)",
+      "why": "The plan's later item (c), not first release: Account recovery in sign-in readiness. OWNER RULING 2026-11-22 (the recommendation accepted): guardian relationships are held behind the children's gate, a separately governed link and not an RBAC role, and account recovery belongs in the sign-in readiness round.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lc",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): account recovery belongs in the sign-in readiness round, which is P4.1's"
+    },
+    {
+      "id": "FU-1932",
+      "title": "No lesson record schema or reviewer track exists for the Quran platform's curriculum (restart later item d)",
+      "why": "The plan's later item (d), not first release: Scholar roster tracks and the lesson record schema: author, objective, passage id, tradition, example or permitted audio, activity, versioned decisions; no content. OWNER RULING 2026-11-22 (the recommendation accepted): the lesson schema may come before curriculum content, with no content; the Owner names an author and chooses the texts to seek licences for, each a register row before its track opens; one engagement may cover several tracks, provided each approval is entered under the named person who gave it and that person is rostered for that track; every publishable lesson carries a versioned review decision.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Ld",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/scholar_review.py",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1933",
+      "title": "No offline pack exists, nor a high-contrast or reminder control (restart later item e)",
+      "why": "The plan's later item (e), not first release: Service-worker offline pack limited to Tanzil text and the learner's own record, plus high contrast and a notification/reminder control.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Le",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/Settings.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1934",
+      "title": "No teaching circle, assignment, share record or private pinned note exists (restart later item f, P5.17 clause 4)",
+      "why": "The plan's later item (f), not first release: P5.17 clause 4 circle, assignment, completion fact, share record, private pinned note, practise again, after sign-in. OWNER RULING 2026-11-22 (the recommendation accepted): the Owner names the educator; the first stage is capped at one educator and one circle until it has been reviewed; a recording shared with a teacher is kept 30 days from sharing, deletable by the learner at any time and deleted automatically when the period ends, and is never Quran Foundation audio re-hosted.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lf",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1935",
+      "title": "Adult private reflection is not a plan item yet (restart later item g)",
+      "why": "The plan's later item (g), not first release: Adult private reflection, after FU-1838. OWNER RULING 2026-11-22 (the recommendation accepted): admitted as a plan item after FU-1838; an adult's writing is stored only after sign-in, private to them, and exportable and deletable.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lg",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER RULING 2026-11-22 (W1236, the QEP restart): adult private reflection is admitted as a plan item after FU-1838; until it is chartered this row on P5.17, the Quran platform's item, holds it"
+    },
+    {
+      "id": "FU-1936",
+      "title": "A learner cannot read the lessons about the verse being practised (restart later item h)",
+      "why": "The plan's later item (h), not first release: Lessons-about-this-ayah read. That is, from the verse being practised a learner can open the approved lessons about that same verse, once lessons exist, as the restart asks: Link them through the same passage catalogue so a learner can move from practice to a lesson about the same āyah.",
+      "source": "W1236 (the Owner's QEP Restart Vision of 2026-11-22; the plan checked against the tree that day, and the Owner's 24 rulings of 2026-11-22); its round: Lh",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's QEP restart of 2026-11-22 (W1236): a later item of the restart, not first release; no route claims the Quran platform's files"
+    },
+    {
+      "id": "FU-1937",
+      "title": "Every AI caller but four (the Genesis journey, the AI CEO, the native-AI console, the resource fabric) declares no data class, so with the external switch on and no local model its calls still stay on the floor",
+      "why": "MEASURED W1242: with the Owner's ruling of 2026-11-22 an AI call tries an external provider before the floor when the switch is on and no in-house model is reachable, but only for a call that declares a class that may leave (agentic_core/ai/data_class.py). Four callers declare one: the Genesis journey (W1242, person_entered, except its religion, care and education domains and a problem the religious subject screen flags), the AI CEO's chat and C-Suite meeting (W1239), the native-AI console and the resource fabric (W899). No other caller of the gateway or the orchestrator declares a class: the synthesis studio (agentic_core/api/synthesis_studio.py), the forge (agentic_core/api/forge.py) and the domain tools (their one helper, ai_text in agentic_core/api/_ai_provenance.py) among them, so they stay on the floor and do not say that this is why. Each needs reading for what it sends: a studio that sends only the founder's own business text can declare person_entered; a domain tool that carries the legal matter (barred by the Owner's ruling of 2026-10-03c) or religious, health or children's material, which the Genesis journey keeps in, stays on the floor and says why.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/api/synthesis_studio.py",
+        "agentic_core/api/forge.py",
+        "agentic_core/api/_ai_provenance.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1938",
+      "title": "The synthesis studio says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). pages/synthesis/SynthesisStudio.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1939",
+      "title": "The forge pipeline says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). pages/developers/ForgePipeline.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1940",
+      "title": "The domain tool form says no plain no-model notice before what the fallback produced, when every call was floor-served",
+      "why": "MEASURED W1242 (the Owner's genesis attempt of 2026-11-22, all 14 calls floor-served, showed the fallback's repeated frames under every heading with the technical labels first): Genesis now says first, in plain words, that no model answered so the steps wrote nothing, what was saved and how a model is added; folds the fallback's frames behind a toggle; and moves the technical labels into a details disclosure (W1242, W1242b). The notice is the journey route's own (no_model) and the fold is the page's, so there was nothing small and shared to reuse; the AI CEO chat says its own (W1239). components/DomainTool.tsx has no such notice: it holds no sentence saying that no model is connected. Its route would say when every call was floor-served, and the page say it plainly before the frames, the technical labels kept.",
+      "source": "W1242 (the Owner's ruling of 2026-11-22)",
+      "found": "2026-11-27",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 (W1242): what an invited person meets on a server with no model, and what a journey's calls may carry out, are settled before the invited stage opens"
+    },
+    {
+      "id": "FU-1941",
+      "title": "The saved profile the gateway puts before every prompt is read by no religious-content screen, so with the external switch on a Genesis journey or the AI CEO chat can carry it out",
+      "why": "MEASURED W1242c (its review of 2026-11-27): with the Owner's external switch on and no in-house model reachable, a call that declares a class that may leave is sent out (W1242). Genesis screens the problem and what an establishment carries, and the AI CEO what it sends (W1242c, W1239), each before its call. The gateway then puts the person's own saved profile before the prompt (agentic_core/ai/user_context.py, applied in gateway.query_meta and gateway.stream_meta): under sign-in for the caller it names, and in single-user mode for every call, since the one profile is read under \"default\" (user_context.profile_owner). That text is not screened, so a profile that names religious content leaves with every declared Genesis journey call and AI CEO chat once the switch is on. The Owner's ruling of 2026-11-22 keeps religious content on the platform, and ruling 3 of 2026-11-27 turns the switch on after W1242, W1242c and W1258 are deployed. The profile needs the religious-content screen where the gateway adds it, and a call whose profile it flags needs to declare nothing and say why. The AI CEO's recalled lines are already kept off a call that may go out (W1241).",
+      "source": "W1242c (its review of 2026-11-27)",
+      "found": "2026-11-27",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/user_context.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P4.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.2, the Owner's ruling of 2026-11-22 and ruling 3 of 2026-11-27 (W1242c): what a call that may leave carries is settled before the external switch is turned on"
     }
   ],
   "routes": [

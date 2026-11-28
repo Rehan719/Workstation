@@ -312,6 +312,80 @@ def _reorder_by_health(order: List[str]) -> List[str]:
     return head + tail + bad
 
 
+def _external_before_floor(order: List[str]) -> List[str]:
+    """W1242 (OWNER RULING 2026-11-22) - WITH NO IN-HOUSE MODEL REACHABLE, AN ALLOWED EXTERNAL IS TRIED BEFORE THE FLOOR.
+
+    The registry lists an external accelerant only with the Owner's switch on and its key set, after the floor, and
+    the floor always answers, so under the ruling of 2026-11-06 (W755) a call that did not ask (prefer_external)
+    never reached one. When no in-house model is reachable for this call - none is listed (local disabled, or the
+    runtime not answering with a model) or every listed one's breaker is open - the externals move to just before the
+    floor. With one reachable the order stands: the in-house model is tried first and the floor answers when it
+    fails. The class check (W899) and the hourly cap (W335) still run on every external attempt, in _run_model."""
+    ext = [n for n in order if n in ("anthropic", "openai")]
+    if not ext or "native" not in order:
+        return order
+    local = [n for n in order if n == "ollama" or n.startswith("ollama:")]
+    if any(not _breaker_open(n) for n in local):
+        return order
+    rest = [n for n in order if n not in ext]
+    at = rest.index("native")
+    return rest[:at] + ext + rest[at:]
+
+
+def _external_budget_left() -> bool:
+    """W1242c - whether the hourly external cap (W335) has room now. Read only: nothing is counted against it."""
+    cap = int(os.getenv("EXTERNAL_MAX_CALLS_PER_HOUR", "60"))
+    now = time.time()
+    return len([t for t in NativeOrchestrator._external_calls if now - t < 3600]) < cap
+
+
+def next_to_serve(order: Optional[List[str]] = None) -> Dict[str, Any]:
+    """W1242c - WHAT THE QUERY PATH SERVES NEXT, BY WHAT A CALL DECLARES, read from the registry's order now; nothing is
+    called. The order is _complete's for a call that does not ask (prefer_external): the registry's, by recorded
+    health (W380), then with the allowed externals before the floor when no in-house model is reachable (W1242). A
+    resource whose breaker is open is passed over, as _complete passes it; an external is passed over when the hourly
+    cap is full. A call that declares no class is never sent out (W899), so its externals are passed over too.
+    The stream path reads its own breaker for the local model ("ollama"), so on it the answer can differ."""
+    base = list(order) if order is not None else registry.select()
+    ordered = _reorder_by_health(base)
+    declared_order = _external_before_floor(ordered)
+
+    def _first(seq: List[str], may_leave: bool) -> str:
+        for n in seq:
+            if n == "native":
+                return n
+            if n in ("anthropic", "openai"):
+                if may_leave and not _breaker_open(n) and _external_budget_left():
+                    return n
+                continue
+            if not _breaker_open(n):
+                return n
+        return "native"
+
+    d, u = _first(declared_order, True), _first(ordered, False)
+    if d in ("anthropic", "openai"):
+        d_why = (f"{d} is tried first: the Owner's external-AI switch is on, its key is set and no in-house model is "
+                 "reachable (W1242, the Owner's ruling of 2026-11-22), inside the hourly cap on external calls; the "
+                 "deterministic floor answers if it fails")
+    elif d == "native":
+        d_why = ("the deterministic floor serves it: no in-house model is reachable, and no external provider may be "
+                 "used now (the switch is off, no key is set, its breaker is open or the hourly cap is full)")
+    else:
+        d_why = f"{d} is tried first: an in-house model is reachable, and it is tried before any external provider"
+    u_why = ((f"{u} is tried first: an in-house model is reachable" if u != "native" else
+              "the deterministic floor serves it: no in-house model is reachable")
+             + ", and a call that declares no class is never sent outside the platform")
+    return {"declared_class": {"resource": d, "is_model": d != "native",
+                               "basis": "a call that declares a class that may leave (ai/data_class.py): " + d_why},
+            "no_class": {"resource": u, "is_model": u != "native",
+                         "basis": "a call that declares no class: " + u_why},
+            "order_declared_class": declared_order, "order_no_class": [n for n in ordered
+                                                                       if n not in ("anthropic", "openai")],
+            "basis": ("read now from the registry's order, the recorded health, the breakers and the hourly cap, on the "
+                      "query path; nothing was called, so a resource listed here can still fail, and then the next "
+                      "one, and last the floor, answers")}
+
+
 # ── W506 (P2.8(1)) — which EXTRA branches a goal or concept calls for ─────────────────────────
 #
 # These rules were inline in `_plan_tree` and the Genesis journey, which runs six FIXED stages, could not
@@ -401,6 +475,8 @@ class NativeOrchestrator:
             order = [f"ollama:{prefer.split(':', 1)[1]}", "native"]
         else:
             order = _reorder_by_health(registry.select(prefer_external=prefer_external))
+            if not prefer_external:                # W1242 (OWNER RULING 2026-11-22) - no in-house model: external next
+                order = _external_before_floor(order)
         tried: List[str] = []
         _fire("cognitive", f"native.{agent}", f"orchestrate: {prompt[:60]}", 0.5)
         for name in order:
@@ -865,15 +941,29 @@ class NativeOrchestrator:
             _all_floor = bool(results) and all((r or {}).get("served_by") == "native" for r in results.values())
             qms_passed = None if _all_floor else await qms.run_quality_gates(
                 {"coverage": coverage_proxy, "stubs_found": not final.strip()})
-            dcms_hash = await dcms.commit_artifact(f"tree:{(goal or '')[:48]}",
-                                                   {"goal": goal, "final": final[:2000], "nodes": len(nodes)}, "native.tree")
+            #  W1205 (FU-1845) - the seal has its own try: the DCMS ledger now refuses a commit it cannot keep and
+            #  lets a failed write raise, which would drop the whole governance, the QMS verdict with it. The
+            #  verdict is kept, and the record says the seal was not kept, and why.
+            from agentic_core.config import StoreUnavailable as _SU1205
+            _dcms_why = None
+            try:
+                dcms_hash = await dcms.commit_artifact(f"tree:{(goal or '')[:48]}",
+                                                       {"goal": goal, "final": final[:2000], "nodes": len(nodes)},
+                                                       "native.tree")
+            except (_SU1205, OSError) as _dc_exc:
+                dcms_hash = None
+                _dcms_why = ("not kept: the tree's record could not be written to the document-control ledger "
+                             f"({type(_dc_exc).__name__}: "
+                             f"{str(getattr(_dc_exc, 'problem', _dc_exc)).split('; to repair it')[0][:600]})")
             governance = {"governed_by": "VBS QMS + DCMS (owned, real)",
                           "qms_passed": (None if _all_floor else bool(qms_passed)),
                           "qms_basis": ("not assessable — every node floor-served; the length proxy cannot fail"
                                         if _all_floor else "QMS gate on the synthesis length/stub proxies"),
                           "qms_coverage_proxy": round(coverage_proxy, 3),
                           "dcms_hash": dcms_hash, "dcms_algo": "sha3_512",
-                          "dcms_version": len(dcms.registry.get(f"tree:{(goal or '')[:48]}", []))}
+                          "dcms_version": (len(dcms.registry.get(f"tree:{(goal or '')[:48]}", []))
+                                           if dcms_hash else None),
+                          **({"dcms_basis": _dcms_why} if _dcms_why else {})}
             _fire("reflex", "native.tree",
                   f"VBS governance: qms={'not assessable' if _all_floor else 'pass' if qms_passed else 'fail'}", 0.4)
         except Exception:

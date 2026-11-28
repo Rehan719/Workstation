@@ -164,6 +164,24 @@ def served_identity_of(served_by: str | None) -> dict:
                 "basis": f"which model answered could not be read ({type(_e).__name__})"}
 
 
+def in_house_reachable() -> bool:
+    """W1242 (OWNER RULING 2026-11-22) - whether an in-house model can be reached for a stream: the local model is not
+    turned off (AI_DISABLE_LOCAL), its breaker is closed, and the local runtime answers with a model pulled
+    (model_resource.ollama_up, a probe with a one-second timeout, cached). With none reachable and the Owner's switch
+    on, the stream tries an external provider before the floor; with one reachable, the local model is tried first and
+    a caller that did not ask is answered by the floor if it fails, as on the query path."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return False
+    try:
+        from agentic_core.organism.self_healing import self_healer as _sh1242
+        if _sh1242.is_open("ollama"):
+            return False
+        from agentic_core.ai.native import model_resource as _mr1242
+        return bool(_mr1242.ollama_up())
+    except Exception:                             # noqa: BLE001 - not known to be reachable is not reachable
+        return False
+
+
 def _external_budget_allows(provider: str) -> bool:
     """W869 (FU-1128) - THE HOURLY EXTERNAL CAP, ON A STREAM AS ON A QUERY. The orchestrator's sliding-hour cap
     (EXTERNAL_MAX_CALLS_PER_HOUR) was taken only by its own _run_model, so a stream served externally was bounded
@@ -283,22 +301,38 @@ class ModelGateway:
       1. the owned local model (Ollama), when its server answers with a model pulled - skipped when
          AI_DISABLE_LOCAL is set or its circuit breaker is open, and moved behind the floor when its recent
          record is effectively dead (W380);
-      2. the native deterministic floor, which always answers, so it is the last resource this path tries.
-         The external accelerants (Anthropic, OpenAI: a key AND AI_ALLOW_EXTERNAL=true) are listed after it
-         and are therefore never attempted here - this gateway never passes prefer_external.
+      2. W1242 (OWNER RULING 2026-11-22): when no in-house model is reachable for the call (none is listed: local
+         disabled, or the runtime not answering with a model; or its breaker is open), the external accelerants
+         (Anthropic, then OpenAI: a key AND AI_ALLOW_EXTERNAL=true) are tried next, before the floor, each only for
+         a call that declares a class that may leave (W899) and inside the orchestrator's hourly cap (W335);
+      3. the native deterministic floor, which always answers, so it is the last resource this path tries.
+         While an in-house model is reachable, the external accelerants are listed after it and are therefore
+         never attempted here - this gateway never passes prefer_external.
 
     stream / stream_meta - ordered in this class:
       1. the owned local model, token by token - skipped when AI_DISABLE_LOCAL is set or its circuit
          breaker is open;
-      2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the caller asks
-         (prefer_external) - W755 (FU-1124, Owner ruling 2026-11-06, option (a)): the in-house-first order,
-         as a query has it (Anthropic, then OpenAI; each inside the orchestrator's hourly external cap, W335,
-         as a query's external call is - W869, FU-1128);
+      2. the external accelerants (Anthropic, then OpenAI), when AI_ALLOW_EXTERNAL=true and a key is set, and
+         the caller asks (prefer_external) or no in-house model was reachable before the local attempt (local
+         disabled, its breaker open, or the runtime not answering with a model: in_house_reachable) - each inside
+         the orchestrator's hourly external cap, W335, as a query's external call is (W869, FU-1128). A reachable
+         local model that fails a call that did not ask is followed by the floor, as on the query path;
       3. the native floor, chunked - the guaranteed terminal.
 
-    With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, NEITHER
-    path puts an external first unless its caller asks (prefer_external) - one order for both (W755, FU-1124,
-    Owner ruling 2026-11-06). The switch is the Owner's (P4.3).
+    With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, both paths
+    try the in-house model first wherever one is reachable, and an allowed external before the floor when none
+    is. The switch is the Owner's (P4.3): it is read here and never set.
+
+    OWNER RULING 2026-11-22 (W1242): the Owner wrote, in chat, after the recommendations were put, "I want to go
+    with all your recommendations". It amends the ruling of 2026-11-06 (W755, FU-1124, option (a)), under which
+    this docstring read: "2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the
+    caller asks (prefer_external) - W755 (FU-1124, Owner ruling 2026-11-06, option (a)): the in-house-first
+    order, as a query has it" and "With it on, NEITHER path puts an external first unless its caller asks
+    (prefer_external) - one order for both". Under that ruling a caller had to pass prefer_external, and no product
+    journey did. Now, with the switch on and no in-house model reachable, the query and the stream path try the
+    external provider before the floor; the in-house model is still tried first wherever one is up; the class check
+    (W899) and the hourly cap (W335, W869) still apply to every call, so a call that declares no class still never
+    goes out.
 
     W899 (FU-610): on both paths an external provider is sent a call only when the call declares the class of what
     it carries and that class is not barred. The check runs before the provider's client is built
@@ -416,8 +450,9 @@ class ModelGateway:
         governance checkpoint are dropped, so a caller that must say who served it uses `query_meta`.
 
         `timeout` is handed to the orchestrator, which applies it to an external accelerant attempt only,
-        and this path never attempts one (see the class docstring). The owned local model runs on its own
-        budget (orchestrator.local_model_budget_s) and the native floor answers in-process.
+        which this path makes only when no in-house model is reachable (see the class docstring; W1242, OWNER
+        RULING 2026-11-22 - until then this read "and this path never attempts one"). The owned local model runs
+        on its own budget (orchestrator.local_model_budget_s) and the native floor answers in-process.
         None is read as 30.
         """
         res = await self.query_meta(prompt, agent=agent, timeout=timeout,
@@ -436,9 +471,12 @@ class ModelGateway:
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
 
         IN-HOUSE FIRST: route through Workstation's OWN native orchestrator — a local owned model
-        (Ollama) when present → the always-available native structured engine floor, which answers, so
-        the external accelerants the registry lists after it (a key AND AI_ALLOW_EXTERNAL=true) are never
-        attempted on this path. The native floor guarantees a real, honest,
+        (Ollama) when present → the always-available native structured engine floor, which answers. While a
+        local model is reachable, the external accelerants the registry lists after the floor (a key AND
+        AI_ALLOW_EXTERNAL=true) are never attempted on this path; with none reachable they are tried before the
+        floor (W1242, OWNER RULING 2026-11-22; until then this read "so the external accelerants the registry lists
+        after it ... are never attempted on this path"), each only for a declared class that may leave (W899) and
+        inside the hourly cap (W335). The native floor guarantees a real, honest,
         structured result, so the platform never hangs, never depends on an external provider, and
         never returns a bare "[unavailable]". `timeout` reaches the orchestrator, which applies it to an
         external attempt only; the local model runs on its own budget. (The legacy external-first `_call`
@@ -696,8 +734,10 @@ class ModelGateway:
         query_meta since W755 (FU-1124, Owner ruling 2026-11-06; see the class docstring):
         1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
            (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
-        2. external accelerant streaming ONLY when the switch is on (AI_ALLOW_EXTERNAL=true) AND this caller
-           asked for one (prefer_external) - otherwise the floor below answers;
+        2. external accelerant streaming when the switch is on (AI_ALLOW_EXTERNAL=true) and this caller asked
+           for one (prefer_external) or no in-house model was reachable (W1242, OWNER RULING 2026-11-22; under the
+           ruling of 2026-11-06 this read "ONLY when the switch is on (AI_ALLOW_EXTERNAL=true) AND this caller
+           asked for one (prefer_external) - otherwise the floor below answers");
         3. the native structured-reasoning floor, chunked — the GUARANTEED terminal: this stream
            never depends on an external provider and never ends in a bare error line.
         W451 (P1.3) — the stream path used to swallow WHO served it (recorded into the learning
@@ -760,6 +800,9 @@ class ModelGateway:
 
         # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
         # gated, and every streamed serve RECORDS an outcome into the W275 learning loop.
+        #  W1210 (FU-1847) - t0 is a perf_counter reading taken where each attempt starts, and the duration
+        #  is read from the same clock: a monotonic one, so a wall clock set back or forward during an attempt
+        #  neither stores a negative duration (which spends nothing) nor books the jump as work
         def _record(served_by: str, is_external: bool, t0: float, ok: bool, tokens: int | None = None) -> None:
             #  W757 (FU-1123) - the immune sensor hears every streamed attempt, not only the floor: a serve is observed
             #  and a failed local or external attempt is recorded as ai_failure, as the query path's are
@@ -775,7 +818,7 @@ class ModelGateway:
                 from agentic_core.api.operational_excellence import record_outcome
                 record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,
                                is_external=is_external,
-                               duration_ms=int((time.time() - t0) * 1000), success=ok,
+                               duration_ms=int((time.perf_counter() - t0) * 1000), success=ok,
                                tokens=tokens)        # W741 (S18.1) - one spend with the seconds
             except Exception:
                 pass
@@ -817,10 +860,16 @@ class ModelGateway:
                     #  W899 (FU-610) - the class declared for what the stream carried, and what each check decided
                     "data_class": _dc899.provenance(data_class, _dc_checks899, is_external)}
 
+        #  W1242 (OWNER RULING 2026-11-22) - whether an in-house model is reachable, read BEFORE the local attempt (a
+        #  failed attempt below may open the breaker), and only when it can decide anything: the switch on and no ask
+        from agentic_core.ai.native import model_resource as _mr1242
+        _switch1242 = bool(_mr1242.external_allowed())          # the Owner's switch, read and never set
+        _no_in_house1242 = _switch1242 and not prefer_external and not in_house_reachable()
+
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
                 and not self_healer.is_open("ollama")):
-            _t0 = time.time()
+            _t0 = time.perf_counter()
             try:
                 full = ""
                 _count = None     # W741 (S18.1) - the zero-length CountedText the stream ends with, if any
@@ -851,13 +900,17 @@ class ModelGateway:
                 _record("ollama", False, _t0, False)
 
         # 2 — external accelerants: OPT-IN ONLY (never a dependency). W755 (FU-1124, OWNER RULING 2026-11-06,
-        #     option (a)): the IN-HOUSE-FIRST order on both paths. The switch alone no longer puts an external
+        #     option (a)) read: "the IN-HOUSE-FIRST order on both paths. The switch alone no longer puts an external
         #     before the floor; a caller must also ask (prefer_external), as an orchestrator caller does. With no
-        #     ask, the floor answers, exactly as a gateway query does.
-        if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true" and prefer_external:
+        #     ask, the floor answers, exactly as a gateway query does."
+        #     OWNER RULING 2026-11-22 (W1242) amends it: with the switch on and no in-house model reachable, the
+        #     stream tries the external before the floor whether or not the caller asked, as a gateway query now
+        #     does; with one reachable, the local attempt above came first, and a caller that did not ask is answered
+        #     by the floor. Every attempt still takes the class check (W899) and the hourly cap (W335, W869).
+        if _switch1242 and (prefer_external or _no_in_house1242):
             if (self.anthropic_key and not self_healer.is_open("claude") and _may_send899("anthropic")
                     and _external_budget_allows("anthropic")):      # W899 (FU-610) - the class first
-                _t0 = time.time()
+                _t0 = time.perf_counter()
                 try:
                     import anthropic
                     client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
@@ -889,7 +942,7 @@ class ModelGateway:
                     _record("claude", True, _t0, False)
             if (self.openai_key and not self_healer.is_open("openai") and _may_send899("openai")
                     and _external_budget_allows("openai")):         # W899 (FU-610) - the class first
-                _t0 = time.time()
+                _t0 = time.perf_counter()
                 try:
                     from openai import AsyncOpenAI
                     client = AsyncOpenAI(api_key=self.openai_key)
@@ -922,7 +975,7 @@ class ModelGateway:
                     _record("openai", True, _t0, False)
 
         # 3 — the native structured floor: guaranteed, honest, in-house (chunked stream shape)
-        _floor_t0 = time.time()
+        _floor_t0 = time.perf_counter()
         try:
             from agentic_core.ai.native import native_engine
             out = native_engine.generate(augmented, agent, user_text=user_text)

@@ -582,22 +582,35 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
             # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
             # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
-            quality["quality_record_hash"] = await qms.control_document(
-                f"qms_record:{label}",
-                {"label": label, "delivery_coverage": coverage, "stub_found": stub,
-                 "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
-                 # W449 — the seal is PER DELIVERY: the content hash and the server are in the sealed
-                 # payload (163 of 176 historical records shared one hash because it sealed only the
-                 # verdict shape, so one seal certified a scaffold and a real document alike).
-                 "content_sha3": _ref["content_sha3"], "served_by": _served_label,
-                 "qms_basis": quality["qms_basis"],
-                 "bar_measured": quality["bar_measured"],
-                 "compliance": {"overall": _comp.get("overall"),
-                                "verdicts": _comp.get("verdicts"),
-                                "coverage_gaps": _comp.get("coverage_gaps") or [],
-                                "assessed_by": _comp.get("assessed_by") or []}},
-                actor="QMS")
-            quality["document_controlled"] = True
+            #  W1205 (FU-1845) - A VERSION THAT WAS NOT KEPT IS SAID. The DCMS ledger refuses a commit it
+            #  cannot keep and lets a failed write raise; the record then says it is not under document
+            #  control, and why, and the outer except stays for every other fault.
+            try:
+                quality["quality_record_hash"] = await qms.control_document(
+                    f"qms_record:{label}",
+                    {"label": label, "delivery_coverage": coverage, "stub_found": stub,
+                     "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
+                     # W449 — the seal is PER DELIVERY: the content hash and the server are in the sealed
+                     # payload (163 of 176 historical records shared one hash because it sealed only the
+                     # verdict shape, so one seal certified a scaffold and a real document alike).
+                     "content_sha3": _ref["content_sha3"], "served_by": _served_label,
+                     "qms_basis": quality["qms_basis"],
+                     "bar_measured": quality["bar_measured"],
+                     "compliance": {"overall": _comp.get("overall"),
+                                    "verdicts": _comp.get("verdicts"),
+                                    "coverage_gaps": _comp.get("coverage_gaps") or [],
+                                    "assessed_by": _comp.get("assessed_by") or []}},
+                    actor="QMS")
+                quality["document_controlled"] = True
+            except Exception as _dc_exc:   # noqa: BLE001 - said on the record, never counted as controlled
+                quality.update({"quality_record_hash": None, "document_controlled": False,
+                                "document_control_basis": (
+                                    "not kept: the quality record could not be written to the "
+                                    f"document-control ledger ({type(_dc_exc).__name__}: "
+                                    f"{str(getattr(_dc_exc, 'problem', _dc_exc)).split('; to repair it')[0][:600]}), "
+                                    "so this delivery is not under document control and no controlled "
+                                    "document was counted (GET /api/v1/vbs/qms/document-control says how "
+                                    "the Owner repairs the ledger)")})
     except Exception as exc:  # never break a delivery on a QMS hiccup
         quality["qms_error"] = str(exc)
 

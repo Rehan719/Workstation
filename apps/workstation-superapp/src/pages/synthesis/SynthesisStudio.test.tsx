@@ -149,6 +149,21 @@ describe('SynthesisStudio, rendered against the routes it reads', () => {
     expect(screen.getByRole('alert').textContent).not.toContain('check the API server is running');
   });
 
+  // W1195b (P5.18 clause 4) - instructions that ask for a reserved document: the studio says the route's reason whole,
+  // where help is among it (SynthesisStudio.fixture.json's `reserved`, captured by w1195b_probe.py)
+  it('says a reserved document asked for by the route\'s reason, whole', async () => {
+    serve({ generate: { refused: captured.reserved.status, body: captured.reserved.body } });
+    mount();
+    await waitFor(() => expect(screen.getByText(FILE.filename)).toBeTruthy());
+    fireEvent.change(screen.getByPlaceholderText(/^Describe the topic, focus, or angle/), {
+      target: { value: 'Draft the TR1 transfer of my flat to my son' } });
+    await generate([]);
+    const reason = captured.reserved.body.detail;
+    expect(reason).toContain('For help from a person, see the list of where help is');
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(
+      `Generation failed for report: Failed (HTTP 409): ${reason}`));
+  });
+
   it('says a refused delete by its status and reason, and one with no reason never as an unreachable server', async () => {
     serve();
     //  the ingest route's own refusal of a file it no longer holds (captured by W1026), then a proxy's answer in front

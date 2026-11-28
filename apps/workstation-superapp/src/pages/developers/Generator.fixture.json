@@ -31,5 +31,11 @@
     }
    ]
   }
+ },
+ "reserved": {
+  "status": 409,
+  "body": {
+   "detail": "'content' is not generated: the words \"Draft the TR1\" in the specification were read as asking to prepare a transfer or legal charge of land, a house or a flat, which would fall under \"an instrument of transfer or charge of land\", one of the reserved documents, so nothing was composed. The screen reads words, not what a document is. It misses most other ways of asking, so a request it does not refuse is not cleared. The Generator (POST /api/v1/generator/produce) reads a request's specification, artefact type, format and domain, each on its own and together, with the screen the Law draft form and the clerk use. Preparing any of these four documents is a reserved instrument activity: an instrument of transfer or charge of land; an instrument for land registration; a contract for the sale or other disposition of land beyond a short lease; a deed for registration (Legal Services Act 2007 Schedule 2, read by this platform (round W1148), not by a qualified person, at https://www.legislation.gov.uk/ukpga/2007/29/schedule/2 on 2026-11-20; not read: Schedule 3 (exempt persons); who is entitled, under section 13). The Law draft form and the clerk refuse a request whose words the screen reads as asking to prepare one of them, and the draft form any template id it does not list. For help from a person, see the list of where help is ('Where to get help from a person' on the Law page, and the support page). Nothing here is legal advice."
+  }
  }
 }

@@ -11,11 +11,19 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_core.ai.native import orchestrator, registry
 from agentic_core.ai.native.model_resource import external_allowed
+from agentic_core.auth.core import require_admin
+
+#  W1203 (FU-1853, P4.1) - THE LIFECYCLE'S WRITES ARE AN ADMINISTRATOR'S. The router is mounted behind get_current_user
+#  (app_mvp.py), so with sign-in on any signed-in person could promote, retire, reinstate or evaluate a local model, or
+#  run or reproduce a baseline; the serving default governs the platform, which is the W505 perimeter's reason. Each of
+#  the six writes asks for require_admin; the reads stay behind get_current_user. With sign-in off require_admin is a
+#  synthetic admin, so nothing changes there.
+_ADMIN = [Depends(require_admin)]
 
 router = APIRouter(prefix="/api/v1/native-ai", tags=["native-ai-fabric"])
 
@@ -78,6 +86,12 @@ async def native_status():
     active = order[0] if order else "native"
     is_real_model = active != "native"
     active_row = next((r for r in resources if r["name"] == active), None)
+    #  W1242c - WHAT SERVES NEXT, BY WHAT A CALL DECLARES (W1242, the Owner's ruling of 2026-11-22). `active_model` is
+    #  the registry's head and keeps that meaning: the form tools' serving sentence reads it, and a domain tool
+    #  declares no class, so the floor answers it. With the switch on, a key set and no in-house model, a call that
+    #  declares a class that may leave is served by the external provider first; next_to_serve says both.
+    from agentic_core.ai.native.orchestrator import next_to_serve as _next_to_serve
+    _next1242c = _next_to_serve(order)
     # §6 (W323) — MEASURED serving mode beside the prediction: the selection head can list a model
     # that keeps failing while the floor actually serves — `mode` now follows what the learning
     # loop MEASURED on the most recent recorded work, never just the optimistic prediction.
@@ -105,6 +119,7 @@ async def native_status():
         "selection_order": order,
         "active_model": active,
         "active_model_label": (active_row or {}).get("model", active),
+        "next_to_serve": _next1242c,               # W1242c - by what a call declares, read now, nothing called
         "is_real_model": is_real_model,
         "mode": mode_measured if mode_measured != "unmeasured" else mode_predicted,
         "mode_predicted": mode_predicted,
@@ -613,7 +628,7 @@ _EVAL_BASIS = ("a marker hit means the reply CONTAINS a marker string - it is no
                "compares a model's internal state.")
 
 
-@router.post("/lifecycle/evaluate")
+@router.post("/lifecycle/evaluate", dependencies=_ADMIN)
 async def evaluate_model(req: LifecycleModelRequest):
     """§6 (W276) — run a bounded, HONEST evaluation of a named local model: three small probes
     routed explicitly to it. Scored only on what genuinely happened (did the target actually
@@ -625,7 +640,7 @@ async def evaluate_model(req: LifecycleModelRequest):
     results = []
     served_target = 0
     for pid, prompt, marker in probes:
-        _p0 = _t.time()
+        _p0 = _t.perf_counter()
         r = await orchestrator.complete(prompt, agent=f"eval:{req.model}",
                                         prefer=f"ollama:{req.model}", timeout=20.0)
         on_target = r.get("served_by") == f"ollama:{req.model}"
@@ -635,7 +650,7 @@ async def evaluate_model(req: LifecycleModelRequest):
                         "structure_hit": marker.lower() in (r.get("output") or "").lower(),
                         #  P3.32 - THE REPLY IS KEPT, so a probe that missed can be re-read
                         **_reply_record(r.get("output")),
-                        "ms": int((_t.time() - _p0) * 1000)})
+                        "ms": int((_t.perf_counter() - _p0) * 1000)})
     can_serve = served_target == len(probes)
     score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
              if can_serve else None)   # honest: no score when the target never served
@@ -821,7 +836,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
     rows: List[Dict[str, Any]] = []
     for set_name, cases in (("public", _EVAL_PROBES), ("heldout", held["cases"])):
         for c in cases:
-            _p0 = _t.time()
+            _p0 = _t.perf_counter()
             r = await orchestrator.complete(c["prompt"], agent=f"baseline:{tier}", prefer=tier,
                                             timeout=_BASELINE_TIMEOUT_S)
             reply = r.get("output") or ""
@@ -840,7 +855,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
                                           f"not read: {r.get('served_by')} answered this case, not {tier}, "
                                           f"so the reply says nothing about {tier}"),
                          **_reply_record(reply), **_withheld_if_repeats(set_name, c["prompt"], reply),
-                         "ms": int((_t.time() - _p0) * 1000)})
+                         "ms": int((_t.perf_counter() - _p0) * 1000)})
     counts = {"passed": sum(1 for x in rows if x["passed"] is True),
               "failed": sum(1 for x in rows if x["passed"] is False),
               "not_read": sum(1 for x in rows if x["passed"] is None)}
@@ -871,7 +886,7 @@ class BaselineRequest(BaseModel):
     tier: str = "native"
 
 
-@router.post("/baseline/run")
+@router.post("/baseline/run", dependencies=_ADMIN)
 async def run_baseline(req: BaselineRequest):
     """Run the behavioural baseline against ONE owned serving tier, now, because a person asked.
 
@@ -957,7 +972,7 @@ async def get_baseline(run_id: str):
     return rec
 
 
-@router.post("/baseline/{run_id}/reproduce")
+@router.post("/baseline/{run_id}/reproduce", dependencies=_ADMIN)
 async def reproduce_baseline(run_id: str):
     """Run a recorded baseline AGAIN from the versions it recorded, and say case by case whether the reply
     was the same. Refused - with nothing run - when it cannot be run from those versions: the case sets in
@@ -1039,8 +1054,10 @@ _EVIDENCE_SURFACES = {
     "/route": ("configuration", "which tier a request would be sent to, by rule"),
     "/models": ("configuration", "the local model names the runtime lists"),
     "/lifecycle": ("configuration", "the promoted default and retired names; its `evaluations` are behaviour records"),
-    "/lifecycle/promote": ("configuration", "a named model is made the default on a recorded evaluation of its build "
-                                            "on the pinned probe set (W841); the promotion itself measures nothing"),
+    "/lifecycle/promote": ("configuration", "a named model is made the default by an administrator on a recorded "
+                                            "evaluation of its build on the pinned probe set (W841) and on the licence "
+                                            "text the runtime holds for that build (W1203); the promotion itself "
+                                            "measures nothing"),
     "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
     "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
     "/lifecycle/installed": ("configuration", "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time"),
@@ -1268,7 +1285,7 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
             "ruling": ("Owner, 2026-10-13: every surface means every router that names a model, counted per "
                        "router. The count above is what remains.")}
 
-@router.post("/lifecycle/promote")
+@router.post("/lifecycle/promote", dependencies=_ADMIN)
 @_states_level("/lifecycle/promote")
 async def promote_model(req: LifecycleModelRequest):
     """§6 (W276) — promote a DISCOVERED local model to the persisted serving default (the 'ollama'
@@ -1290,28 +1307,72 @@ async def promote_model(req: LifecycleModelRequest):
             f"Model '{req.model}' was not promoted: the local runtime reports no build digest for this name, so no "
             "evaluation can be tied to a build of it. A name is not a build."))
     _set_now = {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()}
-    st = _lifecycle_for_write()                              # W577 (FU-395)
-    _measured = [e for e in (st.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
-                 and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
-                 and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
-    if not _measured:
-        raise HTTPException(status_code=409, detail=(
+
+    def _measured_on(rec):
+        return [e for e in (rec.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
+                and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
+                and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
+
+    def _not_evaluated():
+        return HTTPException(status_code=409, detail=(
             f"Model '{req.model}' was not promoted: no evaluation of this build ({_dg[:23]}) on the pinned probe set "
             f"(version {_EVAL_PROBE_SET_VERSION}) that it served and whose control it passed is recorded. Run POST "
             "/api/v1/native-ai/lifecycle/evaluate for it, then promote."))
+    _before = _lifecycle_for_write()                         # W577 (FU-395)
+    if not _measured_on(_before):
+        raise _not_evaluated()
+    #  W1203 (FU-1852) - AND ON THE LICENCE TEXT THE RUNTIME HOLDS FOR THIS BUILD. The Owner ruled on 2026-11-22 that a
+    #  model is made the serving default only with its licence read, with no override: no override is built, and no
+    #  research lead's licence stands in for the runtime's text. A description that could not be read is refused on
+    #  its own words, never as 'no licence'. OLLAMA_MODEL, which the Owner sets on the machine, still names the
+    #  model served, if it is installed and not retired, when nothing is promoted. One /api/show call, off the event
+    #  loop; the build is read again after it, so a licence read from another build is never kept beside this digest.
+    import asyncio as _aio
+    from agentic_core.ai.native.model_resource import describe_installed_one
+    _desc = await _aio.to_thread(describe_installed_one, req.model)
+    _dg_now = local_model_digest(req.model)
+    if _dg_now != _dg:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the build under this name changed while its licence was read (it "
+            f"was {_dg[:23]}, and the runtime now reports {str(_dg_now)[:23]}). Evaluate the build installed now, then "
+            "promote."))
+    if _desc.get("show_read") is not True:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime's description of this build ({_dg[:23]}) could "
+            f"not be read, so whether the runtime holds licence text for it is not known ({_desc.get('show_basis')}). "
+            "Promote again once the runtime answers."))
+    _lic = _desc.get("licence")
+    if not (isinstance(_lic, dict) and _lic.get("sha256")):
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime holds no licence text for this build "
+            f"({_dg[:23]}). The Owner ruled on 2026-11-22 that a model is made the serving default only with its "
+            "licence read, with no override. OLLAMA_MODEL, which the Owner sets on the machine, still names the "
+            "model served, if it is installed and not retired, when nothing is promoted."))
+    _licence = {"first_line": _lic.get("first_line"), "chars": _lic.get("chars"), "sha256": _lic.get("sha256")}
+    #  W1203 (review) - THE RECORD IS READ AGAIN AFTER THE AWAIT, and nothing is awaited from here to the save: a
+    #  retire, reinstate or evaluation saved while the licence was read is kept (W577), and the evaluation is checked
+    #  again on the record that is written
+    st = _lifecycle_for_write()                              # W1203 - read after the licence, written below
+    _measured = _measured_on(st)
+    if not _measured:
+        raise _not_evaluated()
     st["default_local"] = req.model
     st["default_local_digest"] = _dg
+    st["default_local_licence"] = _licence                  # W1203 (FU-1852) - the licence text it was promoted on
     st["default_local_evaluated_at"] = _measured[-1].get("at")
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
-    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at")})
+    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at"),
+                                           "licence_sha256": _licence["sha256"]})
     return {"promoted": req.model, "effective_default": req.model, "digest": _dg,
-            "evaluated_at": _measured[-1].get("at"),
+            "evaluated_at": _measured[-1].get("at"), "licence": _licence,
             "promoted_basis": (f"promoted on the evaluation of this build at {_measured[-1].get('at')} on the pinned "
-                               "probe set; it serves as the default only while the runtime reports this build")}
+                               "probe set and on the licence text the runtime holds for it (its first line, length "
+                               "and hash are kept, not a reading of what it permits); it serves as the default only "
+                               "while the runtime reports this build")}
 
 
-@router.post("/lifecycle/retire")
+@router.post("/lifecycle/retire", dependencies=_ADMIN)
 @_states_level("/lifecycle/retire")
 async def retire_model(req: LifecycleModelRequest):
     """§6 (W276) — retire a local model from the ACTIVE estate: default orchestration (ensemble,
@@ -1324,13 +1385,14 @@ async def retire_model(req: LifecycleModelRequest):
     if st.get("default_local") == req.model:
         st["default_local"] = None            # a retired model cannot stay the promoted default
         st.pop("default_local_digest", None)  # W841 (FU-1087) - nor its build
+        st.pop("default_local_licence", None)  # W1203 (FU-1852) - nor the licence it was promoted on
         st.pop("default_local_evaluated_at", None)
     save_lifecycle(st)
     _ueg_lifecycle("retired", req.model)
     return {"retired": st["retired"], "promoted_default": st.get("default_local")}
 
 
-@router.post("/lifecycle/reinstate")
+@router.post("/lifecycle/reinstate", dependencies=_ADMIN)
 @_states_level("/lifecycle/reinstate")
 async def reinstate_model(req: LifecycleModelRequest):
     """§6 (W276) — return a retired model to the active estate."""
@@ -1548,10 +1610,18 @@ async def native_complete(req: CompleteRequest):
                 #  shape-complete with the orchestrator's reply: a refusal ran no model, so nothing counted
                 "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared(req.data_class or "person_entered"):          # W899 (FU-610) - what the prompt carries
+    #  W1242c (the Owner's ruling of 2026-11-22: religious content is not sent outside the platform) - the console
+    #  declares the class its caller names, person_entered when none, and nothing when the religious-content screen
+    #  flags the prompt: since W1242 a declared call can leave with the switch on and no in-house model, whether or not
+    #  it asks. A flagged prompt is served on the platform and the answer says why (kept_in); nothing is refused
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c(req.data_class or "person_entered", req.prompt)
+    with _dc899.declared(_cls1242c["data_class"]):          # W899 (FU-610) - what the prompt carries
         res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
                                           prefer_external=req.prefer_external, prefer=req.model,
                                           user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 
@@ -1595,9 +1665,16 @@ async def native_swarm(req: SwarmRequest):
     #  P3.30 (ledger v16 R4.17) - the context field is what the person typed on this console; the stage
     #  instructions may be the page's defaults and are not passed as theirs
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the stages carry
+    #  W1242c - the stages carry the context and their own instructions: nothing is declared when the
+    #  religious-content screen flags any of them, so no call of the run leaves the platform, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", req.context,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    with _dc899.declared(_cls1242c["data_class"]):                    # W899 (FU-610) - what the stages carry
         res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
                                        user_text=((req.context or "").strip() or None))
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 
@@ -1946,10 +2023,16 @@ async def native_tree(req: TreeRequest):
         return {"goal": req.goal, "nodes": [], "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the nodes carry
+    #  W1242c - the nodes carry the goal and the context: nothing is declared when the religious-content screen flags
+    #  either, so no node of the tree leaves the platform, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", req.goal, req.context)
+    with _dc899.declared(_cls1242c["data_class"]):                    # W899 (FU-610) - what the nodes carry
         res = await orchestrator.orchestrate_tree(
             req.goal, context=req.context, max_parallel=req.max_parallel,
             prefer_external=req.prefer_external, timeout=req.timeout,
             user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
     return res

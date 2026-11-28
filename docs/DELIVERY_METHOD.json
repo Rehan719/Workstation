@@ -1084,6 +1084,276 @@
       "enforced_by": null,
       "why_not_enforced": "The settings fields marked not-to-print cover this platform's own settings. Nothing scans pasted text or another repository; that remains a person's habit.",
       "ratified": "the Owner's ruling of 2026-10-13 (evening), reworded as ruled"
+    },
+    {
+      "id": "M-VERIF-14",
+      "group": "verification",
+      "rule": "A guard that counts or lists the mounted routes holds the same where the pages are not built: a route mounted only beside the built pages is named, never assumed.",
+      "defect": "W683 (b5300d97): the round's own perimeter guard required the two page routes to be mounted, and they are mounted only where the pages are built, which the build server is not; the round's blind run found it.",
+      "apply": "Before a guard counts the mounted routes, name each route that depends on what is built beside the code and allow exactly those.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a new guard depends on the build is seen only by running it where the pages are not built, as the build server does.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-15",
+      "group": "verification",
+      "rule": "New code never repeats, word for word, a line an earlier guard or blind uses as its anchor.",
+      "defect": "W684 (bba70cbb): the practice code repeated word for word a line an earlier round's blind uses as its anchor, so that anchor matched twice and the guard that refuses a blind it cannot apply went red on the build server.",
+      "apply": "Before writing a line that copies an existing one, search the suite and the blinds for it; word the new line differently and say why.",
+      "enforced_by": null,
+      "why_not_enforced": "The guard that refuses a blind it cannot apply catches it afterwards, when the suite runs; nothing checks a line as it is written.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-16",
+      "group": "verification",
+      "rule": "A guard that reads the application every test shares leaves out what other tests add to it while the suite runs.",
+      "defect": "W684 (bba70cbb): the perimeter guard read every route on the application object the whole run shares, including a probe route an earlier test adds at run time, so it passed or failed by which test ran first in its worker.",
+      "apply": "Leave out the routes the test file defines, by the module that defines them and never by name, and run the guard after the tests that add probe routes as well as before them.",
+      "enforced_by": null,
+      "why_not_enforced": "Only the order the workers happen to run in exposes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-08",
+      "group": "execution",
+      "rule": "A handler given a caller passes the owner to every model call it makes.",
+      "defect": "W687 (385fb3c3): giving the plan-generation route a caller put a person in scope at its model call; an earlier round's guard requires every such call to pass the owner, the call did not, and the build server found it.",
+      "apply": "When a handler gains a caller, find each model call beneath it and pass the owner, and run the guard that walks every model call before pushing.",
+      "enforced_by": null,
+      "why_not_enforced": "The guard that walks every model call in the tree catches it when it runs; the round's targeted guards did not include it (385fb3c3).",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-17",
+      "group": "verification",
+      "rule": "Run the whole family of guards on the subsystem a round touches, not only the round's own targets.",
+      "defect": "W694 (180960dd): the round listed the nervous system's engine run in the table of reads that are not free, which overrode its own fuller declaration, and an earlier guard on what every engine run declares went red on the build server; the round's targeted guards had not included the family of guards on the cell's contracts.",
+      "apply": "Before the suite, name the subsystem the change touches and run every guard of that family with the round's own.",
+      "enforced_by": null,
+      "why_not_enforced": "Which guards make up a subsystem's family is a judgement; nothing in the tree lists the families.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-09",
+      "group": "execution",
+      "rule": "A row registered as waiting on the Owner also goes on the plan's list of what is with the Owner, in the same round.",
+      "defect": "W696 (b3554403): the round registered the filing of the lessons' change record on the Owner's own store as an owner-gated row and did not add it to the plan's list; the guard that compares the two failed on the build server.",
+      "apply": "Once an owner-gated row is added, add its line to the plan's STILL WITH THE OWNER list before the round's guards run.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon (every open owner-gated row is on the plan's list, and no closed one is)",
+      "why_not_enforced": null,
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-10",
+      "group": "execution",
+      "rule": "A row placed on a plan item by choice, not by the router, says why it is there, and the item is open.",
+      "defect": "W698 (eb6bf504): a row was filed on a plan item that is done, and the guard that keeps every open row on an open item refused it. W699 (1d73ba53): a row placed on its item by hand recorded no reason, and the guard that compares each open row's place with the router's refused it. The notes cite W747 for the same rule.",
+      "apply": "Pass --slot-source to scripts/followups.py add whenever --slot names the item, and name an open item.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w469_the_plan_carries_every_followup_and_keeps_itself_current (a row not on the router's item fails unless it says why, and a chosen item must be open)",
+      "why_not_enforced": null,
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-11",
+      "group": "execution",
+      "rule": "A route that reads or parses files is a plain function, never async, so it runs off the event loop.",
+      "defect": "W698 (eb6bf504): the count of answer blocks by router ran inside the inventory the Native AI page loads, about two seconds of reading and parsing source on the event loop, so the page's other reads waited and the browser check missed a section.",
+      "apply": "Declare a handler that reads files with def, not async def, and give a slow count a route of its own.",
+      "enforced_by": null,
+      "why_not_enforced": "It shows only when a page's other reads are held up, as the browser check saw.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DIAG-07",
+      "group": "diagnosing",
+      "rule": "Before taking an old test's failure for the round's own, find out whether it also fails on a clean copy of main.",
+      "defect": "W707 (5b3eec94): an older Change Control test refused a state its own preceding lines admit, and it failed whenever it ran before anything had fed the organism's health, on an untouched main too.",
+      "apply": "Run the failing test on a clean checkout of main, alone and in the round's order, and record both results with the fix.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-12",
+      "group": "execution",
+      "rule": "Before altering any line, search the suite for a test that pins it.",
+      "defect": "W709 (9e2cf46e): an older guard pins the opening of the per-node trace in the plan's answer, and the inserted statement displaced it. W715 (15ceb561): the low-tier rule's own line was kept as it was because an older guard reads that line from the source.",
+      "apply": "Search integration_tests/ for the line's words before changing it, and change a pin only on purpose, saying so in the round.",
+      "enforced_by": null,
+      "why_not_enforced": "The pinning test catches the change when the suite runs; nothing warns before the edit.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DELIV-09",
+      "group": "delivery",
+      "rule": "Before merging, count the checks that passed against the checks the pull request lists.",
+      "defect": "W713 and W725, as the assistant's notes on the Owner's machine record them; the tree holds no account of the failure.",
+      "apply": "Read the pull request's checks and count those passed against those listed; a check still pending or missing is not a pass.",
+      "enforced_by": null,
+      "why_not_enforced": "The checks are the repository host's; nothing in the tree reads them before a merge.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-18",
+      "group": "verification",
+      "rule": "Run the sources check when a round names an authority, and keep a named Act whole on one line.",
+      "defect": "W714 (78c55ebe): the build server's sources guard read the hold's reason line by line and found 'Services Act 2007' with no row, because the name was wrapped across two string lines.",
+      "apply": "Run scripts/sources_check.py before pushing, and never wrap an Act's name across lines.",
+      "enforced_by": "scripts/sources_check.py (a name the code uses with no row in docs/SOURCES.json fails it)",
+      "why_not_enforced": null,
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DELIV-10",
+      "group": "delivery",
+      "rule": "Commit, push and open the pull request as one script that runs only once the round's guards have passed.",
+      "defect": "W714 to W725, as the assistant's notes on the Owner's machine record them; the tree holds no account of the failure.",
+      "apply": "One script runs the guards, stops at any failure, and only then commits the listed files, pushes and opens the pull request.",
+      "enforced_by": null,
+      "why_not_enforced": "Such a script is the session's own; it is not in the tree.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-19",
+      "group": "verification",
+      "rule": "Run a drafted module on real samples and on hand-made ones before building on it.",
+      "defect": "W724, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure.",
+      "apply": "Before a module is wired in, call it on a real sample and on samples made to fail, and read what it returns.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-20",
+      "group": "verification",
+      "rule": "After a scripted edit, check the edited files for names that are not defined.",
+      "defect": "W728; no commit records W728's own failure, which the assistant's notes on the Owner's machine are the only record of. W747 (7c45c8e1) records one of the same kind: an older test's failure message read an undefined name.",
+      "apply": "Run a check for undefined names over every file a script edited before the guards run.",
+      "enforced_by": null,
+      "why_not_enforced": "No job or script in the tree runs a check for undefined names.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXEC-13",
+      "group": "execution",
+      "rule": "A script whose text holds backslash escapes is written to a file and run from it, never passed through a shell heredoc.",
+      "defect": "W732; no commit records W732's own failure, which the assistant's notes on the Owner's machine are the only record of. The suite records the same kind of failure twice, in comments in test_w514 and test_w569: a pattern written through a heredoc had its word-boundary escapes turned into literal backspace bytes, so it matched nothing.",
+      "apply": "Write such a script with the editor or a file write and run the file; read back any regular expression in it.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session's shell; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-21",
+      "group": "verification",
+      "rule": "A claim a test makes that something does not happen is checked against the route a person actually uses.",
+      "defect": "W735 (4e12a498): a browser check of the round's Cockpit line found its own fix incomplete. The record said only the spawn route writes the field, but that route is retired and Genesis is the only door a person uses, so every new entity would have read 'not recorded', and the guard had pinned that sentence as the expected answer.",
+      "apply": "Before pinning a 'does not' or 'not recorded' answer, call the route a person uses and read what it returns.",
+      "enforced_by": null,
+      "why_not_enforced": "Which route is live for a person is read from the running app, not from the test.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DELIV-11",
+      "group": "delivery",
+      "rule": "A round's script names the branch it works on, and is read through again before it is launched.",
+      "defect": "W735, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure.",
+      "apply": "The script compares the current branch with the one it names and stops on a mismatch; read the whole script once before starting it.",
+      "enforced_by": null,
+      "why_not_enforced": "Round scripts are the session's own; they are not in the tree.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DELIV-12",
+      "group": "delivery",
+      "rule": "If main moved while a round waited, merge it in and run the checks again before merging.",
+      "defect": "W732 and W735, in the build server's runs 848 and 854, as the assistant's notes on the Owner's machine record them; the tree holds no account of the failure.",
+      "apply": "Before merging, compare the branch's base with main; if main moved, merge it in and wait for a fresh green run.",
+      "enforced_by": null,
+      "why_not_enforced": "The merge is made at the repository host; nothing in the tree compares a branch with main.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-22",
+      "group": "verification",
+      "rule": "Never reload a module that defines classes other modules import.",
+      "defect": "W748 (697d452c): a test reloaded agentic_core.config, so config's own functions then raised a new StoreUnavailable class while every module that had imported the name held the old one, and in a later test of the same worker the settings route's refusal let the new class escape as an error; PR 457's build failed on W752's guard.",
+      "apply": "Swap in a fresh object and restore the original afterwards; never reload a module whose classes are imported elsewhere.",
+      "enforced_by": null,
+      "why_not_enforced": "Nothing in the tree refuses a reload; the breach shows only when a later test in the same worker meets the split class.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-DELIV-13",
+      "group": "delivery",
+      "rule": "Pin the image a build job runs on, and say why and when to unpin it.",
+      "defect": "W757 (7af98927): the repository host moved ubuntu-latest to 26.04, where Playwright cannot install chromium, so the browser smoke check failed on every pull request before a page was opened; the job was pinned to ubuntu-24.04.",
+      "apply": "Name an exact runner image in each job, with a comment saying why it is pinned and when to unpin it.",
+      "enforced_by": null,
+      "why_not_enforced": "Only the browser job is pinned; the other jobs name ubuntu-latest or windows-latest, and nothing checks that a job names an exact image.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-SESS-13",
+      "group": "session",
+      "rule": "After the machine has slept, check which runs are still alive before relaunching any.",
+      "defect": "W757, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure.",
+      "apply": "List the running processes and each run's last output first, and relaunch only what has stopped.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-SESS-14",
+      "group": "session",
+      "rule": "Keep prepared work out of temporary folders.",
+      "defect": "After W757 (2026-11-04), as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure.",
+      "apply": "Keep prepared scripts, notes and staged rounds in a folder the system does not clear, and commit or copy them out before a session ends.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXCH-09",
+      "group": "exchange",
+      "rule": "Every prompt the Owner sends gets an equal, individual review.",
+      "defect": "2026-10-16, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure. That day's round, W747 (7c45c8e1), records that the Owner asked for each of twenty-seven external prompts to be reviewed equally, and that each was read end to end by its own reviewer under one rubric.",
+      "apply": "Give each prompt its own reading under the same rubric, whatever its length or its place in the set, and record each one's result.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-PREP-07",
+      "group": "preparation",
+      "rule": "Verify a long brief's claims against the tree before building from it.",
+      "defect": "2026-10-16, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure. W747 (7c45c8e1) records that every claim of the prompts reviewed that day was checked at the tree or the build server, and that of 832 demands about one in nine was a true gap.",
+      "apply": "List the brief's claims about the tree and check each there before any step is planned from it.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-VERIF-23",
+      "group": "verification",
+      "rule": "A server a test starts chooses its own port and names it before anything is sent to it.",
+      "defect": "W1133o (7450e682): test_w919 raised BadStatusLine against the backend it had started and passed alone on the same tree. It chose its port by binding port 0, reading the number and closing the socket, so while the server started nobody listened there: a poll could connect to itself, and any other process could take the port.",
+      "apply": "Start the server on port 0 through _serving_on_its_own_port and take the port from the line where the server names it.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w1133o_fu1802_a_server_a_guard_starts_chooses_its_own_port_and_names_it_before_it_is_asked (no function reads a socket's name to hand a port on, and only the helper starts a server process)",
+      "why_not_enforced": null,
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
+    },
+    {
+      "id": "M-EXCH-10",
+      "group": "exchange",
+      "rule": "An option left unticked is not a no: ask each fact on its own.",
+      "defect": "2026-11-22, as the assistant's notes on the Owner's machine record it; the tree holds no account of the failure.",
+      "apply": "Put each fact as a question of its own, and record one left unanswered as unanswered, never as a refusal.",
+      "enforced_by": null,
+      "why_not_enforced": "A practice of the session that does the work; nothing in the tree observes it.",
+      "ratified": "the Owner's ruling of 2026-11-22, as one batch"
     }
   ],
   "mechanisms": [

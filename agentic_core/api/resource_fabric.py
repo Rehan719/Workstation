@@ -2097,7 +2097,11 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             if _halt651:
                 return _halt651
             from agentic_core.ai import data_class as _dc899
-            with _dc899.declared("person_entered"):    # W899 (FU-610) - what a person typed or saved in a design
+            #  W1242c - nothing is declared when the religious-content screen flags the stage's prompt or the run's
+            #  objective, so the stage is served on the platform, and its row says why
+            from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+            _cls1242c = _cur1242c("person_entered", cfg.get("prompt"), objective)
+            with _dc899.declared(_cls1242c["data_class"]):    # W899 (FU-610) - what a person typed or saved in a design
                 res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                                   agent=str(cfg.get("agent") or "fabric-composition"),
                                                   prefer_external=bool(cfg.get("prefer_external", False)),
@@ -2108,7 +2112,8 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             return {**_reply_evidence(res.get('served_by')), "resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
-                    "output": (res.get("output") or "")[:600]}
+                    "output": (res.get("output") or "")[:600],
+                    **({"kept_in": _cls1242c["kept_in"]} if _cls1242c["kept_in"] else {})}   # W1242c - why it stayed
         if rid == "native_ensemble":
             from agentic_core.ai.native import orchestrator
             #  W836 - the gates its siblings run: the declared /native-ai/ensemble route gates, and so does the
@@ -2223,10 +2228,19 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
         if rid == "generator":
             # the §7 Generator: produce ONE targeted artefact in a chosen format on the native swarm.
             from agentic_core.api.products import run_generator
-            g = await run_generator(artefact_type=str(cfg.get("artefact_type") or "content"),
-                                    spec=str(cfg.get("spec") or objective), domain=domain,
-                                    fmt=str(cfg.get("format") or "markdown"),
-                                    prefer=str(cfg.get("model") or "auto"))
+            #  W1195b - the Generator's own refusal (an explicit ask for a reserved document in its words) is this
+            #  stage's, whole, with its status, and nothing is offered as output. Uncaught, it was the handler's
+            #  error, cut at 160 characters and counted as raised. A composition's run reads the same words (its
+            #  usage area, which is this stage's domain, among them) before any stage is built, so this is met by
+            #  an in-process call: the swarm cascade's fabric requisition, or a caller of this handler
+            try:
+                g = await run_generator(artefact_type=str(cfg.get("artefact_type") or "content"),
+                                        spec=str(cfg.get("spec") or objective), domain=domain,
+                                        fmt=str(cfg.get("format") or "markdown"),
+                                        prefer=str(cfg.get("model") or "auto"))
+            except HTTPException as _e1195b:
+                return {"resource": "generator", "ran": "/api/v1/generator/produce", "refused": True,
+                        "status": _e1195b.status_code, "detail": _e1195b.detail, "output": None}
             return {**_reply_evidence(g['served_by']), "resource": "generator", "ran": "/api/v1/generator/produce",
                     "artefact_type": g["artefact_type"], "format": g["format"],
                     "served_by": g["served_by"], "is_external": g["is_external"],
@@ -2469,6 +2483,10 @@ _OUTCOME_PHRASE = {
 _GATE_REFUSED_PHRASE = ("refused by the platform's constitutional gate before any resource was asked — nothing was "
                         "composed; the gate's reason is in `detail`")
 _FORM_NOT_COMPOSED_PHRASE = "answered by the form's own route: nothing was composed and no call served it"
+#  W1195b - a resource that is not a form, refused by its own route's rules (the Generator's reading of a reserved
+#  document asked for): it was not refused by "the form's own rules"
+_ROUTE_REFUSED_PHRASE = ("refused by its own route's rules before anything was composed — nothing was produced; "
+                         "the route's reason is in `detail`")
 _OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified", "narrative": "narrated",
                      "facility_run": "produced"}
 
@@ -2531,6 +2549,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     #  registers gives it a word of its own, with the page's count and chip
     if outcome == "refused" and r.get("served_by") == _REFUSAL_GATE:
         r["outcome_phrase"] = r["kind_phrase"] = _GATE_REFUSED_PHRASE
+    elif outcome == "refused" and rid not in _FORM_BY_ID:        # W1195b - a route's own refusal, never a form's
+        r["outcome_phrase"] = r["kind_phrase"] = _ROUTE_REFUSED_PHRASE
     elif rid in _FORM_BY_ID and outcome == "produced" and r.get("served_by") == _FORM_NO_SERVER:
         r["outcome_phrase"] = r["kind_phrase"] = _FORM_NOT_COMPOSED_PHRASE
     r["invocation"] = "in_process"
@@ -2900,6 +2920,24 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             cfg.update(req.params.get(r["id"]) or {})
         return cfg
 
+    #  W1195b (P5.18 clause 4, its ACCEPT) - A COMPOSITION'S WORDS, READ FOR AN EXPLICIT ASK TO PREPARE A RESERVED
+    #  DOCUMENT BEFORE ANY STAGE IS BUILT. What reaches a composer below: the objective (or, with none, the default
+    #  objective made of the name and the usage area), the usage area again as every real resource's domain and the
+    #  org cascade's, and each resource's settings that differ from the declared placeholders, as "name=value" in
+    #  its stage. The Generator's own stage would read its words only after them. An ask W1195's screen reads is
+    #  refused here with 409, before anything runs, is composed or is recorded
+    from agentic_core.legal import specialist as _sp1195b
+    _words1195b = ([("the objective", req.objective)] if req.objective else
+                   [("the composition's name", comp.get("name"))])
+    _words1195b.append(("the composition's usage area", comp.get("usage_area")))
+    for _r1195b in comp.get("resources", []):
+        _decl1195b = (_BY_ID.get(_r1195b["id"]) or {}).get("reconfigurable_params") or {}
+        for _k, _v in _eff_cfg(_r1195b).items():
+            if _v != _decl1195b.get(_k):
+                _words1195b += [(f"the {_r1195b['id']} resource's {_k} setting", str(_v)),
+                                (f"the name of a setting of the {_r1195b['id']} resource", str(_k))]
+    _sp1195b.refuse_reserved(cid, _words1195b, "composition", act="run", kept="run or composed")
+
     stages: List[Dict[str, str]] = []
     for r in comp.get("resources", []):
         base = _BY_ID.get(r["id"], {})
@@ -2940,7 +2978,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         for _st in stages:
             _st["instruction"] += f"\nObjective: {req.objective}"
     from agentic_core.ai.native import orchestrator
-    _t0 = time.time()
+    #  W1210 (FU-1847) - the run's duration is read from perf_counter, a monotonic clock (host_observation.py's
+    #  precedent: on Windows before Python 3.13 monotonic() ticks in ~15.6 ms steps), so a wall clock set back or
+    #  forward during the run neither stores a negative duration nor books the jump as work. Stamps stay on the
+    #  wall clock: created_at is still time.strftime over time.gmtime().
+    _t0 = time.perf_counter()
     #  W627 (FU-531) - a composition run passes the same constitutional pre-gate and checkpoint as /swarm
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate("composition-run")
@@ -2972,10 +3014,17 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the composition's stages carry
+    #  W1242c - the stages carry the objective and their own instructions (the resources' configured parameters among
+    #  them): nothing is declared when the religious-content screen flags any of them, so no stage leaves the platform
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", objective,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    with _dc899.declared(_cls1242c["data_class"]):            # W899 (FU-610) - what the composition's stages carry
         res = await orchestrator.swarm("composition-run", stages, context=objective,
                                        prefer_external=req.prefer_external, timeout=req.timeout,
                                        user_text=(req.objective or None))   # W640 - the objective the person typed
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
@@ -2992,7 +3041,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         record_outcome("composition_run", f"composition:{comp['name']}", served_by=served,
                        served_by_all=_all or None,
                        is_external=bool(res.get("any_external")),
-                       duration_ms=int((time.time() - _t0) * 1000),
+                       duration_ms=int((time.perf_counter() - _t0) * 1000),
                        # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
                        success=bool(res.get("trace")),
                        quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid,
@@ -3072,10 +3121,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     for r in comp.get("resources", []):
         if r["id"] == "vsb_org_swarm":
             continue
-        _r0 = time.time()
+        _r0 = time.perf_counter()
         rr = await _run_real_resource(r["id"], _eff_cfg(r), objective, domain)
         if rr is not None:
-            rr["duration_ms"] = int((time.time() - _r0) * 1000)
+            rr["duration_ms"] = int((time.perf_counter() - _r0) * 1000)
             real_runs.append(rr)
             #  W640 (P3.31 clause 6; OWNER ruled 2026-10-10: "yes, once, for resources that only read or
             #  compose; never for one that writes") — ONE DECLARED ALTERNATIVE, ONCE. Only a STATUS READ
@@ -3089,7 +3138,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 _in_run = {x["id"] for x in comp.get("resources", [])}
                 _alts = [a for a in _equivalents(r["id"]) if a not in _in_run and a not in _READ_SIDE_EFFECTS]
                 if _alts:
-                    _a0 = time.time()
+                    _a0 = time.perf_counter()
                     #  W810 (FU-898) - THE STAND-IN'S OWN CONFIGURATION: it held none in this composition, so it runs
                     #  with what composing it would give it - its registered parameters and any per-run override for
                     #  it. An empty one was harmless only while every possible stand-in took none.
@@ -3097,7 +3146,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 **(((req.params or {}).get(_alts[0])) or {})}
                     _alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)
                     if _alt is not None:
-                        _alt["duration_ms"] = int((time.time() - _a0) * 1000)
+                        _alt["duration_ms"] = int((time.perf_counter() - _a0) * 1000)
                         _alt["alternative_for"] = r["id"]
                         #  P3.31 (round 9) - THE LABEL TRAVELS WITH THE ROW. `alternative_for` is a field a
                         #  reader must know to look for; this is the sentence, and it is on the row in the
@@ -3250,7 +3299,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             #  registry, and its hash was not kept on the run
             "quality_record_hash": qa["quality"].get("quality_record_hash"),
             "plan_binding": plan_binding,
-            "duration_ms": int((time.time() - _t0) * 1000),
+            "duration_ms": int((time.perf_counter() - _t0) * 1000),
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
         atomic_write_json(_cr_store, _cr[-100:])
@@ -3640,6 +3689,18 @@ async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     return {"deleted": sid, "remaining": len(keep)}
 
 
+#  W1242c (its review; the Owner's ruling 4 of 2026-11-27) - THE DOMAINS WHOSE ENTITY'S CASCADE DECLARES NOTHING, each
+#  with why: those Genesis keeps on the platform, with the two names the AI CEO also reads (W1239). Education is here
+#  whatever an education journey may later be ticked for: a cascade's run carries no person's confirmation
+_KEPT_DOMAINS1242C = {
+    "religion": "religious content is not sent outside the platform",
+    "religious": "religious content is not sent outside the platform",
+    "care": "care and health material is not sent outside the platform",
+    "health": "care and health material is not sent outside the platform",
+    "education": "education material may carry children's data, which is not sent outside the platform",
+}
+
+
 @router.post("/swarm/run")
 @spans_run("swarm_run")            # W847 (FU-1121) - the stages' model attempts inside are held
 async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
@@ -3686,7 +3747,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
             f"this cascade holds {len(stages)} stages and a run attempts at most {_max_stages} "
             f"({_max_basis}). Nothing was run."))
     from agentic_core.ai.native import orchestrator
-    _t0 = time.time()
+    _t0 = time.perf_counter()
     # W509 (FU-009) — the run's own identity, minted BEFORE the run so the outcome row, the ledger entry
     # and the response all cite the same one. Without it a cascade run could not be referred to at all.
     swarm_run_id = f"sr-{uuid.uuid4().hex[:8]}"
@@ -3701,12 +3762,39 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     #  own rule, W640). What they typed for THIS run is `req.context`, and that is what the floor is told is
     #  theirs; with none typed it is told nothing was said.
     from agentic_core.ai import data_class as _dc899
-    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the saved swarm's stages carry
+    #  W1242c - the stages carry the context (a saved cascade's own text and the entity's grounding among it) and their
+    #  own instructions: nothing is declared when the religious-content screen flags any of them, and the answer says why
+    from agentic_core.religious_domain.subject_screen import class_unless_religious as _cur1242c
+    _cls1242c = _cur1242c("person_entered", context,
+                          *[f"{s.get('role')}: {s.get('instruction')}" for s in stages])
+    #  W1242c (its review; the Owner's ruling 4 of 2026-11-27: religion and care stay on the platform, and so does
+    #  children's education) - A CASCADE BOUND TO AN ENTITY RUNS THAT ENTITY'S WORK. Genesis gives every entity one,
+    #  with its mission and domain as the context, and kept a religion, care or education journey on the platform by
+    #  its domain alone, which no word screen reads. So nothing is declared when the bound entity's domain is one of
+    #  those, or its record could not be read, and the answer says why (as the AI CEO reads an entity's domain, W1239)
+    if run_vsb_id and _cls1242c["data_class"]:
+        try:
+            from agentic_core.api.vsb import _load_vsb as _dom_load1242c
+            _v1242c = _dom_load1242c(run_vsb_id)
+            _dom1242c = str(_v1242c.get("domain") or "").strip().lower() if isinstance(_v1242c, dict) else None
+        except Exception:                          # noqa: BLE001 - a record not read is not known to be clear
+            _dom1242c = None
+        _why1242c = (_KEPT_DOMAINS1242C.get(_dom1242c) if _dom1242c is not None else
+                     "the record of the entity it belongs to could not be read, so it is kept on the platform")
+        if _why1242c:
+            _cls1242c = {"data_class": None,
+                         "kept_in": ("nothing was declared, so no call of this request was sent outside the platform: "
+                                     + (f"the cascade belongs to an entity of the {_dom1242c} domain, and {_why1242c}"
+                                        if _dom1242c else _why1242c)
+                                     + ". It was served on the platform; nothing was refused")}
+    with _dc899.declared(_cls1242c["data_class"]):            # W899 (FU-610) - what the saved swarm's stages carry
         res = await orchestrator.swarm(req.agent, stages, context=context,
                                        prefer_external=req.prefer_external, timeout=req.timeout,
                                        user_text=((req.context or "").strip() or None))
+    if _cls1242c["kept_in"]:
+        res["kept_in"] = _cls1242c["kept_in"]          # W1242c - why no call of it left the platform
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
-    _ms = int((time.time() - _t0) * 1000)
+    _ms = int((time.perf_counter() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
     # request was not honoured is visible here rather than silently served by something else.
     _servers = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
@@ -3850,12 +3938,63 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
         "incompatibilities": incompatibilities,
         "unset_params": unset,
     }
-    # §7→§8 — project the living organism's CURRENT capacity for this configuration's cognitive load, so the
-    # user designs with awareness of whether the organism can admit it now (read-only; the run is governed by
-    # §8 homeostasis at execution time). Best-effort, fail-soft.
+    # §7→§8 — the living organism's CURRENT state beside this configuration (read-only). Best-effort, fail-soft.
+    #  W1209 (FU-1842) - HOW THIS COMPOSITION RUNS, NOT WHETHER IT 'FITS'. This was homeostasis.project(len(resolved)):
+    #  the resource count against the grant for four parallel nodes, drawn 'over capacity' in amber for five
+    #  resources. But a composition's stages run one after another (the orchestrator assesses them with a request of
+    #  1 and awaits each) and its real resources one at a time (the run's loop awaits each); no concurrency limit caps
+    #  or refuses that sequence (MAX_STAGES bounds only how many resources a run attempts). No two stages or real
+    #  resources run at once. Of the composable resources, only the org cascade runs work at once under a grant of its
+    #  own (its C-Suite officer pairs), projected here from the formula the cascade runs on (swarm.cascade_demand) and
+    #  the roles the run would read. The model ensemble asks its up-to-five members in parallel inside its one stage,
+    #  and no grant governs that.
+    #  Read-only throughout (W742): snapshot() and assess(read_only=True) advance no ATP and fire no signal.
     try:
         from agentic_core.ai.native.homeostasis import homeostasis
-        model["organism_capacity"] = homeostasis.project(len(resolved))
+        from agentic_core.api.instrument_cell import MAX_STAGES as _max1209
+        _snap1209 = homeostasis.snapshot()
+        _cascade1209 = None
+        _org1209 = next((r for r in resolved if r["id"] == "vsb_org_swarm"), None)
+        if _org1209 is not None:
+            from agentic_core.api.swarm import cascade_demand
+            #  W495 (FU-123) - a value equal to its declared placeholder is not the user's design, as the run reads it
+            _declared1209 = (_BY_ID.get("vsb_org_swarm") or {}).get("reconfigurable_params") or {}
+            _set1209 = {k: v for k, v in (_org1209.get("config") or {}).items() if v != _declared1209.get(k)}
+
+            def _csv1209(v):
+                return [s.strip() for s in str(v).replace(";", ",").split(",") if s.strip()]
+            _roles, _demand, _requested = cascade_demand(_csv1209(_set1209.get("csuite_roles", "")),
+                                                         _csv1209(_set1209.get("coe_specialisms", "")))
+            _grant = homeostasis.assess(demand_nodes=_demand, requested_parallel=_requested, read_only=True)
+            _granted = max(1, int(_grant.get("max_parallel", 1)))
+            _held = bool((_grant.get("work_budget") or {}).get("holds"))
+            _cascade1209 = {
+                "requested_parallel": _requested,
+                "demand_nodes": _demand,
+                "granted_parallel": _granted,
+                "held_by_work_budget": _held,
+                "basis": (f"granted now, read without advancing anything: the org cascade asks for {_requested} "
+                          f"C-Suite officer pair(s) at once, one per role ({', '.join(_roles)}; at most 4), for a "
+                          f"demand of {_demand} nodes, and the controller grants {_granted}"
+                          + ("; the platform's work budget holds, so its officers run one pair at a time" if _held
+                             else "")
+                          + ". The grant is read again when the run starts and can differ by then (the immune "
+                            "posture, the platform's work budget, the circadian cycle)"),
+            }
+        model["organism_capacity"] = {
+            "projected_posture": _snap1209.get("posture"),
+            "organism": _snap1209.get("organism"),
+            "work_budget": _snap1209.get("work_budget"),
+            "stage_concurrency": 1,
+            "stage_concurrency_basis": (
+                "a composition's stages run one after another, and its real resources one at a time; for "
+                "concurrency nothing caps or refuses that sequence (only the declared ceiling of "
+                f"{_max1209} stages bounds how many resources a run attempts), and a held work budget changes "
+                "nothing about it. Of its resources, only the org cascade runs work at once under a concurrency "
+                "grant of its own (its C-Suite officer pairs); the model ensemble asks its members in parallel "
+                "inside its one stage, and no grant governs that"),
+            "cascade": _cascade1209,
+        }
     except Exception:
         model["organism_capacity"] = None
     return resolved, model

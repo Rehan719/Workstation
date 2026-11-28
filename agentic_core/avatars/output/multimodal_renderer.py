@@ -58,7 +58,7 @@ class MultimodalRenderer:
 
     async def render(self, text: str, expression: str, overlays: Optional[List[Dict]] = None):
         """Synchronizes multimodal emission."""
-        start = time.time()
+        start = time.perf_counter()
 
         # 1. Visual/UI Update (Critical <100ms)
         visual_task = asyncio.create_task(self.renderer.set_expression(expression))
@@ -72,7 +72,7 @@ class MultimodalRenderer:
 
         # Ensure visual is updated immediately
         await visual_task
-        elapsed = (time.time() - start) * 1000
+        elapsed = (time.perf_counter() - start) * 1000
         logger.info(f"Visual render latency: {elapsed:.2f}ms")
 
         # Await voice completion for metabolic cycle consistency

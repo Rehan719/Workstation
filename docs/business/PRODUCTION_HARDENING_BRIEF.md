@@ -21,7 +21,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 ## 2. Reproducible deployment
 
 - `requirements.txt` is exported from the lock, and the lock is made from `pyproject.toml`, so CI and a deploy install the same versions (W906). A fresh environment built only from it ran the whole suite (W907). [observed]
-- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). The Google Cloud deploy is written step by step with no stored key, and its backup, restore and rollback were drilled on this machine (W1134, W1137, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). Run again on an image with the logs folder on the data root, the drill found nothing written outside the data disk and `/tmp` (W1138, recorded in `docs/DEPLOYMENT.md`). HTTPS is the deploy's step 12, Caddy in front of the platform, drilled on this machine (W1140); it needs a domain, which is the Owner's to buy (row FU-1289), and the deploy itself is the Owner's. [observed]
+- The production image serves the pages and carries the plan, the law corpus and the product catalogue. It was built from this tree and booted in a dry run under a 1 GiB memory cap (W1128, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). The Google Cloud deploy is written step by step with no stored key, and its backup, restore and rollback were drilled on this machine (W1134, W1137, 2026-11-20; recorded in `docs/DEPLOYMENT.md`). Run again on an image with the logs folder on the data root, the drill found nothing written outside the data disk and `/tmp` (W1138, recorded in `docs/DEPLOYMENT.md`). HTTPS is the deploy's step 12, Caddy in front of the platform, drilled on this machine (W1140); it needs a domain, which the Owner registered on 2026-11-22 (FU-1289, closed in W1234), and the deploy itself is the Owner's. [observed]
 - Done looks like this: an image built from a clean checkout of one commit serves `GET /health` and the pages, a dry run of the deploy steps in `docs/DEPLOYMENT.md` is recorded with its output, and a second person repeats it from the document alone. [inference]
 
 ## 3. Secrets and access
@@ -45,7 +45,7 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 6. Monitoring and incident response
 
-- Every route failure is recorded and shown on the Operations page (`GET /api/v1/operations/failures`). Nothing sends a failure to anyone: row FU-1095, whose outside uptime check the Owner sets up at the first deploy. [observed]
+- Every route failure is recorded and shown on the Operations page (`GET /api/v1/operations/failures`), and the platform sends none to anyone. An outage reaches the Owner: since 2026-11-22 an uptime check from outside the release machine e-mails the Owner when `/health` fails, and it was driven once that day (FU-1095, closed in W1234). [observed]
 - Done looks like this: the uptime check driven once (the service stopped, the alert received, the service started, the alert cleared), and a written incident procedure saying who is told, how and within what time, rehearsed once. [deferred]
 
 ## 7. Limits

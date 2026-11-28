@@ -5572,13 +5572,10 @@ def test_two_authenticated_users_memory_isolated(client, monkeypatch):
                memory.query_memory("saffron merger valuation talking points", owner_id="alice343"))
     assert all("KILIMANJARO" not in r for r in
                memory.query_memory("saffron merger valuation talking points", owner_id="bob343"))
-    from agentic_core.ai.ceo.memory_v01 import memory_v01
-    memory_v01.add_exchange("AVATAR[general]: my private board notes ORCHID-NINE", "ok",
-                            owner_id="alice343")
-    assert all("ORCHID-NINE" not in d for d in
-               memory_v01.query("private board notes", owner_id="bob343"))
-    assert any("ORCHID-NINE" in d for d in
-               memory_v01.query("private board notes", owner_id="alice343"))
+    # W1196 - the second store, memory_v01, is retired (the Owner's ruling of 2026-11-22): it holds no store to
+    # recall from, so VectorMemory above is the only cross-request recall this test can hold
+    import agentic_core.ai.ceo.memory_v01 as _m1196
+    assert not hasattr(_m1196, "memory_v01") and not hasattr(_m1196, "MemoryV01"), "the retired memory is back"
     # B ships a website — A's secret never reaches B's public surfaces
     est = client.post("/api/v1/genesis/establish", headers=B,
                       json={"problem": "b343 pottery cooperative", "ship_output": False, "name": "B343 Pottery"}).json()   # W450
@@ -5824,15 +5821,31 @@ def test_tamper_evidence_is_genuinely_evident(client):
     # restore a coherent head for later tests
     for i in range(2):
         loop.run_until_complete(ueg_ledger.log_event(f"w327t-restore-{i}", {"n": i}))
-    # DCMS — persistent, verifiable, honestly measured
-    from agentic_core.vbs.registry import dcms
-    loop.run_until_complete(dcms.commit_artifact("w327t-doc", {"body": "sealed"}, "test"))
-    va = dcms.verify_artifact("w327t-doc")
-    assert va["valid"] is True and va["versions"][0]["basis"] == "recomputed"
-    dcms.registry["w327t-doc"][0]["content"] = '{"body": "TAMPERED"}'
-    assert dcms.verify_artifact("w327t-doc")["valid"] is False
-    assert dcms.get_audit_integrity() < 1.0            # measured, never a constant
-    assert "w327t-doc" in type(dcms)("x").registry     # persists across instances
+    # DCMS — persistent, verifiable, honestly measured. W1205 (FU-1845): the store is the append-only ledger and
+    # memory holds no content, so the tamper is made to one line of the ledger FILE, on purpose, in an isolated data
+    # root: the suite's own ledger is not touched.
+    import pathlib as _pl327
+    import shutil as _sh327
+    import tempfile as _tf327
+    from agentic_core import config as _cfg327
+    from agentic_core.vbs.dcms import DocumentControlManagementSystem as _DC327
+    _was327, _iso327 = _cfg327.data_path, _tf327.mkdtemp(prefix="w327t-")
+    try:
+        _cfg327.data_path = lambda *parts: _pl327.Path(_iso327).joinpath(*parts)
+        dcms = _DC327("w327t")
+        loop.run_until_complete(dcms.commit_artifact("w327t-doc", {"body": "sealed"}, "test"))
+        va = dcms.verify_artifact("w327t-doc")
+        assert va["valid"] is True and va["versions"][0]["basis"] == "recomputed"
+        _led327 = _pl327.Path(dcms._store_path())
+        _rec327 = _json.loads(_led327.read_text(encoding="utf-8").splitlines()[0])
+        _rec327["content"] = '{"body": "TAMPERED"}'
+        _led327.write_text(_json.dumps(_rec327) + "\n", encoding="utf-8")
+        assert dcms.verify_artifact("w327t-doc")["valid"] is False
+        assert dcms.get_audit_integrity() < 1.0            # measured, never a constant
+        assert "w327t-doc" in type(dcms)("x").registry     # persists across instances
+    finally:
+        _cfg327.data_path = _was327
+        _sh327.rmtree(_iso327, ignore_errors=True)
 
 
 def test_marketplace_screened_and_birth_verdict_substance_aware(client):
@@ -19952,9 +19965,12 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
         assert sig.parameters["augment"].default is False, \
             f"gateway.{meth} still defaults to injecting cross-request recall"
     # the two conversational callers opt IN by name — the exception is explicit, not inherited
-    for p, why in ((root / "agentic_core/avatars/api.py", "avatar"),
-                   (root / "agentic_core/api/v138/ceo.py", "CEO chat")):
-        assert "augment=True" in p.read_text(encoding="utf-8"), f"the {why} lost its explicit opt-in"
+    #  W1241 (2026-11-27), ON PURPOSE: the CEO chat recalls only while its call cannot go to an external model, so its
+    #  opt-in is the name it computes for each call (augment=_recall1241), never the constant; the avatar's stays it
+    assert "augment=True" in (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8"), \
+        "the avatar lost its explicit opt-in"
+    assert "augment=_recall1241," in (root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8"), \
+        "the CEO chat lost its explicit opt-in"
     #  W593 — ASSERTED ON WHAT IS RENDERED, NOT ON THE FILE'S TEXT. These read engine.py as a string, and
     #  "not an analysis of the subject" vanished from the SOURCE when the f-string was reflowed across two
     #  literals ("not an analysis of " + "the subject") while the rendered sentence was unchanged. A guard
@@ -20492,7 +20508,11 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
                     for k in _n.keywords):
                 optin.append(p.name)
                 break
-    assert sorted(optin) == ["api.py", "ceo.py"], optin      # avatars/api.py and v138/ceo.py
+    #  W1241 (2026-11-27), ON PURPOSE: the CEO chat recalls only while its call cannot go to an external model, so its
+    #  opt-in is the name it computes for each call, never the constant; the avatar's stays the constant
+    assert sorted(optin) == ["api.py"], optin      # avatars/api.py
+    assert (root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8").count("augment=_recall1241,") == 1, (
+        "the CEO chat's recall is no longer its own opt-in, computed for each call")
     # …and no docstring still describes recall as the ambient default each caller must switch off
     for p, stale in ((root / "agentic_core/ai/user_context.py", "every generation-class caller passes"),
                      (root / "agentic_core/avatars/api.py", "Every ship/persist caller sets augment=False"),
@@ -22062,7 +22082,8 @@ def test_w495_a_figure_nothing_computed_is_not_a_measurement(client, monkeypatch
                 and ("=" in l or ":" in l.split("#")[0])], "a transcript lookup table is bound again"
     assert "def _pdf_docx_extractor(" in _ing
     assert 'status = "NOT_EXTRACTED"' in _ing and 'status = "NOT_TRANSCRIBED"' in _ing
-    assert 'if status == "EXTRACTED" and extracted_text.strip():' in _ing
+    #  W1196 - the extracted-only rule is read where it now lives: the memory write it guarded is retired
+    assert '"in_knowledge_base": bool(status == "EXTRACTED" and extracted_text.strip()),' in _ing
     for _f in ("status:", "extraction_method:", "extraction_basis:", "in_knowledge_base:"):
         assert _f in _ing, _f                      # declared on the model, or the key is stripped out
     import io as _io
@@ -22991,7 +23012,9 @@ def test_w500_cross_request_recall_is_tenant_scoped_on_every_caller_that_keeps_i
             continue
         for _n, _l in enumerate(_p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             _code = _l.split("#", 1)[0]
-            if "augment=True" in _code:
+            #  W1241 (2026-11-27), ON PURPOSE: the CEO chat asks by the name it computes for each call, off for a call
+            #  that may go to an external model; the avatar asks by the constant
+            if "augment=True" in _code or "augment=_recall1241," in _code:
                 _sites.setdefault(_rel, []).append(_n)
     assert sorted(_sites) == ["agentic_core/api/v138/ceo.py", "agentic_core/avatars/api.py"], _sites
 
@@ -27459,15 +27482,16 @@ def test_w507_fu167_a_removal_deletes_the_bytes_and_says_what_it_cannot_reach(cl
     MEASURED: the DELETE removed the registry ROW and nothing else, then answered `{"status": "DELETED"}`.
       · the uploaded bytes at DATA_DIR/uploads/{file_id}_{filename} stayed, and the row just removed was
         their only pointer — so they became unreachable and uncountable rather than merely kept;
-      · the extracted text stayed in memory_v01, the store the AI CEO and the avatars read, so a "deleted"
-        file's content could still be recalled into a generation.
+      · the extracted text stayed in memory_v01, the avatar and upload memory (no production caller read it;
+        the Owner retired it on 2026-11-22 and W1196 removed it).
 
     The Owner's FU-167 ruling ("keep refusing" on URL fetching) does not cover this half; it needed fixing
     whichever way egress was decided.
 
-    The bytes are now removed. The memory rows are NOT removable by file id, and the response says so rather
-    than claiming a deletion it did not perform — answering DELETED over a recallable copy is the same
-    over-claim one layer over.
+    The bytes are now removed. Since W1196 no memory store takes the text at upload, but a generation that read
+    the file kept its prompt in the interaction log and in VectorMemory, which are NOT removable by file id, and
+    the response says so rather than claiming a deletion it did not perform, or that nothing remains —
+    answering DELETED over a recallable copy is the same over-claim one layer over.
     """
     from agentic_core.ingestion.api import ingestion_manager
 
@@ -27496,6 +27520,8 @@ def test_w507_fu167_a_removal_deletes_the_bytes_and_says_what_it_cannot_reach(cl
         f"fixes")
     assert out["extracted_text_may_still_be_recalled"] is True, out
     assert "CANNOT be removed by file id" in out["what_remains"], out["what_remains"]
+    #  W1196 - what may remain is named where it is, and the retired memory is not named as holding it
+    assert "interaction log" in out["what_remains"] and "long-term" not in out["what_remains"], out["what_remains"]
     assert "overstate" in out["not_claimed"]
 
     # the row really is gone
@@ -38639,8 +38665,9 @@ def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
         "that does not verify is not a record", _vj583)
 
     # ── L5. requirements.txt IS NOT EDITED BY THIS ITEM ───────────────────────────────────────────
-    #  The ruling's other half rested on a false premise (opentelemetry is Required-by chromadb, which is
-    #  LIVE on the recall path; requirements.txt is a 298-line LOCK that lists transitive deps by design).
+    #  The ruling's other half rested on a false premise (opentelemetry-api and -sdk are Required-by chromadb,
+    #  which pyproject.toml still declares, and -api by anthropic too; requirements.txt is a LOCK that lists
+    #  transitive deps by design). W1196 removed the memory that imported chromadb; the declaration stays.
     #  The item says so and excludes it, and the manifest question is a separate row with its own
     #  measurement — so the pins must still be there.
     _req583 = (_root583 / "requirements.txt").read_text(encoding="utf-8", errors="replace")
@@ -38649,7 +38676,7 @@ def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
     for _pin583 in ("opentelemetry-api", "opentelemetry-sdk"):
         assert _re583.search(r"(?m)^" + _re583.escape(_pin583) + r"[=<>~\s]", _req583), (
             "a pin this item explicitly excludes was removed. `pip show` reports it Required-by chromadb, "
-            "which agentic_core/ai/ceo/memory_v01.py imports on the cross-request recall path, and a lock "
+            "which pyproject.toml still declares (and opentelemetry-api by anthropic), and a lock "
             "lists transitive dependencies BY DESIGN - removing one breaks the install rather than tidying "
             "it", _pin583)
 
@@ -41882,6 +41909,9 @@ def test_w593_p220a_the_floor_never_returns_its_own_text_as_the_users(client):
         "the embedded heading was STRIPPED rather than demoted, which loses real text from a real record",
         _g593b[:400])
 
+    #  W1239 (2026-11-22), ON PURPOSE: this leg is kept. The CEO's prompt still ends with these three sections, because
+    #  a model reads it; on a server with no model the frame the floor makes of them is no longer shown (the chat
+    #  streams a fixed notice in its place, test_w1239), so what is held here is the prompt, not what a reader sees.
     _full593 = ("You are the AI CEO.\n\n" + _g593b + "\n\nQuestion: How should we prioritise next "
                 "quarter?\n\nRespond with:\n## Assessment\n## Priorities\n## Next actions")
     assert _E._sections(_full593) == ["Assessment", "Priorities", "Next actions"], (
@@ -64848,9 +64878,103 @@ _W963_PERSONAL = (
 _W963_PUBLIC = "DRAFT - NOT APPROVED FOR PUBLICATION"
 
 
-def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
+#  W1201 (FU-1873, P5.10 clause 2) - A MONEY FIGURE IS COUNTED BEFORE OR AFTER ITS NUMBER, WITH A MULTIPLIER, OR
+#  IN WORDS: a code or symbol before a number; a number, a multiplier or none, then a currency code or word, or a
+#  symbol after it; or number words before pounds, dollars, euros or pence. 'GB' is not a currency. The rulings that let a figure stand are unchanged: [owner-defined, or a
+#  provider's published price marked SOURCED (FU-1176). test_w923's loop calls _w703_money as well.
+_W703_NUMBER_WORD = (r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+                     r"sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+                     r"hundred|thousand|million|billion)")
+_W703_MONEY = (r"\b(?:GBP|USD|EUR)\s*\d|[£$€]\s*\d"
+               r"|\b\d[\d,]*(?:\.\d+)?\s*(?:(?:million|thousand|bn|m|k)\b\s*)?"
+               r"(?:GBP|USD|EUR|pounds?|dollars?|euros?|pence|sterling)\b"
+               r"|\b\d[\d,]*(?:\.\d+)?\s*[£$€]"
+               r"|\b" + _W703_NUMBER_WORD + r"(?:[\s-]+(?:and[\s-]+)?" + _W703_NUMBER_WORD + r")*\s+"
+               r"(?:pounds?|dollars?|euros?|pence)\b")
+
+
+def _w703_money(block):
+    """W1201 (FU-1873) - whether a statement states a money figure, before or after its number, with a multiplier, or
+    in words."""
+    import re
+    return bool(re.search(_W703_MONEY, block, re.I))
+
+
+#  W1201 (FU-1872, P5.10 clause 1) - WHAT A ROW'S STATUS AND A PLAN ITEM'S STATE ARE, read from the tree the document
+#  is in (root/docs/FOLLOWUPS.json and the delivery plan), or from a register a test passes; read once per file state
+_W703_STATE_CACHE = {}
+
+
+def _w703_state(root, register=None):
+    import json
+    import pathlib
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(root)
+    out = []
+    for rel in ("docs/FOLLOWUPS.json", "docs/FABLE_DELIVERY_PROMPT.md"):
+        st = (root / rel).stat()
+        key = (str(root / rel), st.st_mtime_ns, st.st_size)
+        if key not in _W703_STATE_CACHE:
+            text = (root / rel).read_text(encoding="utf-8")
+            _W703_STATE_CACHE[key] = ({r["id"]: r for r in json.loads(text)["items"] if isinstance(r, dict)}
+                                      if rel.endswith(".json") else
+                                      {i["slot"] for i in _pf.plan_items(text) if i.get("done")})
+        out.append(_W703_STATE_CACHE[key])
+    rows, done = out
+    if register is not None:
+        rows = {r["id"]: r for r in register} if isinstance(register, list) else dict(register)
+    return rows, done
+
+
+_W703_BETWEEN = "Between this step and being relied on"
+_W703_CALLS_OPEN = r"\bopen\b|\bthe Owner['’]s to (?:rule|decide)\b"
+_W703_ROWS_OPEN = r"\brows\s+(?:are|stay|remain)\s+(?:still\s+)?open\b"
+
+
+def _w703_status_faults(text, root, register=None):
+    """W1201 (FU-1872) - (a) a 'Between this step and being relied on' bullet names only open rows, a row it labels
+    [owner decision is slotted OWNER or owner-gated, and a plan item it names is not done; (b) a row a sentence calls
+    open, still open, or the Owner's to rule or decide, is open; (c) a sentence or table cell that says rows are, stay
+    or remain open names at least one. A row named elsewhere, as evidence of what was built, is not read for status."""
+    import re
+    rows, done = _w703_state(root, register)
+    faults = []
+    body = text.split("\n## ", 1)[1] if "\n## " in text else ""
+    for block in re.split(r"\n(?=- |\d+\. )", body):
+        if not block.startswith("- " + _W703_BETWEEN):
+            continue
+        said = block.split("\n\n", 1)[0].split("\n## ", 1)[0]
+        for rid in dict.fromkeys(re.findall(r"\bFU-\d+\b", said)):
+            r = rows.get(rid)
+            if r is None:
+                continue
+            if r.get("status") != "open":
+                faults.append(f"a 'Between' line names row {rid}, which is {r.get('status')}, as standing between a "
+                              "step and being relied on")
+            if "[owner decision" in said and not (r.get("slot") == "OWNER" or r.get("owner_gated") is True):
+                faults.append(f"a 'Between' line labels row {rid} [owner decision], and it is neither slotted OWNER "
+                              "nor owner-gated")
+        for slot in dict.fromkeys(re.findall(r"plan item (P\d+\.\d+)", said)):
+            if slot in done:
+                faults.append(f"a 'Between' line names plan item {slot}, which is done")
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n\s*\n|\n(?=- |\d+\. |#|\|)", text):
+        for cell in sentence.split("|"):
+            named = list(dict.fromkeys(re.findall(r"\bFU-\d+\b", cell)))
+            if named and re.search(_W703_CALLS_OPEN, cell, re.I):
+                for rid in named:
+                    r = rows.get(rid)
+                    if r is not None and r.get("status") != "open":
+                        faults.append(f"it calls row {rid} open, or the Owner's to rule, and it is "
+                                      f"{r.get('status')}: {cell.strip()[:70]}")
+            if re.search(_W703_ROWS_OPEN, cell, re.I) and not named:
+                faults.append(f"it says rows are open and names none: {cell.strip()[:70]}")
+    return faults
+
+
+def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False, register=None):
     """Every reason a business document cannot stand as written. Empty means none. `public`: the document is a
-    public-facing draft (W963: one under docs/business/public/)."""
+    public-facing draft (W963: one under docs/business/public/). W1201: a row's status and a plan item's state are
+    read from root/docs/FOLLOWUPS.json and the delivery plan, or from `register` (rows by id) when a test passes one."""
     import re
     labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
     faults = []
@@ -64893,7 +65017,8 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
     for block in re.split(r"\n(?=- |\d+\. |\n)", text):
         _sourced = ("SOURCED" in block and re.search(r"\b20\d\d-\d\d-\d\d\b", block)
                     and ("https://" in block or "`docs/DEPLOYMENT.md`" in block))
-        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block and not _sourced:
+        #  W1201 (FU-1873) - the currency before or after the figure, with a multiplier, or the amount in words
+        if _w703_money(block) and "[owner-defined" not in block and not _sourced:
             faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
@@ -64910,6 +65035,8 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
         m = re.search(pat, text)
         if m:
             faults.append(f"it carries {what}: {m.group(0)[:40]}")
+    #  W1201 (FU-1872) - a row it says stands open, or between a step and being relied on, is open
+    faults += _w703_status_faults(text, root, register)
     #  a public-facing draft opens with its heading (P5.7 clause 4)
     if public and _W963_PUBLIC not in opening:
         faults.append(f"a public-facing draft does not open with {_W963_PUBLIC}")
@@ -69992,7 +70119,13 @@ def test_w753_with_sign_in_on_the_signed_in_person_is_stamped(client, monkeypatc
 
 def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
     """W755 (FU-1124, Owner ruling 2026-11-06, option (a)): with the switch ON and a key set, a stream that does not
-    ask is answered in-house; only a caller passing prefer_external reaches the accelerant."""
+    ask is answered in-house; only a caller passing prefer_external reaches the accelerant.
+    CHANGED ON PURPOSE by W1242, citing the OWNER RULING of 2026-11-22 (the Owner wrote, in chat, after the
+    recommendations were put: "I want to go with all your recommendations"), which amends option (a): with the switch
+    on and no in-house model reachable (local disabled here), a stream tries the external before the floor whether or
+    not it asks. Its plain stream below declares no data class, so it is still not sent (W899), and that is now the
+    reason; a declared stream that does not ask reaches the provider; and an asking stream still does. The name is
+    kept, as the record of the 2026-11-06 ruling it was built for."""
     import asyncio
     import agentic_core.ai.gateway as _g
     monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
@@ -70027,7 +70160,15 @@ def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
 
     _plain = _run()
     assert _plain[-1].get("is_external") is False and not _calls, (
-        "with the switch on, a stream that did not ask was served externally before the floor", _plain[-1], _calls)
+        "with the switch on, a stream that declared no class was served externally", _plain[-1], _calls)
+    assert "declared no data class" in _plain[-1]["data_class"]["checks"][0]["why"], (
+        "the undeclared stream was kept on the floor for some reason other than its missing class (W1242)",
+        _plain[-1]["data_class"])
+    _declared = _run(data_class="person_entered")       # W1242 (OWNER RULING 2026-11-22) - no ask, no local model
+    assert _calls == ["claude"] and _declared[-1].get("is_external") is True, (
+        "with the switch on and no local model, a declared stream that did not ask was not sent (W1242)",
+        _declared[-1].get("served_by"), _calls)
+    _calls.clear()
     _asked = _run(prefer_external=True, data_class="person_entered")     # W899 (FU-610) - what it carries
     assert _calls and _asked[-1].get("is_external") is True, (
         "a caller that asked for an external with the switch on was not served by one", _asked[-1], _calls)
@@ -73199,6 +73340,14 @@ def test_w841_a_model_is_made_the_serving_default_on_an_evaluation_of_that_build
     monkeypatch.setattr(_mr841, "local_models", lambda: ["w841-model"])
     digest = {"now": "sha256:w841aaaa"}
     monkeypatch.setattr(_mr841, "local_model_digest", lambda name: digest["now"] if name == "w841-model" else None)
+    #  W1203 (FU-1852) - promotion also reads the build's licence text from the runtime; this build's runtime holds
+    #  one (a made-up text), so the evaluated build is still promoted, on purpose
+    import hashlib as _h841
+    _lic841 = "W841 MADE-UP LICENCE TEXT\nA stand-in for what a runtime returns; it is no licence."
+    monkeypatch.setattr(_mr841, "describe_installed_one", lambda name: {
+        "name": name, "show_read": True, "show_basis": None, "licence": {
+            "first_line": "W841 MADE-UP LICENCE TEXT", "chars": len(_lic841),
+            "sha256": _h841.sha256(_lic841.encode("utf-8")).hexdigest()}})
     set_now = {"version": _na841._EVAL_PROBE_SET_VERSION, "digest": _na841._eval_probe_digest()}
 
     def _evaluation(identity, probe_set, can_serve=True, control_passed=True, at="2026-11-11T21:00:00Z"):
@@ -76311,10 +76460,12 @@ def test_w885_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
         assert legacy["file_id"] in [x["file_id"] for x in listed("admin").json()]
     finally:
         _ing885.ingestion_manager.registry.remove(legacy)
-    #  4. what the upload put into the shared memory is its sender's to recall, not every person's
-    from agentic_core.ai.ceo.memory_v01 import memory_v01 as _mem885
-    assert any(secret in m for m in _mem885.query(secret, owner_id=who["one"])), "the sender cannot recall it"
-    assert not any(secret in m for m in _mem885.query(secret, owner_id=who["two"])), "another person can recall it"
+    #  4. the upload writes no memory store: the avatar and upload memory it went into is retired (W1196), and the
+    #     recall memory gives the second person nothing of it
+    import agentic_core.ai.ceo.memory_v01 as _mem885
+    assert not hasattr(_mem885, "memory_v01"), "an upload's text has a retired memory to go into again"
+    from agentic_core.ai.memory import memory as _vm885
+    assert not any(secret in m for m in _vm885.query_memory(secret, owner_id=who["two"])), "another person can recall it"
     #  5. its owner deletes it
     assert client.delete(f"/api/v1/ingest/{fid}", headers=H["one"]).status_code == 200
     assert fid not in [x["file_id"] for x in listed("one").json()]
@@ -76764,7 +76915,9 @@ def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to
 
     # 3. the lock belongs to no event loop: two threads, each with its own loop, contend for one limiter
     lim = _gw892._RateLimiter(600)
-    lim._tokens, lim._last = 0.0, time.monotonic()
+    #  W1206b - ten slots of debt (a second): a thread that starts a slot or more after the drain still waits
+    #  (PR #470, Windows: one call of six let through when the second thread started late)
+    lim._tokens, lim._last = -10.0, time.monotonic()
     errors = []
 
     def _a_loop_of_its_own():
@@ -77442,15 +77595,22 @@ def test_w904_fu1095_failures_are_said_to_be_recorded_not_alerted_and_the_outsid
     assert "- Analytics / error monitoring" not in readme, "the README still lists error monitoring as simply not built"
     assert "failures are recorded, not alerted" in readme and "docs/DEPLOYMENT.md" in readme, readme[:200]
     dep = (root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8")
-    sec = " ".join(dep.split("## Watching the first deploy: failures are recorded, not alerted", 1)[1]
+    #  W1234 - the heading says an outage is alerted, since the Owner set the check up and drove it (2026-11-22)
+    sec = " ".join(dep.split("## Watching the deploy: an outage is alerted, route failures are recorded", 1)[1]
                    .split("\n## ", 1)[0].split())
     for words in ("uptime check on `/health` from OUTSIDE the machine", "your own cloud account",
                   "with you watching", "returns a fixed body", "this platform sends nothing"):
         assert words in sec, ("the runbook's first-deploy section does not say", words)
-    assert dep.index("## Watching the first deploy") < dep.index("## Verify before deploy")
+    assert dep.index("## Watching the deploy") < dep.index("## Verify before deploy")
     fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     owner_list = fable.split("THAT IS THE WHOLE LIST.", 1)[0]
-    assert "FU-1095 (W904)" in owner_list, "the uptime check is not on the Owner's list"
+    #  W1234 - on the Owner's list while the row is open; it closed once the check was set up and driven
+    import json as _j904
+    _r904 = next(r for r in _j904.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+                 if r["id"] == "FU-1095")
+    assert ("FU-1095 (W904)" in owner_list) == (_r904["status"] == "open"), (
+        "the uptime check's line on the Owner's list and its row disagree", _r904["status"])
+    assert _r904["status"] == "open" or _r904["closed_by"] == "W1234", _r904["closed_by"]
 
     #  /health's body is fixed: a recorded failure between two reads does not change it
     first = client.get("/health")
@@ -77855,7 +78015,8 @@ def test_w913_fu806_three_first_offers_are_compared_on_their_evidence_and_the_in
         assert f"def {cited}_" in suite, (cited, "is cited as evidence and the suite holds no such test")
     rows = {ln.split("|")[1].strip(): [c.strip() for c in ln.split("|")[2:-1]]
             for ln in table.splitlines() if ln.startswith("| ") and not ln.startswith("| Criterion") and "---" not in ln}
-    for demand in ("Would anyone pay", "How often the need recurs", "What a person uses today"):
+    #  W1201 (FU-1876): the Domain tools are free (P5.16 clause 1), so the first demand row asks about use again
+    for demand in ("Would anyone use it again", "How often the need recurs", "What a person uses today"):
         assert rows.get(demand) == ["NOT MEASURED"] * 3, (demand, rows.get(demand), "no interview has measured it")
     assert len(rows) >= 8 and all(len(cells) == 3 and all(cells) for cells in rows.values()), rows
 
@@ -78659,7 +78820,7 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert f"waits on your decision in row {row['id']}" not in guide and "stays open for it" not in guide
     assert f"as the Owner ruled on 2026-11-19 in row {row['id']}. [owner-defined, 2026-11-19]" in guide
     for _blk in re.split(r"\n(?=- |\d+\. |\n)", guide):
-        if re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", _blk):
+        if _w703_money(_blk):   # W1201 (FU-1873): the figure by the business guard's own pattern
             assert "SOURCED" in _blk and "2026-11-20" in _blk and "`docs/DEPLOYMENT.md`" in _blk, _blk[:120]
 
 
@@ -80489,8 +80650,9 @@ def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_i
     - the source check passes on the tree, and fails - naming the file - when code reaches a host of a source not
       to be used, or when a row with hosts does not say what it permits;
     - the method and marking-scheme sources are rows that say they were never read;
-    - the two letters are drafted for the Owner to send: each names what is asked, says nothing has been sent, and
-      carries no one's name or address, only the places to fill them in;
+    - the two letters are drafted for the Owner to send: each names what is asked, says nothing has been sent (or,
+      since W1259, that the Owner sent it on 2026-11-27), and carries no one's name or address, only the places
+      to fill them in;
     - the listening row is a journey driven by the test that exists;
     - the Owner's row to send them is open, gated and on the resume prompt's list."""
     import json
@@ -80538,7 +80700,9 @@ def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_i
     for name, asks in (("QUL_DATA_PERMISSION_REQUEST.md", ("page layouts", "similar-verse lists", "word timings")),
                        ("KFGQPC_PERMISSION_REQUEST.md", ("recitations", "fonts"))):
         letter = (root / "docs/letters" / name).read_text(encoding="utf-8")
-        assert "DRAFTED FOR THE OWNER TO SEND" in letter and "Nothing has been sent." in letter, name
+        #  W1259 - the Owner sent both on 2026-11-27: the header says so, and that nothing is used before an answer
+        assert "DRAFTED FOR THE OWNER TO SEND" in letter and ("Nothing has been sent." in letter or (
+            "SENT BY THE OWNER ON 2026-11-27" in letter and "Until a written answer" in letter)), name
         assert all(a in letter for a in asks), (name, asks)
         assert "[your name]" in letter and "[your address]" in letter, name
         assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", letter), ("a letter carries an address", name)
@@ -92194,7 +92358,9 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     - P4.4: the plan records it deferred by the Owner; P4.5: the dry run's rows are done (W1137) and no deploy is
       recorded: the Owner's first restore at the deploy (FU-1288) is open;
     - P4.6: REAL_MONEY_ENABLED is False;
-    - the first offer: no interview is recorded in the tree.
+    - the first offer (W1201, FU-1879): by the Owner's ruling of 2026-11-22, evidenced only at five interviews
+      recorded in the notes template and the Owner's choice recorded with its date and reasons, never by a file
+      named 'interview' (_w1201_first_offer_gate).
     A gate whose state changes fails this until its row is marked again."""
     import json
     import pathlib
@@ -92206,7 +92372,8 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
     reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
     flat = " ".join(read("docs/FABLE_DELIVERY_PROMPT.md").split())
     p44 = flat[flat.index(" P4.4 ✅ DONE W1174 Managed Postgres"):flat.index(" P4.5 Production deploy")]   # W1174
-    interviews = [p for p in (root / "docs").rglob("*") if p.is_file() and re.search(r"interview", p.name, re.I)]
+    #  W1201 (FU-1879) - the seventh gate is the Owner's bar of 2026-11-22, read from the notes recorded and P5.7
+    first_offer = _w1201_first_offer_gate(root)
     met = {
         "P4.1 sign-in": 'os.getenv("AUTH_ENABLED", "false")' not in auth
                         or not re.search(r'key: AUTH_ENABLED\n\s+value: "false"', read("render.yaml")),
@@ -92218,7 +92385,7 @@ def test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the
         "P4.5 production deploy": (reg["FU-603"]["status"] == "done" and reg["FU-1156"]["status"] == "done"
                                    and reg["FU-1288"]["status"] == "done"),
         "P4.6 real money": _op.REAL_MONEY_ENABLED is not False,
-        "A first offer the interviews support": bool(interviews),
+        "A first offer the interviews support": first_offer["met"],
     }
     gates = read("docs/business/COST_MODEL.md").split("## The seven investment gates", 1)[1]
     rows = dict(re.findall(r"^\| (.+?) \| .+? \| (yes|no) \|$", gates, re.M))
@@ -92536,8 +92703,8 @@ def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothi
     """FU-1067's next step (W1132; the Owner accepted the recommendation on 2026-11-20). The private test needs lawful
     recordings of ordinary adult reciters, and the closest dataset states no licence for its recordings and cannot
     rule children out. Held here:
-    - the letter is drafted for the Owner and sent by no one: it asks the licence, adult consent and a private test
-      that scores nothing, and promises no recording of a child;
+    - the letter is drafted for the Owner, and was sent by no one until the Owner sent it on 2026-11-27 (W1259): it
+      asks the licence, adult consent and a private test that scores nothing, and promises no recording of a child;
     - the dataset's row in the register of sources permits nothing, and names only the dataset's own address, which
       no code reaches;
     - an open, owner-gated row asks the Owner to send it, and both the plan's list and the local notes name it."""
@@ -92548,7 +92715,9 @@ def test_w1132_fu1067_the_recordings_request_is_drafted_its_source_permits_nothi
     root = pathlib.Path(__file__).resolve().parents[1]
     letter = (root / "docs" / "letters" / "QURANIC_AUDIO_DATASET_REQUEST.md").read_text(encoding="utf-8")
     flat = " ".join(letter.split())
-    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+    #  W1259 - the Owner sent it on 2026-11-27: the header says so where it said nothing had been sent
+    _sent1132 = "SENT BY THE OWNER ON 2026-11-27" if "SENT BY THE OWNER ON" in flat else "Nothing has been sent"
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", _sent1132, "[your name]", "[your address]",
                  "under what licence the recordings are offered", "whether every participant was an adult",
                  "It would score or grade no recording", "We will use no recording of a child",
                  "nothing from the dataset is downloaded or used"):
@@ -93466,9 +93635,12 @@ def test_w1140_fu1284_https_is_caddy_in_front_of_the_platform_and_no_one_signs_i
     rows = json.loads(read("docs/FOLLOWUPS.json"))["items"]
     owner = [r for r in rows if r.get("title") ==
              "OWNER: buy a domain for the release machine and point it at the machine's fixed address"]
-    assert len(owner) == 1 and owner[0]["owner_gated"] and owner[0]["status"] == "open", owner
+    #  W1234 - open until the Owner registered the domain on 2026-11-22; closed by W1234 since
+    assert len(owner) == 1 and owner[0]["owner_gated"] and (owner[0]["status"] == "open" or (
+        owner[0]["status"], owner[0]["closed_by"]) == ("done", "W1234")), owner
     oid = owner[0]["id"]
-    assert f"({oid})" in step12 and f"({oid})" in rec and f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")
+    assert f"({oid}" in step12 and f"({oid})" in rec and (
+        f"{oid} (W1140):" in read("docs/FABLE_DELIVERY_PROMPT.md")) == (owner[0]["status"] == "open")
     assert f"({oid})" in read("docs/RESUME_ON_MY_MACHINE.md")
 
 
@@ -94163,7 +94335,8 @@ def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_th
     - each of the six pieces is a section whose heading carries DRAFT - NOT APPROVED FOR PUBLICATION;
     - every test a claim names is one this suite defines and one that runs without an outside model (not _ai_only);
     - the drafts are built from the leading hypothesis the first-offer comparison still states (candidate C);
-    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and no price is set."""
+    - the demonstration uses invented material only, the outreach drafts are marked NOT SENT, and the cost answer
+      says the Domain tools are free, by plan item P5.16 (W1201, FU-1876)."""
     import pathlib
     import re
     import json
@@ -94202,7 +94375,9 @@ def test_w1151_fu809_each_public_draft_is_headed_and_every_claim_names_a_test_th
     outreach = doc.split("## 6. Outreach templates", 1)[1].split("\n## ", 1)[0]
     drafts = [l for l in outreach.splitlines() if l.startswith("- ")]
     assert len(drafts) >= 2 and all("DRAFT, NOT SENT" in l for l in drafts), drafts
-    assert "No price is set" in flat
+    #  W1201 (FU-1876): the cost answer says the Domain tools are free, never that a price may come
+    assert "Nothing is charged for using a Domain tool: the Domain tools are free" in flat and "plan item P5.16" in flat
+    assert "No price is set" not in flat and "a price is the Owner's to set" not in flat
     assert reg["FU-809"]["slot"] == "P5.7"
 
 
@@ -94287,11 +94462,18 @@ def test_w1153_p57_each_name_says_what_was_searched_and_each_public_claim_is_one
 
     #  2. what the Owner holds: what the tree says is not held is said as not held
     held = " ".join(doc.split("## 2. What the Owner holds", 1)[1].split("\n## ", 1)[0].split())
-    assert "No domain:" in held and "(row FU-1289)" in held and reg["FU-1289"]["status"] == "open", held
+    #  W1234 - the domain was registered on 2026-11-22: the screen says it is held once its row is closed
+    assert "(row FU-1289)" in held, held
+    if reg["FU-1289"]["status"] == "open":
+        assert "No domain:" in held, held
+    else:
+        assert "No domain:" not in held and "A domain, registered by the Owner on 2026-11-22" in held, held
     workpack = " ".join((root / "docs/business/FORMATION_WORKPACK.md").read_text(encoding="utf-8").split())
     assert "It chooses no route" in workpack and "No company or other legal form" in held
     deploy = " ".join((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").split())
-    assert "Nothing here has been run against a Google account" in deploy and "No cloud project for the release yet" in held
+    #  W1234 - the runbook was written before anything ran, and the release machine has been deployed since
+    assert ("When this was written, nothing here had been run against a Google account" in deploy
+            and "The release machine, deployed in the Owner's cloud project" in held), held
     assert "with no mark applied for or registered for it" in held
     assert "not recorded in this repository, by design" in held
 
@@ -95531,7 +95713,8 @@ def test_w1164_the_owners_ten_decisions_of_2026_11_20_are_recorded_and_the_water
     for rid, n in (("FU-1188", 1), ("FU-1288", 1), ("FU-1289", 1), ("FU-1286", 5)):
         r = reg[rid]
         #  W1180 - FU-1286 closed once each of its five places was settled
-        assert r["status"] == ("done" if rid == "FU-1286" else "open") and r["owner_gated"] is True, rid
+        #  W1234 - FU-1289 closed once the Owner registered the domain (2026-11-22)
+        assert r["status"] == ("done" if rid in ("FU-1286", "FU-1289") else "open") and r["owner_gated"] is True, rid
         assert r["why"].count("RECOMMENDED (accepted 2026-11-20):") == n and "RECOMMENDED:" not in r["why"], rid
     assert "(ledger_v14_W639_375c5ffb.json), opened only on a go-ahead that names it. DONE W1175" \
            in reg["FU-1286"]["why"], "the audit record is not named"   # W1175
@@ -96888,8 +97071,9 @@ def test_w1180_fu1286_is_closed_once_each_of_its_five_places_is_settled():
     #  W1188 - FU-1054 closed on its first run, and its step left step 5
     #  W1192: the lessons sitting joined step 5 after FU-1165, so the summary names two rows
     assert "FU-1286" not in re.findall(r"^   - (FU-\d+):", step5, re.M) and "git rm -r --cached venv" not in step5
-    assert "The rows in step 5: FU-1165 and " in flat and "FU-1286" not in flat.split(
-        "The rows in step 5:", 1)[1].split(".", 1)[0]
+    #  W1234 - FU-1840 closed, so the summary names FU-1165 alone
+    assert re.search(r"The rows? in step 5: FU-1165", flat) and "FU-1286" not in flat.split(
+        " in step 5:", 1)[1].split(".", 1)[0]
     assert ("**Settled on 2026-11-20:** the five places that named your Windows home folder (FU-1286, closed W1180)"
             in flat), "the notes do not say the row is closed"
     yours = flat.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
@@ -98416,7 +98600,7 @@ def test_w1188_fu1054_is_closed_on_the_care_reviewers_first_run_and_what_it_miss
                  "stays uncalibrated.",
                  f"what it missed is {miss['id']}: the cloud session makes its three fixes, and the second run is "
                  "made from this machine before 2027-01-10, with a larger local model, as I ruled that afternoon.)",  # W1190
-                 "The rows in step 5: FU-1165 and ",   # W1192: the lessons sitting joined step 5
+                 " in step 5: FU-1165",   # W1192: the lessons sitting joined step 5; W1234: it left again
                  "**Settled on 2026-11-21:** the Care reviewer's first calibration run (FU-1054, closed W1188), made on "
                  "your machine through the agent's own door with the local model (llama3.2): run cal-8c7430765c left "
                  f"five cases unanswered, caught {s['caught']} of {s['planted_cases']} planted cases and raised "
@@ -98672,7 +98856,9 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
     still = " ".join(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     s = ("(docs/DEPLOYMENT.md, step 12). Ruled on the afternoon of 2026-11-21: it is bought before the first deploy, and "
          "without it the machine is to publish no port and is reached only through an SSH tunnel (P4.1).")
-    assert s in still and "until then the machine serves plain HTTP and no person signs in" not in still, "FU-1289's line"
+    #  W1234 - the line stands while FU-1289 is open; the row closed once the domain was registered
+    assert (s in still or "FU-1289 (W1140):" not in still) and (
+        "until then the machine serves plain HTTP and no person signs in" not in still), "FU-1289's line"
     said.append(s)
 
     #  2 and 3. the Care reviewer, at P5.15 and in its rows
@@ -98791,8 +98977,9 @@ def test_w1190_the_owners_six_decisions_of_the_afternoon_of_2026_11_21_are_recor
               "Much of that phase is ruled to come after sign-in (P4.1), which is your switch, made in the release "
               "machine's own settings at its first deploy, together with its domain and HTTPS; the final audit runs "
               "after the fifth phase and the sign-in readiness round.",
-              "Buying a domain for the release machine before the first deploy and pointing it at the machine's fixed "
-              "address (FU-1289): without it the machine is to publish no port (P4.1).",
+              *(("Buying a domain for the release machine before the first deploy and pointing it at the machine's "
+                 "fixed address (FU-1289): without it the machine is to publish no port (P4.1).",)
+                if "FU-1289 (W1140):" in still else ()),     # W1234: the bullet left the notes when the row closed
               "At the first deploy, setting the admin password on the release machine and switching sign-in on in its "
               "own settings (P4.1; the setting W1191 adds), so that it answers from its first boot with its domain, "
               "HTTPS and sign-in on; the password and the signing secret stay on the machine, never in the repository.",
@@ -98852,7 +99039,8 @@ def test_w1191_the_release_machine_serves_publicly_only_with_its_domain_https_an
         here), setting the domain and sign-in together and sending the reader back to step 10; the steps keep their
         numbers;
     S5. the round's row is closed on P4.5 in the Owner's recorded words, W1190's quoted as W1190 recorded them;
-        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built); the W729 credentials are an OWNER
+        three rows are left open on P4.1 (FU-1836 since closed by W1198 as built, FU-1835 by W1202); the W729
+        credentials are an OWNER
         row of high severity, on the plan's Owner list and in the local notes; FU-1289 and FU-1095, still open and
         the Owner's, each say in one sentence what W1191 changed, FU-1289's after the Owner's ruling W1190 recorded
         there and before the dated note of the late evening; P4.1 carries that evening's ruling right after the
@@ -99037,8 +99225,10 @@ fi
     assert '--env=CORS_ORIGINS="https://$3"' in front, front[:600]
     assert 'start_front "$IMG" drill "$DOM" true ' in read("deploy/https_drill.sh"), "the drill's front is told false"
     said_in_script = " ".join(script.replace("#", " ").split())
-    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers, not sending it requests"
-            in said_in_script), "the script's comment says CORS keeps the pages of other sites out"
+    #  W1202 - the comment now says what the request guard's setting adds; changed on purpose
+    assert ("CORS_ORIGINS stops a page from another site reading its ordinary answers; WORKSTATION_PAGE_ORIGINS has "
+            "the platform refuse a write or a stream socket from a page of any other origin" in said_in_script), (
+        "the script's comment says CORS keeps the pages of other sites out")
     assert ("Nothing that deploys the release machine turns sign-in on: the machine's own metadata does, the Owner's "
             "switch (the Owner's ruling of 2026-11-21)") in said_in_script
 
@@ -99303,14 +99493,14 @@ fi
                  "NOT READ HERE: gcloud's ssh reference", "Port 8800, not 8000",
                  "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
                  "forwarded port acts as the platform's administrator", "(CORS_ORIGINS)",
-                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers, not sending it "
-                 "requests: while sign-in is off the platform acts on those requests as for the administrator, making an "
-                 "account included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, "
-                 "where the tunnel listens, are outside that setting.",
+                 #  W1202 - CORS's sentence and the failed sign-ins' are reworded on purpose: the request guard
+                 #  refuses a page of another origin, so what still acts is a program
+                 "(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers; it does not "
+                 "stop the page's request.",
                  "With sign-in on, every route except those docs/PUBLIC_ROUTES.json makes public on purpose acts only on "
                  "a request that carries a token, which a page from another site does not hold.",
-                 "Such a page can still send failed sign-ins, and five for one name block that name's sign-in for up to "
-                 f"15 minutes; the stream socket still answers it ({origin_id}).",
+                 "A program can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 f"15 minutes, and the stream socket answers a program that asks ({origin_id}).",
                  "`jwt_secret.key` under DATA_DIR", "Nothing sets it", "only its hash is stored",
                  "The password is never kept in a file of its own; the signing secret's own file is on the data disk",
                  "A users store that is not there, or cannot be read whole, is refused",
@@ -99326,7 +99516,9 @@ fi
         "step 7's order: a plain SSH session, the password, sign-in, and only then the tunnel")
     for gone in ("Only the Owner's signed-in SSH", "or a file of their own", "-L 8000:localhost:8000",
                  "so a page from another site cannot read", "it is the Owner's to choose", "the tree never turns it on",
-                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token"):
+                 "this guide's recommendation", "rebound to the machine are outside", "carries the admin's token",
+                 "while sign-in is off the platform acts on those requests as for the administrator",
+                 "Such a page can still send failed sign-ins"):
         assert gone not in flat, ("the guide still says", gone)
     ten = " ".join(steps[10].split())
     assert ten.startswith("The uptime check") and "Set up once step 12 is done (W1191)" in ten and "protocol HTTPS" in ten
@@ -99412,6 +99604,10 @@ fi
             assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
                 "W1198", "built", "P4.1", False), r
             continue
+        if r is origin and r["status"] == "done":        # W1202 closed it as built; test_w1202 holds the guard
+            assert (r.get("closed_by"), r.get("because"), r["slot"], bool(r.get("owner_gated"))) == (
+                "W1202", "built", "P4.1", False), r
+            continue
         assert (r["status"], r["slot"], bool(r.get("owner_gated"))) == ("open", "P4.1", False), r
     for said in ("At every boot, importing agentic_core/auth/core.py runs _create_default_admin()", "read_json_strict",
                  "create the admin only when the file does not exist"):
@@ -99427,8 +99623,10 @@ fi
     owner = titled("OWNER: revoke at their providers the credentials W729 redacted from three archived files, which this "
                    "public repository has held, most of them since March 2026, or confirm each is dead, and record the "
                    "date")
-    assert (owner["status"], owner["slot"], owner.get("owner_gated"), owner["severity"]) == (
-        "open", "OWNER", True, "high"), owner
+    #  W1234 - closed on the Owner's word of 2026-11-22 ("close it"): its lines left the list and the notes
+    O_OPEN = owner["status"] == "open"
+    assert (owner["status"] if O_OPEN or owner.get("closed_by") != "W1234" else "open", owner["slot"],
+            owner.get("owner_gated"), owner["severity"]) == ("open", "OWNER", True, "high"), owner
     for said in ("W729 (50abf919, 2026-10-14) replaced real-looking values in three archived copies of one pasted text "
                  "file", "\"The values are to be revoked at their providers by the Owner - redaction does not remove them "
                  "from history\"", "No row ever recorded this", "the Owner's Stripe key roll of 2026-10-09 covers none of "
@@ -99447,7 +99645,8 @@ fi
     assert "The Owner rotates that key separately; the platform never reads it." in reg["FU-268"]["note"]
     still = " ".join(plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
     entry = still.split(f"{owner['id']} (W1191): ", 1)
-    assert len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1, "the Owner's list does not name the row once"
+    assert (len(entry) == 2 and still.count(f"{owner['id']} (W1191): ") == 1) == O_OPEN, (
+        "the Owner's list names the row once while it is open, and not once it is closed")
     for said in ("revoke at their providers the credentials W729 (2026-10-14) redacted", "a Stripe live secret key and "
                  "a Stripe webhook signing secret: revoke those too, or confirm they no longer work",
                  "Redaction does not remove the redacted values from history: the repository has held most of them since "
@@ -99456,18 +99655,19 @@ fi
                  "First read the repository host's secret-scanning alert list",
                  "beside the Stripe line at the head of this list", "Added to your list at your request on 2026-11-21, "
                  "to be done soon."):
-        assert said in entry[1][:2000], ("the Owner's list does not say", said)
-    assert still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), "the row's line is not after FU-1818's"
+        assert not O_OPEN or said in entry[1][:2000], ("the Owner's list does not say", said)
+    assert not O_OPEN or still.index("FU-1818 (W1174):") < still.index(f"{owner['id']} (W1191):"), (
+        "the row's line is not after FU-1818's")
     assert "(The Stripe key roll that stood here is DONE: the Owner rotated the keys and expired the old ones, 2026-10-09.)" in still
     notes = " ".join(read("docs/RESUME_ON_MY_MACHINE.md").split())
     yours = notes.split("**Still yours:**", 1)[1].split("**Settled on 2026-11-20:**", 1)[0]
-    assert (f"({owner['id']}; the plan's list names each by its kind)" in yours
+    assert not O_OPEN or (f"({owner['id']}; the plan's list names each by its kind)" in yours
             and "Added to your list at your request on 2026-11-21, to be done soon." in yours), yours[-600:]
     for said in ("two earlier Stripe values, a live secret key and a webhook signing secret, that the March copies hold "
                  "and W729 never redacted", "the repository has held most of them since March 2026, and most of its other "
                  "branches still carry unredacted copies", "the openQuran archive's .env on your machine, which was "
                  "never in the repository"):
-        assert said in yours, ("the local notes do not say", said)
+        assert not O_OPEN or said in yours, ("the local notes do not say", said)
     #  ...FU-1289 and FU-1095, still the Owner's, each say once what W1191 changed
     ruling = "OWNER RULING 2026-11-21 (afternoon"          # the Owner's decision, as W1190 recorded it
     changed_by = {
@@ -99481,7 +99681,9 @@ fi
     }
     for rid, said in changed_by.items():
         why = reg[rid]["why"]
-        assert reg[rid]["status"] == "open" and reg[rid]["owner_gated"] is True, (rid, reg[rid]["status"])
+        #  W1234 - both closed on 2026-11-22, the Owner's acts
+        assert reg[rid]["status"] == "open" or reg[rid]["closed_by"] == "W1234", (rid, reg[rid]["status"])
+        assert reg[rid]["owner_gated"] is True, rid
         assert why.count(said) == 1, (rid, "does not say once what W1191 changed")
         assert "W1191 built it" not in why, (rid, "says W1191 built what is the Owner's")
     assert reg["FU-1289"]["why"].find(ruling) != -1, "FU-1289 does not carry the Owner's ruling (W1190 lands first)"
@@ -99508,7 +99710,8 @@ fi
         "P4.1 says W1191 changed the script before the Owner's rulings")
     #  ...and the plan's list and the local notes say the domain and sign-in are set together
     appended = "Since W1191 the domain and sign-in are set together (docs/DEPLOYMENT.md, step 12)."
-    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == 1
+    assert " ".join(plan.split()).count("with FU-1095's uptime check and FU-1288's restore the day after. " + appended) == (
+        1 if reg["FU-1289"]["status"] == "open" else 0)     # W1234: FU-1289's line left the list when it closed
     assert ("the password and the signing secret stay on the machine, never in the repository. " + appended) in notes
 
 
@@ -99605,7 +99808,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
                           "stating why not.",
                           "The 8-hour work cycles replace the rule that long stretches continue automatically at most "
                           "three times before stopping for review"))):
-        assert (row["status"], row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
+        #  W1234 - the lessons row closed once the Owner ratified the batch (2026-11-22)
+        status = "open" if row is lsn and row["status"] == "done" and row["closed_by"] == "W1234" else row["status"]
+        assert (status, row["slot"], row["owner_gated"], row["severity"]) == ("open", "OWNER", True, sev), row
         assert row["source"].startswith("W1192 (the Owner's decisions of 2026-11-22"), row["source"]
         for s in parts:
             holds(row["why"], s, row["id"])
@@ -99615,6 +99820,8 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     assert "section 27" not in lsn["why"], "the lessons row carries a question the Owner was not asked"
     assert lsn.get("slot_source", "").startswith("OWNER (the Owner's machine):"), lsn.get("slot_source")
     S, T, L = sch["id"], tst["id"], lsn["id"]
+    L_OPEN = lsn["status"] == "open"       # W1234: closed once the Owner ratified the batch
+    C_OPEN = reg["FU-1837"]["status"] == "open"     # W1234: closed on the Owner's word of 2026-11-22
 
     #  the rows the day's rulings bear on, each after its earlier ruling
     for rid, before, s in (
@@ -99637,7 +99844,8 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
         why = reg[rid]["why"]
         holds(why, s, rid)
         assert why.index(before) < why.index(s), (rid, "the day's ruling is not after the earlier one")
-        assert reg[rid]["status"] == "open", (rid, reg[rid]["status"])
+        assert reg[rid]["status"] == "open" or (rid == "FU-1837" and reg[rid]["closed_by"] == "W1234"), (
+            rid, reg[rid]["status"])     # W1234: FU-1837 closed on the Owner's word
 
     #  each ruling at the item it governs, written as the rule to be built where the work is not built
     s18 = flat(fable[fable.index("· S18.1 THE METABOLIC BUDGET'S UNIT"):fable.index("· S18.2 WHAT AN ENTITY MAY BE")])
@@ -99730,9 +99938,9 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
               "sold), each your act, as you scheduled on 2026-11-22; the return measurement, built before the invited "
               "stage (P4.2), is a round's. Learners across the platform, a person completing a task and time to a first "
               "useful output are carried by this row, not yet scheduled.",
-              f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on your "
-              "machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
-              "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",
+              *((f"{L} (W1192): ratify, in one sitting, the batch of lessons derived since W677: a local session on "
+                 "your machine lists each, from the assistant's notes there, with a recommendation (step 5 of "
+                 "docs/RESUME_ON_MY_MACHINE.md). Ruled on 2026-11-22.",) if L_OPEN else ()),
               "Ruled on 2026-11-22: it also carries written questions on the project's licence and title and on the "
               "investment-side perimeter, and is to review with you the data protection impact assessment to be drafted "
               "before any health-related wellbeing entry (P5.8).",
@@ -99740,14 +99948,14 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
               "invented sample, each labelled with what served it, the notes recording which the teacher judged; the "
               "first offer's gate is evidenced once at least five interviews are recorded and your choice is recorded "
               "with its reasons.",
-              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+              *((f"On 2026-11-22 you accepted doing it that day. {BRANCHES}",) if C_OPEN else ())):
         holds(still, s, "the plan's list")
     assert still.index("FU-1283 (W1132):") < still.index(f"{S} (W1192):") < still.index("(The five places"), "the scholar"
     assert (still.index("FU-1817 (W1174):") < still.index("Ruled on 2026-11-22: it also carries")
             < still.index("FU-1818 (W1174):") < still.index("Ruled on 2026-11-22: each interview ends")
-            < still.index("FU-1837 (W1191):")), "a ruling of the day is not under its own row"
-    assert (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
-            < still.index(f"{T} (W1192):") < still.index(f"{L} (W1192):")
+            < (still.index("FU-1837 (W1191):") if C_OPEN else len(still))), "a ruling of the day is not under its own row"
+    assert not C_OPEN or (still.index("FU-1837 (W1191):") < still.index("On 2026-11-22 you accepted doing it that day.")
+            < still.index(f"{T} (W1192):") < (still.index(f"{L} (W1192):") if L_OPEN else still.index(f"{T} (W1192):") + 1)
             < still.index("(Ten put to the Owner on the afternoon of 2026-11-20")), "the lines after FU-1837"
     para = still[still.index("(Twenty put in the early hours of 2026-11-22"):]
     para = para[:para.index(".)", para.index("Each is recorded at the item it governs")) + 2]
@@ -99872,10 +100080,11 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
     upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
     assert upd and upd.group(1) >= "2026-11-22" and "W1192" in upd.group(2).split(", "), "the notes' updated line"
     step5 = notes_raw.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
-    assert re.findall(r"^   - (FU-\d+):", step5, re.M) == ["FU-1165", L], re.findall(r"^   - (FU-\d+):", step5, re.M)
-    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0])
+    steps5 = re.findall(r"^   - (FU-\d+):", step5, re.M)
+    assert steps5[:1] == ["FU-1165"] and (L in steps5) == L_OPEN, steps5     # W1234: the lessons' step done
+    step = flat(f"- {L}:" + step5.split(f"   - {L}:", 1)[1].split("\n   (", 1)[0]) if L_OPEN else ""
     no_pronoun(step, "step 5")
-    assert step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
+    assert not L_OPEN or step == (f"- {L}: as I ruled on 2026-11-22, read your notes on this machine and list each lesson derived since "
                     "W677, the round it cites and your recommendation: add it to the batch, or say why not. I ratify the "
                     "batch in one sitting; nothing enters the method until I have ratified the batch."), step
     yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("- **Settled on 2026-11-20:**", 1)[0]
@@ -99885,24 +100094,25 @@ def test_w1192_the_owners_twenty_decisions_of_2026_11_22_are_recorded_where_the_
             ("  - After the first deploy,", "- After the first deploy, the channel test and the price test the canvas "
                                             "names first, each your act; the same row carries three measures the "
                                             f"metrics document defers, not yet scheduled ({T})."),
-            ("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from this "
-                                             f"machine's notes ({L}, step 5).")):
+            *((("  - Ratifying in one sitting", f"- Ratifying in one sitting the lessons a local session lists from "
+                                                f"this machine's notes ({L}, step 5)."),) if L_OPEN else ())):
         assert yours_raw.count(start) == 1, (start, yours_raw.count(start))
         bullet = flat(yours_raw[yours_raw.index(start):].split("\n  - ", 1)[0].split("\n- **", 1)[0])
         no_pronoun(bullet, "the notes' Still-yours list")
         assert bullet == whole, ("the notes' Still-yours list", bullet[:120])
     yours = flat(yours_raw)
-    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there.",
+    for s in (f"The rows in step 5: FU-1165 and {L}, each a step there." if L_OPEN else "in step 5: FU-1165",
               "release, and where other people's data may be kept. As you ruled on 2026-11-22, it also carries written "
               "questions on the project's licence and title and on the investment-side perimeter, and is to review with "
               "you the data protection impact assessment to be drafted before any health-related wellbeing entry.",
               "before the first offer is chosen (FU-1818). Each ends by showing both outputs, labelled, as you ruled on "
               "2026-11-22.",
-              f"On 2026-11-22 you accepted doing it that day. {BRANCHES}"):
+              *((f"On 2026-11-22 you accepted doing it that day. {BRANCHES}",) if C_OPEN else ())):
         holds(yours, s, "the notes' Still-yours list")
-    assert (yours.index("(FU-1837;")
+    assert not C_OPEN or (yours.index("(FU-1837;")
             < yours.index("On 2026-11-22 you accepted doing it that day.") < yours.index("- Asking a scholar")
-            < yours.index("- After the first deploy,") < yours.index("- Ratifying in one sitting")), "the notes' order"
+            < yours.index("- After the first deploy,") < (yours.index("- Ratifying in one sitting") if L_OPEN else
+                                                        len(yours))), "the notes' order"
     holds(notes, "carried by the pull request opened after #466 was merged. PR #33 (opened 2026-03-12, before the plan) "
                  "was closed unmerged on 2026-11-22, on your word; its branch is left.", "the local notes")
     assert notes_raw.count("- **Ruled on 2026-11-22:**") == 1, notes_raw.count("- **Ruled on 2026-11-22:**")
@@ -104032,34 +104242,37 @@ def test_w1233_a_signed_out_visitor_is_sent_to_the_sign_in_page_not_shown_the_sh
        /login unless it is /login already, clearing a held token first; both the fetch and the axios path take that
        one filter;
     2. sendSignedOutToLogin(), the boot probe, reads whoami() and redirects only an 'anonymous' session away from a
-       page that is not /login; 'auth-off' and 'unknown' never redirect, and no next address is added (the login page
-       reads none);
+       page that is not /login; 'auth-off' and 'unknown' never redirect;
     3. App.tsx calls the probe at module level right after installAuth();
+    W1253 changed legs 1 and 2 on purpose: a 401 is first renewed once (test_w1253), the page goes to the sign-in page
+    through goToSignIn alone, and the address the visitor asked for goes with them as ?next=, which the sign-in page
+    now reads as a path on this site only.
     4. lib/auth.test.ts drives each case, and still imports whoami as W930's guard reads it."""
     import pathlib
     src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
     auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
-    #  1. on401: no token asked for, a held one cleared, the login page exempt
-    on = auth[auth.index("  const on401 = () => {"):]
-    on = on[:on.index("\n  };\n") + 5]
-    assert "getToken() &&" not in on, "on401 redirects only a session that held a token"
-    assert "    if (window.location.pathname !== '/login') {" in on and "      if (getToken()) clearToken();" in on
-    assert on.count("window.location.assign('/login');") == 1
-    assert "  const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
-    assert "if (err?.response?.status === 401 && fires401(String(err?.config?.url ?? ''))) on401();" in auth
-    assert "if (res.status === 401 && fires401(url)) on401();" in auth
-    assert auth.count("on401();") == 2, "a 401 reaches on401 by some path that is not filtered"
+    #  1. a 401 nothing renewed goes to the sign-in page whether or not a token was held, through one filter on either
+    #  path, clearing a held token first, the login page exempt (W1253: through goToSignIn, the one way there)
+    go = auth[auth.index("export function goToSignIn(ended: boolean): void {"):]
+    go = go[:go.index("\n}\n") + 3]
+    assert "  if (window.location.pathname === '/login') return;" in go
+    assert "  if (getToken() || getRefreshToken()) clearToken();" in go
+    assert go.count("window.location.assign(signInAddress(ended));") == 1
+    assert auth.count("window.location.assign(") == 1, "the page is sent somewhere by a way that is not goToSignIn"
+    assert "const fires401 = (url: string) => url.startsWith('/api') && !url.includes('/auth/');" in auth
+    e401 = auth[auth.index("function ended401(sentWith: string | null | undefined, url: string): void {"):]
+    e401 = e401[:e401.index("\n}\n") + 3]
+    assert "  if (!fires401(url) || getToken() !== (sentWith ?? null)) return;" in e401 and "getToken() &&" not in e401
+    assert auth.count("goToSignIn(") == 3, "the sign-in page is reached by a way that is not filtered"
     #  2. the boot probe redirects on 'anonymous' alone
     pr = auth[auth.index("export async function sendSignedOutToLogin(): Promise<void> {"):]
     pr = pr[:pr.index("\n}\n") + 3]
     assert "  const who = await whoami();" in pr
-    assert "    if (getToken()) clearToken();" in pr, "the probe leaves a token the server no longer takes"
-    assert "  if (who.mode === 'anonymous' && window.location.pathname !== '/login') {" in pr
-    assert pr.count("window.location.assign('/login');") == 1 and "auth-off" not in pr and "unknown" not in pr
-    assert "next" not in pr, "the probe adds a next address the login page does not read"
-    login = (src / "pages/Login.tsx").read_text(encoding="utf-8")
-    assert "get('next')" not in login and "'next'" not in login, (
-        "the login page now reads a next address: the probe may keep the address the visitor asked for")
+    assert "  if (who.mode === 'anonymous') goToSignIn(!!(getToken() || getRefreshToken()));" in pr
+    assert "auth-off" not in pr and "unknown" not in pr
+    login = _code_only((src / "pages/Login.tsx").read_text(encoding="utf-8"))
+    assert "const back = returnPath(sp.get('next'));" in login and "nav(back);" in login, (
+        "the sign-in page no longer sends the person back to the page they asked for")
     #  3. App.tsx: the probe runs at boot, after the token layer is installed
     app = _code_only((src / "App.tsx").read_text(encoding="utf-8"))
     assert "import { installAuth, sendSignedOutToLogin } from './lib/auth';" in app
@@ -104428,3 +104641,5922 @@ def test_w1203a_every_bundle_shown_says_how_many_rows_cite_its_files():
     assert bundle_line, "the renderer no longer writes the per-file counts"
     assert 'f", and {_more} more" if _more > 0 else ""' in src, "files past the first four are not counted"
     assert "key=lambda kv: (-kv[1], kv[0])" in src, "the most-cited files are not shown first"
+
+
+def test_w1203_a_model_becomes_the_default_only_when_an_administrator_promotes_an_evaluated_build_whose_licence_the_runtime_holds(
+        client, monkeypatch, tmp_path):
+    """FU-1852 (P3.32) and FU-1853 (P4.1), W1203. promote_model refused an undiscovered name, a build with no digest
+    and a build with no recorded evaluation, and then made the name the serving default with no licence read, though
+    the runtime's description of each build carries its licence text: FU-1087 proposed that refusal and W841 built the
+    other two. The Owner ruled on 2026-11-22 that a model is made the serving default only with its licence read, with
+    no override. And the native-ai router is mounted behind get_current_user only, so with sign-in on any signed-in
+    person could promote, retire, reinstate or evaluate a local model, or run or reproduce a baseline. Held here:
+    T1. describe_installed_one asks the runtime for ONE description (one POST /api/show, no list) and answers the
+        described fields describe_installed gives that model, parsed in the same place; a licence given as a list
+        holding anything but text ([null], [0]) or as blank text is no licence text; a description that fails, or is
+        over _DESCRIPTION_MAX_BYTES, is not read; with the local runtime disabled nothing is asked;
+    T2. on builds this test evaluates as W841's check requires (an evaluation on the pinned probe set that served and
+        passed its control): a runtime that holds no licence text for the build, or only [null], [0] or blank text,
+        gives 409 naming the missing licence text, citing the ruling and OLLAMA_MODEL, and nothing is promoted; a
+        description that cannot be read gives 409 saying so, which is not 'no licence'; a build that changes while its
+        licence is read gives 409; licence text held gives 200 with the licence's first line, length and the sha256 of
+        the runtime's own text, kept in the lifecycle record as default_local_licence, and retiring the build drops
+        it; a retire saved while a promotion reads its licence is kept, and the promotion too;
+    T3. the levels row says the promotion is an administrator's and rests on the licence text, and the page fixture's
+        captured row is the route's;
+    T4. DRIVEN WITH SIGN-IN ON, in this test process only: a signed-in user is refused (403) on each of the six writes
+        (/lifecycle/evaluate, /baseline/run, /baseline/{run_id}/reproduce, /lifecycle/promote, /lifecycle/retire,
+        /lifecycle/reinstate) and reads the lifecycle (200); an administrator reaches promote (409, not installed) and
+        reproduce (404, no such run); each write's route asks for require_admin and no lifecycle or baseline read does;
+    T5. the register: FU-1852 on P3.32 (low) and FU-1853 on P4.1 (medium), open or closed by W1203 as built; the row
+        the round's security review found (the operations routes that score a model) open on P4.1 (medium).
+    No model is downloaded and no runtime is asked: httpx's two functions answer for a host that cannot resolve."""
+    import asyncio
+    import hashlib
+    import json
+    import threading
+    import pathlib
+    import uuid
+    import httpx
+    import agentic_core.auth.core as _ac
+    from agentic_core.ai.native import model_resource as _mr
+    from agentic_core.api import native_ai as _na
+    assert _mr.external_allowed() is False, "an external provider is switched on in the tree"
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pre = _na.router.prefix
+    base = "http://w1203-runtime.test:11434"
+    monkeypatch.setenv("OLLAMA_URL", base + "/api/generate")
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setattr(_mr, "_lifecycle_path", lambda *_a, **_k: tmp_path / "w1203_model_lifecycle.json")
+    for _cache in (_mr._OLLAMA_CACHE, _mr._MODELS_CACHE):
+        for _k in list(_cache):
+            monkeypatch.setitem(_cache, _k, _cache[_k])
+    assert _mr._ollama_base() == base
+
+    #  the runtime, made up: builds whose description carries a made-up licence text, none, or a malformed one
+    text = "W1203 MADE-UP LICENCE TEXT\n\nA stand-in for the text a runtime returns for a build; it is no licence.\n"
+    rt = {"show": {"w1203-model": {"license": text, "capabilities": ["completion"],
+                                   "model_info": {"general.parameter_count": 1234}},
+                   "w1203-bare:1b": {"model_info": {}},
+                   "w1203-listnull": {"license": [None]}, "w1203-listzero": {"license": [0]},
+                   "w1203-blank": {"license": "   \n\t "},
+                   "w1203-repull": {"license": text}, "w1203-race": {"license": text}},
+          "fail": set(), "during": {}}
+    calls = []
+
+    class _Resp:
+        def __init__(self, code, body):
+            self.status_code, self._body = code, body
+            self.content = json.dumps(body).encode("utf-8")
+
+        def json(self):
+            return self._body
+
+    def _get(url, *a, **k):
+        calls.append(("GET", str(url)))
+        if str(url) == base + "/api/tags":
+            return _Resp(200, {"models": [{"name": n, "model": n, "digest": "sha256:w1203-" + n} for n in rt["show"]]})
+        return _Resp(404, {})
+
+    def _post(url, *a, **k):
+        name = (k.get("json") or {}).get("model")
+        calls.append(("POST", str(url), name))
+        if name in rt["during"]:
+            rt["during"][name]()
+        if str(url) == base + "/api/show" and name in rt["show"] and name not in rt["fail"]:
+            return _Resp(200, json.loads(json.dumps(rt["show"][name])))
+        return _Resp(500, {"error": "w1203: not answering"})
+    monkeypatch.setattr(httpx, "get", _get)
+    monkeypatch.setattr(httpx, "post", _post)
+
+    #  T1. ONE DESCRIPTION, parsed where the installed list parses it
+    want = {"sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "chars": len(text),
+            "first_line": "W1203 MADE-UP LICENCE TEXT"}
+    one = _mr.describe_installed_one("w1203-model")
+    assert calls == [("POST", base + "/api/show", "w1203-model")], ("not one description, and no list", calls)
+    assert one["show_read"] is True and {k: one["licence"][k] for k in want} == want, one
+    listed = {m["name"]: m for m in _mr.describe_installed()["models"]}
+    for name in ("w1203-model", "w1203-bare:1b", "w1203-listnull", "w1203-blank"):
+        got = _mr.describe_installed_one(name)
+        assert {f: got[f] for f in ("licence", "parameter_count", "capabilities", "show_read", "show_basis")} == {
+            f: listed[name][f] for f in ("licence", "parameter_count", "capabilities", "show_read", "show_basis")}, (
+            name, got, listed[name])
+    assert _mr.describe_installed_one("w1203-bare:1b")["licence"] is None
+    for name in ("w1203-listnull", "w1203-listzero"):
+        got = _mr.describe_installed_one(name)
+        assert (got["show_read"], got["licence"]) == (True, None), ("a list holding no text is licence text", name, got)
+    got = _mr.describe_installed_one("w1203-blank")
+    assert (got["show_read"], got["licence"]) == (True, None), ("blank text is licence text, or not read", got)
+    rt["fail"].add("w1203-model")
+    failed = _mr.describe_installed_one("w1203-model")
+    assert failed["show_read"] is False and failed["licence"] is None and "could not be read" in failed["show_basis"]
+    rt["fail"].clear()
+    cap = _mr._DESCRIPTION_MAX_BYTES
+    monkeypatch.setattr(_mr, "_DESCRIPTION_MAX_BYTES", 64)
+    big = _mr.describe_installed_one("w1203-model")
+    assert big["show_read"] is False and big["licence"] is None and "over the 64" in big["show_basis"], big
+    monkeypatch.setattr(_mr, "_DESCRIPTION_MAX_BYTES", cap)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    n = len(calls)
+    off = _mr.describe_installed_one("w1203-model")
+    assert off["show_read"] is False and off["show_basis"].startswith("NOT READ") and len(calls) == n, off
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+
+    #  T2. THE PROMOTION, on builds evaluated as W841's check requires: licence text held, or refused
+    dig = {name: "sha256:w1203-" + name for name in rt["show"]}
+    monkeypatch.setattr(_mr, "local_models", lambda: list(rt["show"]))
+    monkeypatch.setattr(_mr, "local_model_digest", lambda name: dig.get(name))
+    set_now = {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _na._eval_probe_digest()}
+    st = _mr.lifecycle_state()
+    for name in rt["show"]:
+        st["evaluations"].append({"model": name, "can_serve": True, "control": {"marker_absent": True},
+                                  "probe_set": set_now, "serving": {"identity": _mr.local_model_digest(name)},
+                                  "at": "2026-11-22T12:00:00Z"})
+    _mr.save_lifecycle(st)
+
+    def promote(name, headers=None):
+        return client.post(pre + "/lifecycle/promote", json={"model": name}, headers=headers or {})
+    bare = promote("w1203-bare:1b")
+    assert bare.status_code == 409, ("a build with no licence text was promoted", bare.status_code, bare.text[:300])
+    said = bare.json()["detail"]
+    assert "holds no licence text for this build" in said, said
+    assert "The Owner ruled on 2026-11-22" in said and "with no override" in said and "OLLAMA_MODEL" in said, said
+    assert "if it is installed and not retired, when nothing is promoted" in said, said
+    assert _mr.lifecycle_state()["default_local"] is None and "default_local_licence" not in _mr.lifecycle_state()
+    for name in ("w1203-listnull", "w1203-listzero", "w1203-blank"):
+        got = promote(name)
+        assert got.status_code == 409 and "holds no licence text for this build" in got.json()["detail"], (
+            name, "a malformed or blank licence was taken as licence text", got.status_code, got.text[:200])
+    rt["during"]["w1203-repull"] = lambda: dig.__setitem__("w1203-repull", "sha256:w1203-pulled-again")
+    moved = promote("w1203-repull")
+    rt["during"].clear()
+    assert moved.status_code == 409 and "changed while its licence was read" in moved.json()["detail"], (
+        "a licence read from another build was kept beside this digest", moved.status_code, moved.text[:200])
+    dig["w1203-repull"] = "sha256:w1203-w1203-repull"
+    assert _mr.lifecycle_state()["default_local"] is None
+    rt["fail"].add("w1203-model")
+    unread = promote("w1203-model")
+    assert unread.status_code == 409, ("a build whose description was not read was promoted", unread.text[:300])
+    assert "could not be read" in unread.json()["detail"] and "is not known" in unread.json()["detail"], unread.text
+    assert "holds no licence text" not in unread.json()["detail"], "a description not read is said as no licence"
+    assert _mr.lifecycle_state()["default_local"] is None
+    rt["fail"].clear()
+    ok = promote("w1203-model")
+    assert ok.status_code == 200, ok.text[:300]
+    assert ok.json()["licence"] == want and ok.json()["digest"] == _mr.local_model_digest("w1203-model"), ok.json()
+    assert "licence text the runtime holds" in ok.json()["promoted_basis"], ok.json()["promoted_basis"]
+    kept = _mr.lifecycle_state()
+    assert (kept["default_local"], kept["default_local_licence"]) == ("w1203-model", want), kept
+    gone = client.post(pre + "/lifecycle/retire", json={"model": "w1203-model"})
+    assert gone.status_code == 200 and "default_local_licence" not in _mr.lifecycle_state(), gone.text[:200]
+    #  a retire saved while a promotion reads its licence is kept (the record is read again after the read)
+    in_read, release = threading.Event(), threading.Event()
+    rt["during"]["w1203-race"] = lambda: (in_read.set(), release.wait(10))
+
+    async def _race():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=client.app), base_url="http://w1203.test") as ac:
+            task = asyncio.ensure_future(ac.post(pre + "/lifecycle/promote", json={"model": "w1203-race"}))
+            for _ in range(500):
+                if in_read.is_set():
+                    break
+                await asyncio.sleep(0.01)
+            try:
+                assert in_read.is_set(), "the promotion never read the licence"
+                ret = await ac.post(pre + "/lifecycle/retire", json={"model": "w1203-bare:1b"})
+            finally:
+                release.set()
+            return ret, await task
+    ret, raced = asyncio.run(_race())
+    rt["during"].clear()
+    assert ret.status_code == 200 and raced.status_code == 200, (ret.text[:200], raced.text[:200])
+    after = _mr.lifecycle_state()
+    assert "w1203-bare:1b" in after["retired"] and after["default_local"] == "w1203-race", (
+        "a retire saved while the licence was read was lost", after["retired"], after["default_local"])
+
+    #  T3. THE LEVELS ROW, and the page fixture's captured row is the route's
+    row = ("a named model is made the default by an administrator on a recorded evaluation of its build on the pinned "
+           "probe set (W841) and on the licence text the runtime holds for that build (W1203); the promotion itself "
+           "measures nothing")
+    assert _na._EVIDENCE_SURFACES["/lifecycle/promote"] == ("configuration", row)
+    live = [s for s in client.get(pre + "/evidence-levels").json()["surfaces"] if s["path"] == pre + "/lifecycle/promote"]
+    fx = json.loads((root / "apps/workstation-superapp/src/pages/developers/NativeAI.fixture.json").read_text(
+        encoding="utf-8"))["answers"][pre + "/evidence-levels"]["body"]["surfaces"]
+    assert [s for s in fx if s["path"] == pre + "/lifecycle/promote"] == live and live[0]["rests_on"] == row, live
+
+    #  T4. SIGN-IN ON, in this test process only: the writes are an administrator's, the reads a signed-in person's
+    writes = ["/lifecycle/evaluate", "/baseline/run", "/baseline/{run_id}/reproduce", "/lifecycle/promote",
+              "/lifecycle/retire", "/lifecycle/reinstate"]
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac._load_users()
+    who = {}
+    for k, role in (("user", "user"), ("admin", "admin")):
+        name = f"w1203-{k}-{uuid.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac._save_users(users)
+    try:
+        H = {}
+        for k, name in who.items():
+            tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+            assert tok.status_code == 200, tok.text[:200]
+            H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+        bodies = {"/lifecycle/evaluate": {"model": "w1203-model"}, "/baseline/run": {"tier": "native"},
+                  "/lifecycle/promote": {"model": "w1203-model"}, "/lifecycle/retire": {"model": "w1203-model"},
+                  "/lifecycle/reinstate": {"model": "w1203-model"}}
+        n, retired = len(calls), _mr.lifecycle_state()["retired"]
+        for path in writes:
+            url = pre + path.replace("{run_id}", "w1203-no-such-run")
+            got = client.post(url, json=bodies.get(path), headers=H["user"])
+            assert got.status_code == 403, (path, "a signed-in person who is not an administrator reached it",
+                                            got.status_code, got.text[:200])
+        assert len(calls) == n, ("a refused write asked the runtime", calls[n:])
+        assert _mr.lifecycle_state()["retired"] == retired, "a refused write changed the lifecycle record"
+        seen = client.get(pre + "/lifecycle", headers=H["user"])
+        assert seen.status_code == 200, ("a signed-in person cannot read the lifecycle", seen.text[:200])
+        far = promote("w1203-not-installed", headers=H["admin"])
+        assert far.status_code == 409 and "not discovered" in far.json()["detail"], far.text[:200]
+        none = client.post(pre + "/baseline/w1203-no-such-run/reproduce", headers=H["admin"])
+        assert none.status_code == 404, none.text[:200]
+    finally:
+        users = _ac._load_users()
+        for name in who.values():
+            users.pop(name, None)
+        _ac._save_users(users)
+    #  and by the routes themselves: each write asks for require_admin, and no lifecycle or baseline read does
+    held = set()
+    for r in _na.router.routes:
+        path, asks = r.path[len(pre):], [d.dependency for d in getattr(r, "dependencies", [])]
+        if path in writes:
+            assert _ac.require_admin in asks, (r.path, "a lifecycle write does not ask for require_admin", asks)
+            held.add(path)
+        elif "GET" in r.methods and path.startswith(("/lifecycle", "/baseline")):
+            assert _ac.require_admin not in asks, (r.path, "a lifecycle or baseline read asks for require_admin")
+    assert held == set(writes), held
+
+    #  T5. THE REGISTER
+    rows = {r.get("id"): r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict)}
+    for rid, slot, sev in (("FU-1852", "P3.32", "low"), ("FU-1853", "P4.1", "medium")):
+        r = rows[rid]
+        assert (r["slot"], r["severity"]) == (slot, sev), (rid, r["slot"], r["severity"])
+        assert (r["status"], r.get("closed_by")) in (("open", None), ("done", "W1203")), (rid, r["status"])
+        if r["status"] == "done":
+            assert r.get("because") == "built", (rid, r.get("because"))
+    ops = [r for r in rows.values() if r.get("title", "").startswith(
+        "With sign-in on, any signed-in person can push the promoted local model behind the native floor")]
+    assert len(ops) == 1 and (ops[0]["status"], ops[0]["slot"], ops[0]["severity"]) == ("open", "P4.1", "medium"), (
+        "the operations row W1203's security review found is not registered open", ops)
+    assert ops[0]["source"].startswith("W1203"), ops[0]["source"]
+
+
+def test_w1209_the_fabric_preview_says_how_a_composition_runs_not_that_it_is_over_capacity(client, monkeypatch):
+    """FU-1842 (W1209, key A2), P3.32. The fabric preview's chip compared the resource count with the grant for four
+    parallel nodes (homeostasis.project(len(resolved))) and drew 'over capacity' in amber for five resources. But a
+    composition's stages run one after another and its real resources one at a time, and nothing caps or refuses
+    that; only the org cascade runs its C-Suite officer pairs at once, under a grant of its own. The preview now says
+    so: stage_concurrency 1 with its basis, and for a composition holding vsb_org_swarm the cascade's projected grant,
+    from the one formula the cascade runs on (swarm.cascade_demand). Held here:
+    1. five sequential resources, simulated through the route: stage_concurrency 1, cascade None, no
+       fits_current_capacity False and no admitted_max_parallel, a basis that names sequential execution, and the
+       organism carried from snapshot() (atp_can_fall a bool, test_p330_r6's leg E);
+    2. the same with the work budget's gate held: stage_concurrency still 1, nothing says over capacity, work_budget
+       holds True is carried, and the basis says a held budget changes nothing about a sequential run;
+    3. vsb_org_swarm with csuite_roles 'CSO,CFO,CTO': requested 3, demand 18, and the grant is homeostasis.assess(18,
+       3, read_only=True)'s, and 3 with the controller's answer fixed at 3 (never the resource count); with the
+       gate held, granted 1 and held_by_work_budget True; a placeholder roster is the cascade's default five, as the
+       run reads it; cascade_demand is the cascade's own formula;
+    4. every ATP simulator update made on this test's thread during the two previews is recorded, and there is none,
+       while a run's assess on the same thread is seen (the control);
+    5. POST /api/v1/swarm/cascade with five roles, the grant stubbed to 2 and gateway.query_meta replaced by a stub
+       that counts the C-Suite and CoE calls in flight with a 50 ms await: at most 2 in flight and exactly 2 at peak;
+       with a grant of 1, at most 1 (the merged insight: the cascade's concurrency is observed, not only reported);
+    6. the captured simulate answers in ResourceFabric.fixture.json carry only keys the live route gives, and the
+       stage keys and basis this round owns, equal to the route's;
+    7. the page draws 'stages run one at a time' and the cascade's grant, violet, with no 'over capacity', its
+       budget span says that in this composition the platform's budget holds only the org cascade, with
+       work_budget.basis inside test_w756's window, the fabric-budget-off block is kept, and the rendered test reads
+       the expected grant from the fixture."""
+    import asyncio
+    import inspect
+    import json
+    import pathlib
+    import threading
+    from agentic_core.ai.native import homeostasis as _hm
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.api import swarm as _sw
+    from agentic_core.organism import biobus as _bb
+    root = pathlib.Path(__file__).resolve().parents[1]
+    rows = {r.get("id"): r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict)}
+    r = rows["FU-1842"]
+    assert r["slot"] == "P3.32" and (r["status"] == "open" or (r["status"], r.get("closed_by"), r.get("because")) == (
+        "done", "W1209", "built")), (r["status"], r.get("closed_by"), r["slot"])
+    SEQ = ["bdp", "spi", "cognitive_cascade", "genesis", "compliance"]
+    CASC = {"resource_ids": ["vsb_org_swarm", "compliance"], "usage_area": "delivery",
+            "config": {"vsb_org_swarm": {"csuite_roles": "CSO,CFO,CTO"}}}
+    assert "vsb_org_swarm" not in SEQ and all(x in _rf._BY_ID for x in SEQ + CASC["resource_ids"])
+
+    def simulate(body):
+        got = client.post("/api/v1/resources/compose/simulate", json={"name": "w1209 preview", **body})
+        assert got.status_code == 200, got.text[:300]
+        return got.json()["model"]["organism_capacity"]
+
+    #  1. five sequential resources
+    oc = simulate({"resource_ids": SEQ, "usage_area": "synthesis"})
+    assert isinstance(oc, dict), ("the preview carried no capacity at all", oc)
+    assert oc.get("stage_concurrency") == 1 and oc.get("cascade", "absent") is None, (
+        "the preview does not say a composition runs one stage at a time", sorted(oc))
+    assert oc.get("fits_current_capacity") is not False and "admitted_max_parallel" not in oc, (
+        "the preview still compares the resource count with the grant for four parallel nodes", sorted(oc))
+    basis = oc["stage_concurrency_basis"]
+    assert "one after another" in basis and "one at a time" in basis and "nothing caps or refuses" in basis, basis
+    from agentic_core.api.instrument_cell import MAX_STAGES as _max
+    assert f"ceiling of {_max} stages" in basis and "the model ensemble asks its members in parallel" in basis, (
+        "the basis contradicts the stage ceiling, or calls the org cascade the only work run at once", basis)
+    assert isinstance(oc["organism"], dict) and isinstance(oc["organism"].get("atp_can_fall"), bool), oc["organism"]
+    assert oc["projected_posture"] == _hm.homeostasis.snapshot()["posture"], oc["projected_posture"]
+
+    #  2. the same with the work budget's gate held
+    held = {"enabled": True, "holds": True, "reason": "w1209: the window's capacity is spent",
+            "basis": "w1209: the work budget for this window is spent"}
+    with monkeypatch.context() as m:
+        m.setattr(_hm._work_budget, "gate", lambda *a, **k: dict(held))
+        oh = simulate({"resource_ids": SEQ, "usage_area": "synthesis"})
+        och = simulate(CASC)
+        assess_held = _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3, read_only=True)
+    assert isinstance(oh.get("work_budget"), dict), ("the preview does not carry the work budget", oh.get("work_budget"))
+    assert oh["stage_concurrency"] == 1 and oh["work_budget"]["holds"] is True and "w1209" in oh["work_budget"]["basis"], oh
+    assert "over capacity" not in json.dumps(oh).lower() and oh.get("fits_current_capacity") is not False, oh
+    assert "a held work budget changes nothing about it" in oh["stage_concurrency_basis"], (
+        "the hold is drawn as limiting a sequential run", oh["stage_concurrency_basis"])
+
+    #  3. the org cascade: its request, its demand and its grant, the cascade's own formula
+    occ = simulate(CASC)
+    c = occ["cascade"]
+    assert isinstance(c, dict), ("a composition holding the org cascade says nothing of its grant", c)
+    assert set(c) == {"requested_parallel", "demand_nodes", "granted_parallel", "held_by_work_budget", "basis"}, sorted(c)
+    assert (c["requested_parallel"], c["demand_nodes"]) == (3, 18), c
+    want = _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3, read_only=True)["max_parallel"]
+    assert c["granted_parallel"] == want and c["held_by_work_budget"] is False, (c, want)
+    assert "CSO, CFO, CTO" in c["basis"] and f"grants {want}" in c["basis"] and "granted now" in c["basis"], c["basis"]
+    assert occ["stage_concurrency"] == 1, occ
+    #  ...and with the controller's answer fixed at 3, the request (review W1209-4): the grant is the controller's,
+    #  never the resource count (CASC holds 2), whatever the organism grants in this run
+    _asked, _real_a = [], _hm.homeostasis.assess
+    with monkeypatch.context() as m:
+        m.setattr(_hm.homeostasis, "assess", lambda *a, **k: (_asked.append((k.get("demand_nodes"), k.get(
+            "requested_parallel"))), {**_real_a(*a, **{**k, "read_only": True}), "max_parallel": 3})[1])
+        fixed = simulate(CASC)["cascade"]
+    assert (18, 3) in _asked and fixed["granted_parallel"] == 3 and "grants 3" in fixed["basis"], (fixed, _asked)
+    hc = och["cascade"]
+    assert isinstance(hc, dict), hc
+    assert hc["granted_parallel"] == 1 == assess_held["max_parallel"] and hc["held_by_work_budget"] is True, hc
+    assert "one pair at a time" in hc["basis"] and "platform's work budget" in hc["basis"], hc["basis"]
+    #  a roster left at its placeholder is the cascade's default, as the run reads it (W495)
+    dflt = simulate({"resource_ids": ["vsb_org_swarm"], "usage_area": "delivery"})["cascade"]
+    assert (dflt["requested_parallel"], dflt["demand_nodes"]) == (4, 22), dflt
+    assert _sw.cascade_demand(["CSO", "CFO", "CTO"], []) == (["CSO", "CFO", "CTO"], 18, 3)
+    assert _sw.cascade_demand(None, None) == (["CSO", "CFO", "CTO", "COO", "CLO"], 22, 4)
+    assert _sw.cascade_demand(["CEO", "w1209-nobody"], ["A", "B", "C", "D"])[1:] == (25, 4)
+    _src = inspect.getsource(_sw.cascade_orchestration)
+    assert "cascade_demand(req.csuite_roles, req.coe_specialisms)" in _src and "3 + 2 * len(" not in _src, (
+        "the cascade does not run on the formula the preview projects")
+    assert "= homeostasis.project(" not in inspect.getsource(_rf._model_configuration), "the preview still projects a fit"
+
+    #  4. a preview advances nothing: every simulator update made on this thread during the two previews
+    _tid = threading.get_ident()
+    _atp = _bb._get_atp()
+    assert _atp is not None, "the ATP simulator is absent, so this leg cannot see an advance"
+    _seen = []
+    _upd = _atp.update
+    monkeypatch.setattr(_atp, "update", lambda *a, **k: (
+        _seen.append((threading.get_ident(), k.get("metabolic_load"))), _upd(*a, **k))[1])
+    _bb.biobus._atp_last_update = 0.0                       # the control is outside biobus's 1 s throttle
+    _hm.homeostasis.assess(demand_nodes=18, requested_parallel=3)
+    assert [s for s in _seen if s[0] == _tid], ("the control run did not reach the simulator, so the silence below "
+                                                "proves nothing", _seen)
+    _seen.clear()
+    for ids, area, cfg in ((SEQ, "synthesis", {}), (CASC["resource_ids"], CASC["usage_area"], CASC["config"])):
+        _bb.biobus._atp_last_update = 0.0                   # a preview that asked to advance would now really advance
+        _model = _rf._model_configuration(ids, area, cfg)[1]
+        assert isinstance(_model["organism_capacity"], dict), _model["organism_capacity"]
+    assert _model["organism_capacity"]["cascade"], "the cascade preview did not project, so its silence proves nothing"
+    mine = [s for s in _seen if s[0] == _tid]
+    assert mine == [], ("a preview advanced the shared ATP simulator", mine)
+
+    #  5. the cascade's concurrency, observed: the C-Suite and CoE calls in flight under a grant of 2, then 1
+    from agentic_core.ai.gateway import gateway as _gw
+    roles = ["CSO", "CFO", "CTO", "COO", "CLO"]
+    tier = {f"cascade_{x.lower()}" for x in roles} | {f"cascade_coe_{x.lower()}" for x in roles}
+    _real_assess = _hm.homeostasis.assess
+
+    def observed(grant):
+        flight = {"now": 0, "peak": 0, "calls": 0}
+
+        async def _meta(prompt, agent=None, **_k):
+            if agent in tier:
+                flight["now"] += 1
+                flight["calls"] += 1
+                flight["peak"] = max(flight["peak"], flight["now"])
+                try:
+                    await asyncio.sleep(0.05)
+                finally:
+                    flight["now"] -= 1
+            return {"output": f"w1209 stub answer for {agent}", "served_by": "native", "is_external": False}
+        with monkeypatch.context() as m:
+            m.setattr(_gw, "query_meta", _meta)
+            m.setattr(_hm.homeostasis, "assess", lambda *a, **k: {
+                **_real_assess(*a, **{**k, "read_only": True}), "max_parallel": grant})
+            got = client.post("/api/v1/swarm/cascade", json={"mission": "w1209 observed concurrency",
+                                                              "domain": "enterprise", "csuite_roles": roles})
+        assert got.status_code == 200, got.text[:300]
+        ha = got.json()["homeostasis_adaptation"]
+        assert ha["granted_parallel"] == grant and ha["demand_nodes_reported"] == 3 + 2 * 5 + 3 + 6, ha
+        assert flight["calls"] == 10, ("the stub did not see every officer and CoE call", flight)
+        return flight
+    two = observed(2)
+    assert two["peak"] == 2, ("with a grant of 2 the cascade did not run exactly 2 officer pairs at once", two)
+    one = observed(1)
+    assert one["peak"] == 1, ("with a grant of 1 the cascade ran officer pairs at once", one)
+
+    #  6. the captured simulate answers carry the live route's keys
+    page_dir = root / "apps/workstation-superapp/src/pages/synthesis"
+    fx = json.loads((page_dir / "ResourceFabric.fixture.json").read_text(encoding="utf-8"))
+    for key, live in (("simulate_sequential", oc), ("simulate_cascade", occ)):
+        cap = fx[key]["model"]["organism_capacity"]
+        #  (review W1209-5) the fixture's keys are the route's, so a key added later elsewhere stays green; the keys
+        #  this round owns are there and equal
+        assert set(cap) <= set(live) and set(cap["organism"]) <= set(live["organism"]), (key, "the fixture drifts")
+        assert {"stage_concurrency", "stage_concurrency_basis", "cascade"} <= set(cap), (key, sorted(cap))
+        assert cap["stage_concurrency"] == live["stage_concurrency"] == 1, key
+        assert cap["stage_concurrency_basis"] == live["stage_concurrency_basis"], (key, "the fixture's basis drifts")
+        assert set(fx[key]) <= set(client.post("/api/v1/resources/compose/simulate", json={
+            "name": "w1209 shape", "resource_ids": SEQ, "usage_area": "synthesis"}).json()), key
+    assert fx["simulate_sequential"]["model"]["organism_capacity"]["cascade"] is None
+    assert len(fx["simulate_sequential"]["model"]["pipeline"]) == 5
+    cc = fx["simulate_cascade"]["model"]["organism_capacity"]["cascade"]
+    assert set(cc) == set(c) and (cc["requested_parallel"], cc["demand_nodes"]) == (3, 18), cc
+
+    #  7. the page and its rendered test
+    page = _code_only((page_dir / "ResourceFabric.tsx").read_text(encoding="utf-8"))
+    chip = page.split("{sim.model.organism_capacity && (", 1)[1].split("{sim.model.organism_capacity?.organism &&", 1)[0]
+    assert "· stages run one at a time" in chip and "C-Suite pairs at once" in chip, chip[:400]
+    assert "over capacity" not in chip and "fits" not in chip and "admits" not in chip and "amber" not in chip, chip[:600]
+    assert "homeostatically governed at execution time" not in chip, "the tooltip still says the run is governed then"
+    assert "stage_concurrency_basis" in chip and "cascade.basis" in chip, "the tooltip does not say what governs the run"
+    assert "holds the run to one node at a time" not in chip, "the tooltip's energy clause still misstates the run"
+    _blk = page.split('data-testid="fabric-work-budget-reason"', 1)[1]
+    assert "work_budget.basis" in _blk[:200] and "the platform's work budget" in _blk[:120], _blk[:220]
+    assert "in this composition it holds only the org cascade" in _blk[:120], ("the span is not scoped to the "
+                                                                              "composition", _blk[:220])
+    assert "limits nothing" in page.split('data-testid="fabric-budget-off"', 1)[1][:200]
+    spec = (page_dir / "ResourceFabric.test.tsx").read_text(encoding="utf-8")
+    assert "const granted = casc.model.organism_capacity.cascade.granted_parallel;" in spec, (
+        "the rendered test does not read the expected grant from the capture")
+    assert "getByTestId('fabric-cascade-grant')" in spec and 'data-testid="fabric-cascade-grant"' in page
+    assert "findByTestId('fabric-capacity')" in spec and 'data-testid="fabric-capacity"' in page
+    assert ".not.toMatch(/over capacity|fits|admits/)" in spec
+
+
+def test_w1205_the_document_control_registry_appends_each_version_and_refuses_a_store_it_cannot_read_whole(
+        monkeypatch, tmp_path):
+    """FU-1845 (W1205), P3.30, as FU-1297 was. The document-control registry was one JSON file rewritten whole on every
+    gated answer under a bare except, with every version's content resident in memory; an unreadable store was loaded
+    as {} or its prefix and written back over the history; and a version that failed to write still read as
+    document-controlled. The store is now dcms_ledger.jsonl, one appended line per version. Held here, each on an
+    isolated data root unless it says otherwise:
+    L1. 300 commits of mixed sizes: each commit grows the file by exactly its own LF-ended record line, fsynced once,
+        in the same file (its inode does not change), the length this instance keeps is the file's (so no commit reads
+        the ledger again), the first commit makes its directory entry durable, and the bytes before each line, the
+        first kilobyte among them, never change;
+    L2. a fresh instance replays the same version counts for every id, holds no content, and verify_artifact is valid
+        for each, recomputed; two instances committing one artifact in turn give versions 1, 2, 3;
+    L3. with the last line torn: a new QMS's document_control_status says store_incomplete, writes_refused and how
+        the Owner repairs the ledger; commit_artifact raises StoreUnavailable, from the new instance and from the one
+        that wrote the lines; verify_artifact says the ledger cannot be read whole; and the file's bytes are
+        unchanged. A version out of order and a line that is not JSON are refused the same way;
+    L4. the reader raises PermissionError twice and then reads: the store loads whole. If it raises every time, the
+        load refuses and nothing is written;
+    L5. with the append forced to raise OSError, on the suite's own singletons: assure_delivery answers
+        document_controlled False with the reason, controlled_documents and the stubs do not move, and the ledger's
+        bytes are unchanged; the workflow tree keeps its governance and its QMS verdict and says the seal was not kept;
+    L6. a planted dcms_registry.json of 3 artifacts x 2 versions migrates: 6 versions verify, the ledger's first line
+        names the old file's sha256 and its counts, and after one more commit the old file is still byte-identical
+        and the migration line is there once; a second load carries nothing again. Refused, the old file kept: one
+        that cannot be read whole, one whose versions are out of order, and one whose migration could not be written
+        (the constructor still returns). A ledger that goes missing after it was created is refused, never carried in
+        again. A zero-byte old file is an empty registry. A ledger with fewer carried lines than its migration line
+        names is refused;
+    L7. after 300 commits of about 10 KB each, the stubs hold no content strings, in the instance that wrote them and
+        in a fresh one;
+    L8. one line's content tampered in the file: verify_artifact is invalid and get_audit_integrity is below 1.0, on
+        the instance that committed it; a content_stored flag flipped to hide a tamper, and a repeated line, each
+        make verify say the ledger cannot be read whole;
+    L9. the three direct callers with no try refuse with 503 and the reason and save nothing: the review gates, the
+        review decision (agentic_core/api/vsb.py) and POST /vbs/dcms/commit (vbs_systems.py); an append that could
+        not be taken back is said as maybe in the ledger, not as nothing appended;
+    L10. the soak reads dcms_ledger.jsonl, and no module but dcms.py writes or replaces the old registry;
+    L11. the register: FU-1845 is on P3.30, medium, open or closed by W1205 as built;
+    L12. an append that fails part way (a short write, then ENOSPC) or whose fsync fails takes back its own tail: the
+        bytes are unchanged, a fresh instance reads whole, and the next commit lands as the next version; one whose
+        undo fails too raises AppendNotUndone and refuses every later commit of that instance.
+
+    NOT HELD, as said in dcms.py: a line rewritten together with its hash, or the newest lines removed, still reads as
+    intact; nothing outside the file anchors it."""
+    import asyncio
+    import errno
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import re
+    import stat
+    import pytest
+    from fastapi import HTTPException
+    from agentic_core import config as _cfg
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.vbs import dcms as D
+    from agentic_core.vbs.qms import QualityManagementSystem
+    root = pathlib.Path(__file__).resolve().parents[1]
+    DC = D.DocumentControlManagementSystem
+    run = asyncio.run
+    sha3 = lambda s: hashlib.sha3_512(s.encode()).hexdigest()  # noqa: E731
+
+    def iso(m, name):
+        """A fresh data root for this leg, and the ledger's path in it."""
+        d = tmp_path / name
+        d.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d.joinpath(*parts))
+        return d, d / "dcms_ledger.jsonl"
+
+    def no_content(reg, where):
+        for aid, stubs in reg.items():
+            for s in stubs:
+                assert "content" not in s, (where, aid, "a stub holds its content")
+                assert not [v for v in s.values() if isinstance(v, str) and len(v) > 200], (where, aid, s.keys())
+
+    def versions(inst):
+        return {aid: [s["version"] for s in v] for aid, v in inst.registry.items()}
+
+    #  L1. APPEND ONLY: one line per commit, in the same file, the bytes before it unchanged
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l1")
+        fsynced = []
+        _fsync = os.fsync
+        m.setattr(os, "fsync", lambda fd: (fsynced.append(os.fstat(fd)), _fsync(fd))[1])
+        loads = []
+        _load = DC._load
+        m.setattr(DC, "_load", lambda self, *a, **k: (loads.append(1), _load(self, *a, **k))[1])
+        dc = DC("w1205")
+        sizes = (10, 300, 2_000, 9_000, 15_900, 17_000, 40)
+        first_kb, ino = None, None
+        for i in range(300):
+            before = led.read_bytes() if led.exists() else b""
+            content = {"i": i, "body": "x" * sizes[(i // 7) % len(sizes)]}
+            h = run(dc.commit_artifact(f"w1205-l1-{i % 7}", content, "w1205"))
+            after = led.read_bytes()
+            assert after[:len(before)] == before, (i, "L1: a commit changed bytes already written")
+            added = after[len(before):]
+            assert added.endswith(b"\n") and not added.endswith(b"\r\n") and added.count(b"\n") == 1, (
+                i, "L1: a commit added other than one LF-ended line")
+            assert dc._end == led.stat().st_size == len(after), (i, "L1: the instance's length is not the file's")
+            rec = json.loads(added)
+            payload = json.dumps(content, sort_keys=True, default=str)
+            assert (rec["artifact_id"], rec["version"], rec["hash"]) == (f"w1205-l1-{i % 7}", i // 7 + 1, h), (i, rec)
+            assert h == sha3(payload) and list(rec) == list(D.RECORD_KEYS), (i, list(rec))
+            assert rec["content_stored"] is (len(payload) <= 16000), (i, len(payload))
+            assert rec["content"] == (payload if len(payload) <= 16000 else None), i
+            first_kb = first_kb or (after[:1024] if len(after) >= 1024 else None)
+            assert first_kb is None or after[:1024] == first_kb, (i, "L1: the first kilobyte changed")
+            ino = ino or os.stat(led).st_ino
+            assert os.stat(led).st_ino == ino, (i, "L1: the ledger was replaced, not appended to")
+        on_ledger = [s for s in fsynced if (s.st_dev, s.st_ino) == (os.stat(led).st_dev, ino)]
+        assert len(on_ledger) == 300, ("L1: each append is fsynced once", len(on_ledger))
+        if os.name != "nt":
+            #  the ledger's new directory entry, then its marker's
+            assert sum(stat.S_ISDIR(s.st_mode) for s in fsynced) == 2, "L1: the new ledger's directory was not fsynced"
+        assert len(loads) == 1, ("L1: a single writer read its ledger again", len(loads))
+        assert led.read_bytes().count(b"\n") == 300
+        assert not (_d / "dcms_registry.json").exists(), "L1: the old registry was written"
+        counts = {aid: len(v) for aid, v in dc.registry.items()}
+
+    #  L2. A FRESH INSTANCE REPLAYS THE SAME VERSIONS, AND EACH VERIFIES BY RECOMPUTING
+    with monkeypatch.context() as m:
+        m.setattr(_cfg, "data_path", lambda *parts: (tmp_path / "l1").joinpath(*parts))
+        fresh = DC("w1205-fresh")
+        assert fresh._store_incomplete is None, fresh._store_incomplete
+        assert {aid: len(v) for aid, v in fresh.registry.items()} == counts == {f"w1205-l1-{k}": (300 - k + 6) // 7
+                                                                                for k in range(7)}, counts
+        assert [s["version"] for s in fresh.registry["w1205-l1-3"]] == list(range(1, counts["w1205-l1-3"] + 1))
+        assert fresh.registry == dc.registry, "L2: the replay differs from what was committed"
+        no_content(fresh.registry, "L2")
+        for aid in counts:
+            v = fresh.verify_artifact(aid)
+            assert v["valid"] is True and len(v["versions"]) == counts[aid], (aid, v.get("reason"))
+            assert {r["basis"].split(" ")[0] for r in v["versions"]} == {"recomputed", "hash_only"}, aid
+            assert v["unverifiable"] == sum(r["verified"] is None for r in v["versions"]) > 0, aid
+        assert fresh.get_audit_integrity() == 1.0
+        assert fresh.verify_artifact("w1205-never")["valid"] is False
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l2")
+        a, b = DC("w1205-a"), DC("w1205-b")
+        run(a.commit_artifact("w1205-aba", {"n": 1}, "a"))
+        run(b.commit_artifact("w1205-aba", {"n": 2}, "b"))
+        run(a.commit_artifact("w1205-aba", {"n": 3}, "a"))
+        assert [json.loads(ln)["version"] for ln in led.read_text(encoding="utf-8").splitlines()] == [1, 2, 3], (
+            "L2: an instance wrote on a version count that another instance had moved")
+        assert versions(DC("w1205")) == {"w1205-aba": [1, 2, 3]} and DC("w1205")._store_incomplete is None
+
+    #  L3. A TORN LAST LINE: SAID, REFUSED, THE BYTES KEPT
+    repair = "cuts it back to the end of its last complete line"
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l3")
+        writer = DC("w1205")
+        for i in range(3):
+            run(writer.commit_artifact(f"w1205-l3-{i}", {"i": i}, "w1205"))
+        led.write_bytes(led.read_bytes()[:-7])
+        torn = led.read_bytes()
+        q = QualityManagementSystem("w1205")
+        st = q.document_control_status()
+        assert st.get("writes_refused") is True and "torn" in (st.get("store_incomplete") or ""), st
+        assert repair in st["store_incomplete"] and "never rewrites, truncates or replaces a line it wrote whole" in (
+            st["store_incomplete"])
+        assert st["registered_artifacts"] == 2, ("L3: the versions before the torn line are read, and said", st)
+        for who, inst in (("a new instance", q.dcms), ("the instance that wrote it", writer)):
+            with pytest.raises(StoreUnavailable) as e:
+                run(inst.commit_artifact("w1205-l3-after", {"after": True}, "w1205"))
+            assert repair in str(e.value) and "nothing was written" in str(e.value), (who, str(e.value))
+            assert str(e.value).count("could not be read whole") == 1, (who, "L3: the refusal says itself twice")
+            assert led.read_bytes() == torn, (who, "L3: a refused commit changed the ledger")
+        for aid in ("w1205-l3-0", "w1205-l3-2"):
+            v = q.dcms.verify_artifact(aid)
+            assert v["valid"] is False and "cannot be read whole" in v.get("reason", ""), (aid, v)
+        with pytest.raises(StoreUnavailable):
+            run(q.control_document("w1205-l3-qms", {"x": 1}, "w1205"))
+        assert q.controlled_documents == 0 and led.read_bytes() == torn
+        #  repaired by hand (cut back to the last complete line), it is taken up without a restart
+        led.write_bytes(torn[:torn.rindex(b"\n") + 1])
+        run(writer.commit_artifact("w1205-l3-after", {"after": True}, "w1205"))
+        assert writer._store_incomplete is None and DC("w1205").registry.keys() >= {"w1205-l3-0", "w1205-l3-after"}
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l3b")
+        good = json.dumps({"artifact_id": "w1205-o", "version": 1, "hash": sha3("{}"), "actor": "t", "timestamp": 1,
+                           "content": "{}", "content_stored": True}) + "\n"
+        for bad, said in ((good.replace('"version": 1', '"version": 3'), "out of order"),
+                          ('{"artifact_id": "w1205-o", "versi\n', "not a JSON line")):
+            led.write_text(good + bad + good.replace("w1205-o", "w1205-p"), encoding="utf-8")
+            kept = led.read_bytes()
+            inst = DC("w1205")
+            assert said in (inst._store_incomplete or ""), (said, inst._store_incomplete)
+            assert {k: len(v) for k, v in inst.registry.items()} == {"w1205-o": 1}, (said, "L3: read past the problem")
+            assert inst.verify_artifact("w1205-p")["valid"] is False, (said, "L3: verify read past the problem")
+            with pytest.raises(StoreUnavailable):
+                run(inst.commit_artifact("w1205-o", {"n": 2}, "w1205"))
+            assert led.read_bytes() == kept, said
+
+    #  L4. A SHARING VIOLATION IS RETRIED; ONE THAT LASTS IS A REFUSAL
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l4")
+        run(DC("w1205").commit_artifact("w1205-l4", {"n": 1}, "w1205"))
+        run(DC("w1205").commit_artifact("w1205-l4", {"n": 2}, "w1205"))
+        kept = led.read_bytes()
+        calls = []
+        _open = D._open_raw
+
+        def twice(path):
+            calls.append(path)
+            if len(calls) <= 2:
+                raise PermissionError(13, "w1205: a sharing violation")
+            return _open(path)
+        m.setattr(D, "_open_raw", twice)
+        inst = DC("w1205")
+        assert inst._store_incomplete is None and len(inst.registry["w1205-l4"]) == 2, inst._store_incomplete
+        assert len(calls) >= 3, "L4: the reader was not retried"
+        m.setattr(D, "_open_raw", lambda path: (_ for _ in ()).throw(PermissionError(13, "w1205: held")))
+        stuck = DC("w1205")
+        assert "stayed locked" in (stuck._store_incomplete or "") and stuck.registry == {}, stuck._store_incomplete
+        with pytest.raises(StoreUnavailable):
+            run(stuck.commit_artifact("w1205-l4", {"n": 3}, "w1205"))
+        assert led.read_bytes() == kept, "L4: a ledger that could not be read was written"
+
+    #  L5. A FAILED APPEND IS NOT DOCUMENT CONTROL (the suite's own singletons, nothing written)
+    from agentic_core.vbs import quality as Q
+    from agentic_core.vbs.registry import dcms as _dcms, qms as _qms
+    assert _qms.dcms is _dcms
+    live = pathlib.Path(_dcms._store_path())
+    live_before = live.read_bytes() if live.exists() else None
+    key = "qms_record:delivery"
+    n_before, c_before = len(_dcms.registry.get(key) or []), _qms.controlled_documents
+
+    def full(path, data):
+        raise OSError(errno.ENOSPC, "w1205: no space left on device")
+    secs = ["Summary", "Plan", "Risks"]
+    body = "\n".join(f"## {s}\nA substantive paragraph about the w1205 delivery's {s.lower()}, " * 3 for s in secs)
+    with monkeypatch.context() as m:
+        m.setattr(D, "_append_bytes", full)
+        out = run(Q.assure_delivery(body, required_sections=secs, label="delivery", served_by={"local": 1}))
+        from agentic_core.ai.native.orchestrator import orchestrator as _orch
+        tree = run(_orch.orchestrate_tree("w1205 a made-up bakery's opening plan"))
+    qa = out["quality"]
+    assert qa["document_controlled"] is False and qa["quality_record_hash"] is None, qa.get("document_control_basis")
+    assert "no space left on device" in qa["document_control_basis"], qa["document_control_basis"]
+    assert qa["document_control_basis"].startswith("not kept:") and "qms_error" not in qa, qa
+    assert "/api/v1/vbs/qms/document-control" in qa["document_control_basis"]
+    assert _qms.controlled_documents == c_before and len(_dcms.registry.get(key) or []) == n_before
+    assert (live.read_bytes() if live.exists() else None) == live_before, "L5: a failed append changed the ledger"
+    gov = tree.get("governance") or {}
+    assert gov.get("governed_by", "").startswith("VBS QMS + DCMS") and "qms_passed" in gov and gov.get("qms_basis"), (
+        "L5: a seal that was not kept dropped the tree's governance and its QMS verdict", tree.get("governance"))
+    assert gov["dcms_hash"] is None and gov["dcms_version"] is None, gov
+    assert "no space left" in gov.get("dcms_basis", ""), gov
+    #  and with the append working again, the same delivery is document-controlled
+    ok = run(Q.assure_delivery(body, required_sections=secs, label="delivery", served_by={"local": 1}))["quality"]
+    assert ok["document_controlled"] is True and len(ok["quality_record_hash"]) == 128
+    assert _qms.controlled_documents == c_before + 1 and len(_dcms.registry[key]) == n_before + 1
+
+    #  L6. THE REGISTRY BEFORE W1205 IS CARRIED IN ONCE, AND KEPT
+    def plant(d, entries_of):
+        old = {}
+        for aid, vers in entries_of.items():
+            for v in vers:
+                p = json.dumps({"a": aid, "v": v}, sort_keys=True)
+                old.setdefault(aid, []).append({"version": v, "hash": sha3(p), "actor": "w1205",
+                                                "timestamp": 1700000000 + v, "content": p, "content_stored": True})
+        (d / "dcms_registry.json").write_text(json.dumps(old, indent=2), encoding="utf-8")
+        return (d / "dcms_registry.json").read_bytes()
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6")
+        old_bytes = plant(d, {f"w1205-old-{a}": (1, 2) for a in range(3)})
+        mig = DC("w1205")
+        assert mig._store_incomplete is None, mig._store_incomplete
+        assert {k: len(v) for k, v in mig.registry.items()} == {f"w1205-old-{a}": 2 for a in range(3)}
+        assert sum(r["verified"] is True for a in range(3)
+                   for r in mig.verify_artifact(f"w1205-old-{a}")["versions"]) == 6, "L6: 6 versions verify"
+        lines = led.read_text(encoding="utf-8").splitlines()
+        first = json.loads(lines[0])
+        assert first["kind"] == "migration" and first["from"] == "dcms_registry.json", first
+        assert (first["sha256"], first["artifacts"], first["versions"]) == (hashlib.sha256(old_bytes).hexdigest(),
+                                                                            3, 6), first
+        assert len(lines) == 7 and all(json.loads(ln).get("migrated") is True for ln in lines[1:])
+        run(mig.commit_artifact("w1205-old-0", {"a": 0, "v": 3}, "w1205"))
+        assert (d / "dcms_registry.json").read_bytes() == old_bytes, "L6: the old registry was rewritten"
+        lines = led.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == 8 and sum('"kind": "migration"' in ln for ln in lines) == 1, lines[:2]
+        again = DC("w1205")
+        assert led.read_text(encoding="utf-8").splitlines() == lines, "L6: a second load carried it in again"
+        assert versions(again) == {"w1205-old-0": [1, 2, 3], "w1205-old-1": [1, 2], "w1205-old-2": [1, 2]}
+        assert again.migration and again.migration["sha256"] == first["sha256"] and again.get_audit_integrity() == 1.0
+        #  the ledger goes missing (moved aside here, its bytes kept): refused, never carried in again
+        kept_lines = led.read_bytes()
+        os.replace(led, d / "w1205-ledger-moved-aside.jsonl")
+        lost = DC("w1205")
+        assert "is missing" in (lost._store_incomplete or "") and not led.exists(), lost._store_incomplete
+        with pytest.raises(StoreUnavailable):
+            run(lost.commit_artifact("w1205-old-0", {"a": 0, "v": 4}, "w1205"))
+        with pytest.raises(StoreUnavailable):
+            run(again.commit_artifact("w1205-old-0", {"a": 0, "v": 4}, "w1205"))
+        assert not led.exists() and (d / "dcms_registry.json").read_bytes() == old_bytes
+        assert (d / "w1205-ledger-moved-aside.jsonl").read_bytes() == kept_lines
+    for name, write_old, said in (
+            ("l6b", lambda d: (d / "dcms_registry.json").write_text('{"w1205-x": [{"version": 1, "hash": "ab',
+                                                                      encoding="utf-8"), "stays the store"),
+            ("l6c", lambda d: plant(d, {"w1205-x": (2, 1)}), "not 1 to 2 in order")):
+        with monkeypatch.context() as m:
+            d, led = iso(m, name)
+            write_old(d)
+            old_bytes = (d / "dcms_registry.json").read_bytes()
+            bad = DC("w1205")
+            assert not led.exists(), (name, "L6: an old registry that could not be carried was carried")
+            assert said in (bad._store_incomplete or "") and "empty dcms_ledger.jsonl" in bad._store_incomplete, (
+                name, bad._store_incomplete)
+            with pytest.raises(StoreUnavailable):
+                run(bad.commit_artifact("w1205-x", {"n": 1}, "w1205"))
+            assert not led.exists() and (d / "dcms_registry.json").read_bytes() == old_bytes, name
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6d")
+        old_bytes = plant(d, {"w1205-y": (1,)})
+        _replace = os.replace
+
+        def no_room(src, dst, *a, **k):
+            if str(dst).endswith("dcms_ledger.jsonl"):
+                raise OSError(errno.ENOSPC, "w1205: no space left on device")
+            return _replace(src, dst, *a, **k)
+        m.setattr(os, "replace", no_room)
+        failed = DC("w1205")      # the constructor returns: the platform still imports
+        assert "could not be carried in" in (failed._store_incomplete or ""), failed._store_incomplete
+        assert sorted(p.name for p in d.iterdir()) == ["dcms_registry.json"], sorted(p.name for p in d.iterdir())
+        assert (d / "dcms_registry.json").read_bytes() == old_bytes
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6e")
+        (d / "dcms_registry.json").write_bytes(b"")
+        empty = DC("w1205")
+        assert empty._store_incomplete is None and empty.registry == {} and empty.migration["bytes"] == 0
+        assert (d / "dcms_registry.json").read_bytes() == b""
+    with monkeypatch.context() as m:
+        d, led = iso(m, "l6f")
+        rec = {"artifact_id": "w1205-z", "version": 1, "hash": sha3("{}"), "actor": "t", "timestamp": 1,
+               "content": "{}", "content_stored": True}
+        led.write_text("\n".join([json.dumps({"kind": "migration", "versions": 3}),
+                                  json.dumps({**rec, "migrated": True}),
+                                  json.dumps({**rec, "version": 2, "migrated": True}),
+                                  json.dumps({**rec, "artifact_id": "w1205-after"})]) + "\n", encoding="utf-8")
+        short = DC("w1205")
+        assert "carried 3 version(s), 2 carried line(s) follow it" in (short._store_incomplete or ""), (
+            short._store_incomplete)
+
+    #  L7. 300 VERSIONS OF ABOUT 10 KB: NO CONTENT IS RESIDENT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l7")
+        big = DC("w1205")
+        for i in range(300):
+            run(big.commit_artifact(f"w1205-l7-{i % 5}", {"i": i, "body": "y" * 10_000}, "w1205"))
+        assert sum(len(v) for v in big.registry.values()) == 300 and led.stat().st_size > 3_000_000
+        no_content(big.registry, "L7, the writer")
+        no_content(DC("w1205").registry, "L7, a fresh instance")
+
+    #  L8. A TAMPERED LINE IN THE FILE IS CAUGHT, BY RECOMPUTING, ON THE INSTANCE THAT COMMITTED IT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l8")
+        t = DC("w1205")
+        for i in range(4):
+            run(t.commit_artifact(f"w1205-l8-{i % 2}", {"i": i}, "w1205"))
+        assert t.verify_artifact("w1205-l8-1")["valid"] is True and t.get_audit_integrity() == 1.0
+        clean = led.read_text(encoding="utf-8").splitlines()
+        rec = json.loads(clean[1])
+        lines = list(clean)
+        lines[1] = json.dumps({**rec, "content": '{"i": "TAMPERED"}'})
+        led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        v = t.verify_artifact("w1205-l8-1")
+        assert v["valid"] is False and [r["verified"] for r in v["versions"]] == [False, True], v
+        assert t.verify_artifact("w1205-l8-0")["valid"] is True
+        assert t.get_audit_integrity() == 0.75, t.get_audit_integrity()
+        for shape, lines in (
+                ("the flag flipped to hide a tamper", clean[:1] + [json.dumps({**rec, "content": '{"i": "T"}',
+                                                                               "content_stored": False})] + clean[2:]),
+                ("a repeated line", clean + [clean[1]])):
+            led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            v = t.verify_artifact("w1205-l8-1")
+            assert v["valid"] is False and "cannot be read whole" in v.get("reason", ""), (shape, v)
+            assert t.get_audit_integrity() < 1.0, shape
+
+    #  L9. THE DIRECT CALLERS WITH NO TRY: 503 AND THE REASON, NOTHING SAVED
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.api import vbs_systems as _vs
+    vid = "vsb-w1205-seal"
+    stage = _vsb._LIFECYCLE_STAGE_IDS[1]
+    rec_path = _vsb._vsb_path(vid)
+    rec_path.write_text(json.dumps({"vsb_id": vid, "name": "W1205 Made-up Seal Co", "owner_id": None,
+                                    "review_gates": {"stages": [stage], "decisions": {}}}), encoding="utf-8")
+
+    def undone(path, data):
+        raise D.AppendNotUndone("w1205: the append failed and its tail could not be taken back", 0)
+    try:
+        rec_before = rec_path.read_bytes()
+        live_before = live.read_bytes() if live.exists() else None
+        for failing, tail in ((full, "Nothing was"), (undone, "not confirmed durable")):
+            with monkeypatch.context() as m:
+                m.setattr(D, "_append_bytes", failing)
+                for what, call, lead in (
+                        ("the review gates", lambda: _vsb.set_review_gates(
+                            vid, _vsb.ReviewGatesRequest(stages=[stage, _vsb._LIFECYCLE_STAGE_IDS[2]]), None),
+                         "The review gates were NOT changed"),
+                        ("the review decision", lambda: _vsb.decide_review_gate(
+                            vid, stage, _vsb.GateDecisionRequest(decision="approve", note="w1205"), None),
+                         "The review decision was NOT recorded"),
+                        ("the commit route", lambda: _vs.dcms_commit(_vs.DCMSCommit(artifact_id="w1205-route",
+                                                                                    content={"n": 1})),
+                         "Version NOT committed")):
+                    with pytest.raises(HTTPException) as e:
+                        run(call())
+                    _dcms._unconfirmed = None      # the patched door set it on the singleton; nothing was written
+                    detail = str(e.value.detail)
+                    assert e.value.status_code == 503 and detail.startswith(lead), (what, e.value.status_code, detail)
+                    assert ("no space left on device" if failing is full else "could not be taken back") in detail, (
+                        what, detail)
+                    assert tail in detail, (what, "L9: the refusal says the wrong thing about the ledger", detail)
+                    if failing is undone and what == "the commit route":
+                        assert "Nothing was appended" not in detail, detail
+                    assert rec_path.read_bytes() == rec_before, (what, "L9: the entity was saved without its record")
+                    assert (live.read_bytes() if live.exists() else None) == live_before, what
+    finally:
+        rec_path.unlink(missing_ok=True)
+
+    #  L10. THE SOAK READS THE LEDGER; ONLY dcms.py WRITES OR REPLACES THE OLD REGISTRY
+    soak = (root / "scripts" / "soak_organism.py").read_text(encoding="utf-8")
+    assert '(dd / "dcms_ledger.jsonl")' in soak and "dcms_registry.json" not in soak
+    writes = re.compile(r"atomic_write_json|write_text|write_bytes|os\.replace|unlink|open\([^)]*['\"][wa]b?['\"]")
+    writers = sorted(p.relative_to(root).as_posix() for p in (root / "agentic_core").rglob("*.py")
+                     if "_archive" not in p.parts and any(
+                         "dcms_registry" in ln and writes.search(ln)
+                         for ln in p.read_text(encoding="utf-8", errors="replace").splitlines()))
+    assert writers == [], ("L10: a module writes or replaces the old registry", writers)
+    assert D.OLD_REGISTRY_NAME == "dcms_registry.json" and D.LEDGER_NAME == "dcms_ledger.jsonl"
+
+    #  L11. THE REGISTER
+    row = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+           if isinstance(r, dict) and "id" in r}["FU-1845"]
+    assert (row["slot"], row["severity"]) == ("P3.30", "medium"), row
+    assert (row["status"], row["closed_by"]) in (("open", None), ("done", "W1205")), (row["status"], row["closed_by"])
+
+    #  L12. A FAILED APPEND TAKES BACK ITS OWN TAIL, AND ONLY THAT
+    with monkeypatch.context() as m:
+        _d, led = iso(m, "l12")
+        w = DC("w1205")
+        for i in range(3):
+            run(w.commit_artifact("w1205-l12", {"i": i}, "w1205"))
+        _write, _fsync, _trunc = os.write, os.fsync, os.ftruncate
+        for case in ("a short write, then ENOSPC", "the fsync fails"):
+            kept, n = led.read_bytes(), len(w.registry["w1205-l12"])
+            calls = []
+            if case.startswith("a short"):
+                def write(fd, b):
+                    calls.append(1)
+                    if len(calls) == 1:
+                        return _write(fd, bytes(b)[:20])
+                    raise OSError(errno.ENOSPC, "w1205: no space left on device")
+                m.setattr(os, "write", write)
+            else:
+                def fsync(fd):
+                    calls.append(1)
+                    if len(calls) == 1:
+                        raise OSError(errno.EIO, "w1205: an I/O error")
+                    return _fsync(fd)
+                m.setattr(os, "fsync", fsync)
+            with pytest.raises(OSError):
+                run(w.commit_artifact("w1205-l12", {"failed": case}, "w1205"))
+            m.setattr(os, "write", _write)
+            m.setattr(os, "fsync", _fsync)
+            assert led.read_bytes() == kept, (case, "L12: a failed append left bytes in the ledger")
+            assert DC("w1205")._store_incomplete is None, (case, "L12: the ledger does not read whole")
+            run(w.commit_artifact("w1205-l12", {"after": case}, "w1205"))
+            assert versions(DC("w1205"))["w1205-l12"] == list(range(1, n + 2)), case
+        #  the undo fails too: said, and the instance refuses until it is restarted
+        m.setattr(os, "fsync", lambda fd: (_ for _ in ()).throw(OSError(errno.EIO, "w1205: an I/O error")))
+        m.setattr(os, "ftruncate", lambda fd, n: (_ for _ in ()).throw(OSError(errno.EIO, "w1205: no truncate")))
+        with pytest.raises(D.AppendNotUndone) as e:
+            run(w.commit_artifact("w1205-l12", {"unconfirmed": True}, "w1205"))
+        assert "may or may not be in the ledger" in str(e.value), str(e.value)
+        m.setattr(os, "fsync", _fsync)
+        m.setattr(os, "ftruncate", _trunc)
+        after_undo = led.read_bytes()
+        with pytest.raises(StoreUnavailable) as e:
+            run(w.commit_artifact("w1205-l12", {"next": True}, "w1205"))
+        assert "not confirmed durable" in str(e.value) and w.refusal, str(e.value)
+        assert led.read_bytes() == after_undo, "L12: a refused commit wrote"
+
+
+def test_w1206_a_store_read_tolerantly_into_an_object_is_never_written_back_from_it(monkeypatch, tmp_path):
+    """FU-1846 (W1206), P5.10 clause 1: a return of a closed class gets a guard at the mechanism. FU-395's class, a
+    tolerant read used as a write base, returned through an object attribute: the QMS fills self._state from
+    read_json_reported and _save_state wrote it whole from another method, whatever _store_unreadable said, which
+    W577's per-function guard cannot see. W1205 made the DCMS, the other instance, read strictly. Held here:
+    L1. a QualityManagementSystem on a truncated store, on an isolated data root: a failing gate still returns False;
+        the file's bytes are unchanged; defect_summary says the store is incomplete, that writes are refused, that the
+        refusal lasts until a restart with the store repaired, and the last refused write; each defect writer still
+        answers, saying write_refused, and writes nothing; POST /mgmt/nonconformance answers stored False and NOT
+        STORED, and POST /vbs/qms/gate says its run was NOT recorded, each with writes_refused. On a store read whole,
+        the same writes are made and the routes say stored and recorded;
+    L2. the attribute door, over agentic_core outside _archive: no class binds an attribute from a tolerant read,
+        directly or through its own method's return, and passes it to a writer, unless the writing method first
+        raises on the reason the read bound; in the QMS every save goes through _save_or_refuse, and only
+        _save_state writes;
+    L3. the matcher flags planted sources with HEAD's DCMS shape (through a method's return), HEAD's QMS shape (a
+        tuple bound directly), a cache loaded through a method, a writer guarded on another attribute, an inverted
+        guard, a write through a local alias and a binding by annotated assignment; it does not flag the guarded
+        shape this round builds, or the heartbeat's (a tolerant read of one store, a write of another);
+    L4. the register: FU-1846 is on P5.10, high, open or closed by W1206; its why names FU-1834 (auth/core.py's
+        except-default loader, a third door this matcher does not see, left to P4.1) and why FU-395 is not reopened;
+        FU-1834 is on P4.1."""
+    import ast
+    import asyncio
+    import json
+    import pathlib
+    import pytest
+    from agentic_core import config as _cfg
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.vbs import qms as Qm
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  L1. THE QMS REFUSES ITS WRITE WHILE ITS STORE COULD NOT BE READ WHOLE
+    with monkeypatch.context() as m:
+        d = tmp_path / "l1"
+        d.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d.joinpath(*parts))
+        store = d / "qms_state_w1206.json"
+        store.write_text('{"gates_run": 4, "defects_total": 2, "defe', encoding="utf-8")
+        kept = store.read_bytes()
+        q = Qm.QualityManagementSystem("w1206")
+        assert asyncio.run(q.run_quality_gates({"coverage": 0.2, "stubs_found": True}, label="delivery")) is False
+        assert store.read_bytes() == kept, "the truncated store was written back with what could be read"
+        s = q.defect_summary()
+        assert s.get("store_incomplete") and s.get("counts_are_incomplete") is True, s
+        assert s.get("writes_refused") is True and s.get("writes_refused_basis") == Qm.WRITES_REFUSED_BASIS, s
+        assert "until the platform is restarted with the store repaired" in s["writes_refused_basis"]
+        assert "keeps its bytes" in s["writes_refused_basis"] and "lost when it ends" in s["writes_refused_basis"]
+        lw = s.get("last_write_refused") or {}
+        assert lw.get("writer") == "run_quality_gates" and "qms_state_w1206.json" in lw.get("reason", ""), lw
+        assert "nothing was written" in lw["reason"], lw
+        assert "THIS RATE IS INCOMPLETE" in s["rate_basis"], "W534's disclosure on reads is kept"
+        with pytest.raises(StoreUnavailable):
+            q._save_state()
+        dft = q.open_reported_defect("w1206 a reported nonconformance", "minor", vsb_id="vsb-w1206")
+        assert dft.get("write_refused") and dft["status"] == "open", dft
+        gate_dft = [x for x in q.defects if x.get("label") == "delivery"][0]
+        for writer, call in (
+                ("correct_defect", lambda: q.correct_defect(gate_dft["id"], "w1206 corrected")),
+                ("reverify_defect", lambda: q.reverify_defect(gate_dft["id"], {"coverage": 0.99})),
+                ("dispose_defect", lambda: q.dispose_defect(dft["id"], "not_reproducible", "w1206", "w1206", False))):
+            out = call()
+            assert out and out.get("write_refused"), (writer, out)
+            assert q.last_write_refused["writer"] == writer, (writer, q.last_write_refused)
+            assert store.read_bytes() == kept, (writer, "wrote over the store it could not read")
+        #  the two routes that answer what a write did
+        from agentic_core.api import management_systems as _ms
+        from agentic_core.api import vbs_systems as _vs
+        from agentic_core.vbs import registry as _reg
+
+        async def no_model(prompt, agent, said=None):
+            return "w1206: no model was run", {"served_by": "none"}
+        m.setattr(_ms, "_compose", no_model)
+
+        def routes(inst):
+            m.setattr(_reg, "qms", inst)
+            m.setattr(_vs, "qms", inst)
+            nc = asyncio.run(_ms.record_nonconformance(_ms.NonConformanceRequest(
+                organisation_name="W1206 Made-up Co", description="w1206 a reported nonconformance"), None))
+            gate = asyncio.run(_vs.qms_gate(_vs.QMSGate(coverage=0.2), None))
+            return nc, gate
+        nc, gate = routes(q)
+        assert nc["stored"] is False and nc["stored_basis"].startswith("NOT STORED") and nc.get("writes_refused"), nc
+        assert "will not survive a restart" in nc["stored_basis"] and "list it at" not in nc["stored_basis"], nc
+        assert nc["last_write_refused"]["writer"] == "open_reported_defect", nc
+        assert gate.get("writes_refused") is True and gate.get("last_write_refused"), gate
+        assert "was NOT recorded" in gate["basis"] and "recorded separately" not in gate["basis"], gate["basis"]
+        assert gate.get("store_incomplete") and gate.get("writes_refused_basis") == Qm.WRITES_REFUSED_BASIS, gate
+        assert store.read_bytes() == kept, "a route wrote over the store it could not read"
+        #  a store read whole is written as before, and says nothing of refusals
+        d2 = tmp_path / "l1-whole"
+        d2.mkdir()
+        m.setattr(_cfg, "data_path", lambda *parts: d2.joinpath(*parts))
+        w = Qm.QualityManagementSystem("w1206")
+        assert asyncio.run(w.run_quality_gates({"coverage": 0.2, "stubs_found": True}, label="delivery")) is False
+        on_disk = json.loads((d2 / "qms_state_w1206.json").read_text(encoding="utf-8"))
+        assert on_disk["gates_run"] == 1 and len(on_disk["defects"]) == 1, on_disk
+        r = w.open_reported_defect("w1206 whole", "minor")
+        assert "write_refused" not in r and w.last_write_refused is None
+        assert not {"writes_refused", "last_write_refused", "store_incomplete"} & set(w.defect_summary())
+        nc, gate = routes(w)
+        assert nc["stored"] is True and nc["stored_basis"].startswith("STORED as defect") and "writes_refused" not in nc
+        assert "recorded separately" in gate["basis"] and "writes_refused" not in gate, gate
+
+    #  L2 / L3. THE ATTRIBUTE DOOR
+    TOLERANT = {"read_json_reported", "load_json_tolerant"}
+    WRITERS = {"atomic_write_json", "save_lifecycle", "_save_fund"}       # test_w577's writers
+
+    def attribute_doors(src):
+        """(class, attribute, binding method, writing method) for each attribute a class binds from a tolerant read,
+        directly or through its own method's return, and passes to a writer (itself or through a local alias),
+        unless the writing method first raises on the reason the tolerant read bound (the reason itself, not its
+        negation)."""
+        def called(node):
+            f = node.func if isinstance(node, ast.Call) else None
+            return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+
+        def tolerant(node):
+            node = node.value if isinstance(node, ast.Subscript) else node
+            return isinstance(node, ast.Call) and called(node) in TOLERANT
+
+        def self_attr(node):
+            return (node.attr if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                    and node.value.id == "self" else None)
+
+        def assigns(fn):
+            """(targets, value) for every assignment in FN, annotated ones included."""
+            for a in ast.walk(fn):
+                if isinstance(a, ast.Assign):
+                    yield a.targets, a.value
+                elif isinstance(a, ast.AnnAssign) and a.value is not None:
+                    yield [a.target], a.value
+
+        def returns_tolerant(fn):
+            tainted = set()
+            for targets, value in assigns(fn):
+                if tolerant(value):
+                    for t in targets:
+                        if isinstance(t, ast.Name):
+                            tainted.add(t.id)
+                        elif isinstance(t, ast.Tuple) and t.elts and isinstance(t.elts[0], ast.Name):
+                            tainted.add(t.elts[0].id)
+            return any(isinstance(r, ast.Return) and r.value is not None
+                       and (tolerant(r.value) or {x.id for x in ast.walk(r.value) if isinstance(x, ast.Name)} & tainted)
+                       for r in ast.walk(fn))
+        found = []
+        for cls in [n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.ClassDef)]:
+            methods = {f.name: f for f in cls.body if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            via_methods = {n for n, f in methods.items() if returns_tolerant(f)}
+            bound, reasons = {}, set()
+            for name, fn in methods.items():
+                local_reasons = set()
+                for targets, value in assigns(fn):
+                    direct = tolerant(value)
+                    via = isinstance(value, ast.Call) and self_attr(value.func) in via_methods
+                    if not (direct or via):
+                        continue
+                    for t in targets:
+                        if isinstance(t, ast.Tuple) and t.elts:
+                            if self_attr(t.elts[0]):
+                                bound.setdefault(self_attr(t.elts[0]), name)
+                            if direct and len(t.elts) > 1:
+                                if self_attr(t.elts[1]):
+                                    reasons.add(self_attr(t.elts[1]))
+                                elif isinstance(t.elts[1], ast.Name):
+                                    local_reasons.add(t.elts[1].id)
+                        elif self_attr(t):
+                            bound.setdefault(self_attr(t), name)
+                for targets, value in assigns(fn):      # a reason carried onto the object through a local name
+                    if isinstance(value, ast.Name) and value.id in local_reasons:
+                        reasons.update(self_attr(t) for t in targets if self_attr(t))
+
+            def raises_on(test):
+                """The test is true when the reason is set: the reason itself, an 'is not None' on it, or an 'or'
+                or 'and' holding one of those; never its negation."""
+                if self_attr(test) in reasons:
+                    return True
+                if isinstance(test, ast.BoolOp):
+                    return any(raises_on(v) for v in test.values)
+                return (isinstance(test, ast.Compare) and self_attr(test.left) in reasons and len(test.ops) == 1
+                        and isinstance(test.ops[0], ast.IsNot) and isinstance(test.comparators[0], ast.Constant)
+                        and test.comparators[0].value is None)
+            for name, fn in methods.items():
+                aliases = {t.id: self_attr(value) for targets, value in assigns(fn) for t in targets
+                           if isinstance(t, ast.Name) and self_attr(value) in bound}
+                for c in ast.walk(fn):
+                    if not (isinstance(c, ast.Call) and called(c) in WRITERS):
+                        continue
+                    used = set()
+                    for arg in list(c.args) + [k.value for k in c.keywords]:
+                        for x in ast.walk(arg):
+                            if self_attr(x) in bound:
+                                used.add(self_attr(x))
+                            elif isinstance(x, ast.Name) and x.id in aliases:
+                                used.add(aliases[x.id])
+                    for attr in sorted(used):
+                        guarded = any(isinstance(n, ast.If) and n.lineno < c.lineno and raises_on(n.test)
+                                      and any(isinstance(b, ast.Raise) for s in n.body for b in ast.walk(s))
+                                      for n in ast.walk(fn))
+                        if not guarded:
+                            found.append((cls.name, attr, bound[attr], name))
+        return found
+
+    #  L2. over the tree
+    doors, scanned = [], 0
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        if "_archive" in p.parts:
+            continue
+        try:
+            got = attribute_doors(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        scanned += 1
+        doors += [(p.relative_to(root).as_posix(),) + g for g in got]
+    assert scanned > 300, ("the scan read too few modules to mean anything", scanned)
+    assert not doors, ("these classes read a store tolerantly into an attribute and write that attribute back from "
+                       "another method, so what the read could not recover is overwritten and lost (FU-395's class "
+                       "through the attribute door)", doors)
+
+    #  L3. the matcher, on planted sources: it is neither vacuous nor wide
+    dcms_head = '''
+class DocumentControlManagementSystem:
+    def __init__(self, config_path):
+        self.registry = self._load()
+    def _load(self):
+        try:
+            data, why = read_json_reported(self._store_path(), {})
+            data = data if isinstance(data, dict) else {}
+        except Exception as e:
+            data, why = {}, str(e)
+        self._store_incomplete = why
+        return data
+    def _persist(self):
+        try:
+            atomic_write_json(self._store_path(), self.registry)
+        except Exception:
+            pass
+'''
+    qms_head = '''
+class QualityManagementSystem:
+    def _load_state(self):
+        if self._state is None:
+            self._state, self._store_unreadable = read_json_reported(data_path(self._store_name), {})
+        return self._state
+    def _save_state(self):
+        if self._state is not None:
+            atomic_write_json(data_path(self._store_name), self._state)
+'''
+    qms_guarded = qms_head.replace(
+        "        if self._state is not None:\n            atomic_write_json",
+        "        if self._state is not None:\n            if self._store_unreadable:\n"
+        "                raise StoreUnavailable(data_path(self._store_name), self._store_unreadable)\n"
+        "            atomic_write_json")
+    guarded_elsewhere = qms_guarded.replace("            if self._store_unreadable:\n",
+                                            "            if self._dirty:\n")
+    cache = '''
+class Cache:
+    def _load_tolerant(self):
+        value, _why = read_json_reported(data_path("w1206_cache.json"), {})
+        return value
+    def __init__(self):
+        self.cache = self._load_tolerant()
+    def flush(self):
+        atomic_write_json(data_path("w1206_cache.json"), self.cache)
+'''
+    heartbeat = '''
+class OrganismHeartbeat:
+    def _compliance_beat(self):
+        self.history, self._history_why = read_json_reported(data_path("vsb_compliance_history.json"), {})
+        hist = self.history or {}
+        return sorted(hist)
+    def _save_autonomy(self):
+        payload = {"auto_ship": self.auto_ship}
+        atomic_write_json(self._autonomy_store(), payload)
+'''
+    inverted = qms_guarded.replace("            if self._store_unreadable:\n",
+                                   "            if not self._store_unreadable:\n")
+    alias = qms_head.replace("            atomic_write_json(data_path(self._store_name), self._state)",
+                             "            st = self._state\n"
+                             "            atomic_write_json(data_path(self._store_name), st)")
+    annotated = cache.replace("        self.cache = self._load_tolerant()",
+                              "        self.cache: dict = read_json_reported(data_path(\"w1206_cache.json\"), {})[0]")
+    assert attribute_doors(inverted) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(alias) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(annotated) == [("Cache", "cache", "__init__", "flush")]
+    assert attribute_doors(dcms_head) == [("DocumentControlManagementSystem", "registry", "__init__", "_persist")]
+    assert attribute_doors(qms_head) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(cache) == [("Cache", "cache", "__init__", "flush")]
+    assert attribute_doors(guarded_elsewhere) == [("QualityManagementSystem", "_state", "_load_state", "_save_state")]
+    assert attribute_doors(qms_guarded) == [], "the guarded writer this round builds is flagged"
+    assert attribute_doors(heartbeat) == [], "a tolerant read of one store and a write of another is flagged"
+    #  and the real QMS is the guarded shape, through the one writer every save passes
+    qtree = ast.parse((root / "agentic_core" / "vbs" / "qms.py").read_text(encoding="utf-8"))
+    qcls = next(n for n in qtree.body if isinstance(n, ast.ClassDef) and n.name == "QualityManagementSystem")
+    callers = {}
+    for fn in qcls.body:
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for c in ast.walk(fn):
+                if isinstance(c, ast.Call):
+                    f = c.func
+                    nm = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
+                    callers.setdefault(nm, []).append(fn.name)
+    assert callers.get("_save_state") == ["_save_or_refuse"], ("a save goes around the refusal", callers)
+    assert callers.get("atomic_write_json") == ["_save_state"], ("the QMS writes elsewhere", callers)
+    assert len(callers.get("_save_or_refuse", [])) >= 5, callers.get("_save_or_refuse")
+
+    #  L4. THE REGISTER
+    rows = {r["id"]: r for r in json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+            if isinstance(r, dict) and "id" in r}
+    row = rows["FU-1846"]
+    assert (row["slot"], row["severity"]) == ("P5.10", "high"), row
+    assert (row["status"], row["closed_by"]) in (("open", None), ("done", "W1206")), (row["status"], row["closed_by"])
+    assert "FU-1834" in row["why"] and "no reopen" in row["why"] and "FU-395" in row["why"], row["why"]
+    assert rows["FU-1834"]["slot"] == "P4.1" and "agentic_core/auth/core.py" in rows["FU-1834"]["files"]
+
+
+def test_w1202_fu1835_through_the_tunnel_no_page_from_another_origin_or_host_acts_on_the_platform(
+        client, tmp_path, monkeypatch, caplog):
+    """FU-1835 (W1202), P4.1. CORS_ORIGINS stopped a page from reading the release machine's answers, not from acting
+    on it: with sign-in off, any page in the Owner's browser acted through step 7's tunnel as the administrator, by a
+    simple POST, by the stream socket, or by a host name rebound to 127.0.0.1. agentic_core/request_guard.py is now
+    the outermost layer of the app, and acts only where the release machine names its page origins. Held here, through
+    the real app with sign-in off (heartbeat stop patched, a made-up users store):
+    G1. off by default: with neither setting, with CORS_ORIGINS as a .env made from the old .env.example set it (its
+        own comment), empty, or an explicit list, with WORKSTATION_PAGE_ORIGINS empty, and with it holding an entry that
+        is not scheme://host[:port] (the old comment, a path, a bare host, a served host with a port), a POST with
+        Origin http://evil.example and Host testserver reaches the stop, GET /health answers, and an entry not read
+        says so in the log, naming it, at startup too (the lifespan);
+    G2. the tunnel's own page acts: WORKSTATION_PAGE_ORIGINS as the startup script gives it (http://localhost:8800 and
+        http://127.0.0.1:8800), a client on http://localhost:8800: /health answers, also for Host 127.0.0.1:8000 and
+        [::1]:8000, and the POST runs the stop once from the page opened either way;
+    G3. another site cannot act: a POST, PUT, PATCH or DELETE with Origin http://evil.example, with Origin null, with
+        the tunnel's host on another port, and with no Origin but Sec-Fetch-Site: cross-site answers 403 with the
+        sentence; the stop never runs; a refused request is not observed by the membrane; a preflight runs; a read
+        under /api/ that a page of another site has the browser make (Sec-Fetch-Site: cross-site, any mode but
+        navigate) is refused and does not run, while a link followed from another site, a read outside /api/ and a
+        read with no Sec-Fetch headers still run, as the module says;
+    G4. the registration exploit: POST /api/v1/auth/register with Origin http://evil.example and a JSON body sent with
+        no Content-Type answers 403 and the users store's bytes are unchanged, where the guard with its setting empty
+        does not answer the same request;
+    G5. a program is not a page: the POST with no Origin and no Sec-Fetch-Site reaches the stop;
+    G6. DNS rebinding: GET /api/v1/auth/users with Host evil.example:8800 answers 400 and names no account, and a POST
+        with the tunnel's own Origin under that Host is refused too;
+    G7. the stream socket: with Origin http://evil.example it is closed with 1008 before it is accepted, with the
+        tunnel's origin it is accepted, and with Host evil.example it is closed with 1008;
+    G8. behind the front (https://app.example.com, served host app.example.com): /health answers for that Host and for
+        localhost:8000, the image's health check; the domain's page acts, its default port written or not; the
+        tunnel's origin and another Host are refused. A split deployment (pages from app.example.com, the backend
+        served as api.example.com) serves its own host and refuses the page's;
+    G9. the guard is the app's outermost layer, added once after the CORS middleware and _horizon_observe; the startup
+        script passes the page's origins on both runs (the tunnel's two) and the served host behind the front, and no
+        other file that deploys or configures the platform sets either setting; the drill measures a page's write through the front;
+        .env.example leaves both unset and CORS_ORIGINS empty; the module states what it does not refuse;
+    G10. the guide and the row: step 7 says a page of another origin cannot act through the tunnel and a program
+        still can, W1191's sentence about programs stands, its old sentence that the platform acts on a page's
+        requests is gone, and the reads that still run are stated with the row registered for them, open on P4.1;
+        FU-1835 is open until the round's close step and then closed by W1202 as built; the local platform's row stays
+        open."""
+    import asyncio
+    import json
+    import logging
+    import pathlib
+    import re
+    import subprocess
+    import pytest
+    from dotenv import dotenv_values
+    from starlette.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+    from agentic_core import app_mvp as _app
+    from agentic_core import request_guard as rg
+    from agentic_core.auth import core
+    from agentic_core.horizon import membrane as _membrane
+    from agentic_core.organism import heartbeat as _hb_mod
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")  # noqa: E731
+    PAGE, HOSTS = "WORKSTATION_PAGE_ORIGINS", "WORKSTATION_SERVED_HOSTS"
+    assert (rg.PAGE_ORIGINS_VAR, rg.SERVED_HOSTS_VAR) == (PAGE, HOSTS)
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    monkeypatch.delenv(PAGE, raising=False)
+    monkeypatch.delenv(HOSTS, raising=False)
+    monkeypatch.setattr(rg, "_STATE_CACHE", {})
+    monkeypatch.setattr(rg, "_SAID_OFF", set())
+    stops = []
+    monkeypatch.setattr(_hb_mod.heartbeat, "stop", lambda: stops.append(1))
+    observed = []
+    real_observe = _membrane.observe_request
+    monkeypatch.setattr(_membrane, "observe_request",
+                        lambda method, path, **kw: (observed.append((method, path)), real_observe(method, path, **kw)))
+    store = tmp_path / "users.json"
+    store.write_text(json.dumps({"admin": {"user_id": "w1202-admin", "username": "admin", "role": "admin",
+                                           "hashed_password": "w1202-not-a-hash", "created_at": "2026-11-22T10:00:00Z",
+                                           "api_keys": []}}), encoding="utf-8")
+    monkeypatch.setattr(core, "_USER_STORE", store)
+    EVIL = {"Origin": "http://evil.example"}
+    STOP = "/api/v1/heartbeat/stop"
+
+    def stop_runs(c, headers, what):
+        stops.clear()
+        got = c.post(STOP, headers=headers)
+        assert got.status_code == 200 and stops == [1], (what, "did not reach the stop", got.status_code, got.text[:200])
+
+    def refused(got, status, what):
+        assert got.status_code == status, (what, "was not refused", got.status_code, got.text[:200])
+        body = got.json()
+        assert body.get("refused_by") == "W1202 request guard (FU-1835)" and body["detail"].startswith("Refused: "), (
+            what, body)
+        assert body["detail"].endswith("(W1202).") and ("ran" in body["detail"]), (what, body["detail"])
+        return body["detail"]
+
+    def stop_refused(c, headers, what, method="POST"):
+        stops.clear()
+        observed.clear()
+        detail = refused(c.request(method, STOP, headers=headers), 403, what)
+        assert stops == [], (what, "ran the stop although it was refused")
+        assert not [o for o in observed if o[1] == STOP], (what, "a refused request was observed by the membrane")
+        return detail
+
+    #  G1. OFF BY DEFAULT, and off for anything but an exact list, saying so
+    old_line = "CORS_ORIGINS=                    # your frontend URL(s), e.g. https://your-app.vercel.app\n"
+    old_value = dotenv_values(stream=__import__("io").StringIO(old_line))["CORS_ORIGINS"]
+    assert old_value.startswith("# your frontend URL(s)"), ("the old .env.example line is not read as its comment",
+                                                             old_value)
+    for cors in (None, old_value, "", "http://localhost:5173"):
+        if cors is None:
+            monkeypatch.delenv("CORS_ORIGINS", raising=False)
+        else:
+            monkeypatch.setenv("CORS_ORIGINS", cors)
+        assert not rg.guard_state().on, ("the guard acts without its own setting", cors)
+        stop_runs(client, EVIL, ("guard off, CORS_ORIGINS", cors))
+        assert client.get("/health", headers=EVIL).status_code == 200
+    monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    caplog.set_level(logging.WARNING, logger="workstation.request_guard")
+    for page, hosts in (("", ""), ("  ", ""), (old_value, ""), ("http://localhost:8800/", ""), ("localhost:8800", ""),
+                        ("http://localhost:8800,", ""), ("ftp://localhost:8800", ""), ("null", ""),
+                        ("http://localhost:8800", "app.example.com:443"), ("http://localhost:8800", "https://a.example")):
+        monkeypatch.setenv(PAGE, page)
+        monkeypatch.setenv(HOSTS, hosts)
+        state = rg.guard_state()
+        assert not state.on, ("the guard acts on a setting it could not read", page, hosts)
+        stop_runs(client, EVIL, ("guard off", page, hosts))
+        if page.strip():
+            assert state.reason and ("not scheme://host[:port]" in state.reason or "not a host name" in state.reason), (
+                page, hosts, state.reason)
+            said = [r.getMessage() for r in caplog.records if r.name == "workstation.request_guard"]
+            assert [m for m in said if "the request guard is OFF" in m and (page.strip() in m or hosts in m)], (
+                "the log does not say the guard is off, naming the entry", page, hosts, said[-3:])
+    monkeypatch.delenv(HOSTS, raising=False)
+    #  ...and an entry it cannot read is said at startup, when the lifespan passes through, before any request
+    monkeypatch.setenv(PAGE, "w1202-not-an-origin")
+    started = []
+
+    async def _inner(scope, receive, send):
+        started.append(scope["type"])
+    caplog.clear()
+    asyncio.run(rg.OriginHostGuard(_inner)({"type": "lifespan"}, None, None))
+    assert started == ["lifespan"], "the lifespan did not pass through"
+    assert [r for r in caplog.records if "the request guard is OFF" in r.getMessage() and "w1202-not-an-origin" in
+            r.getMessage()], "an unreadable setting is not said at startup"
+
+    #  G2. THE TUNNEL'S OWN PAGE ACTS, opened as localhost or as 127.0.0.1 (the startup script's two origins)
+    TUNNEL = "http://localhost:8800,http://127.0.0.1:8800"
+    monkeypatch.setenv(PAGE, TUNNEL)
+    assert rg.guard_state().on and rg.guard_state().origins == ("http://localhost:8800", "http://127.0.0.1:8800")
+    tunnel = TestClient(_app.app, base_url="http://localhost:8800")
+    assert tunnel.get("/health").status_code == 200, "the tunnel's host is refused"
+    for host in ("127.0.0.1:8000", "[::1]:8000", "localhost", "LOCALHOST:8800"):
+        assert tunnel.get("/health", headers={"Host": host}).status_code == 200, ("the machine's own host is refused",
+                                                                                  host)
+    stop_runs(tunnel, {"Origin": "http://localhost:8800"}, "the tunnel's own page")
+    stop_runs(tunnel, {"Origin": "http://127.0.0.1:8800", "Host": "127.0.0.1:8800"}, "the tunnel's page opened as 127.0.0.1")
+
+    #  G3. ANOTHER SITE CANNOT ACT
+    detail = stop_refused(tunnel, EVIL, "a page of another site")
+    assert "'http://evil.example'" in detail and "http://localhost:8800" in detail, detail
+    for headers, what in ((EVIL, "a page of another site"), ({"Origin": "null"}, "a page whose Origin is null"),
+                          ({"Origin": "http://localhost:8801"}, "the tunnel's host on another port"),
+                          ({"Sec-Fetch-Site": "cross-site"}, "a page of another site that sent no Origin")):
+        for method in ("POST", "PUT", "PATCH", "DELETE"):
+            stop_refused(tunnel, headers, (what, method), method=method)
+    #  ...a read under /api/ that a page of another site has the browser make, by an image or a fetch, is refused;
+    #  a link followed from another site still opens, and so does a read outside /api/ (the security review)
+    READ = "/api/v1/auth/status"
+    for mode in ("no-cors", "cors", "same-origin", ""):
+        observed.clear()
+        hdrs = {**EVIL, "Sec-Fetch-Site": "cross-site", **({"Sec-Fetch-Mode": mode} if mode else {})}
+        refused(tunnel.get(READ, headers=hdrs), 403, ("a page of another site's read", mode))
+        assert not [o for o in observed if o[1] == READ], ("a refused read ran", mode)
+    assert tunnel.get(READ, headers={"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate"}).status_code == 200, (
+        "a link followed from another site is refused")
+    assert tunnel.get(READ, headers={"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "cors"}).status_code == 200, (
+        "the tunnel's own page cannot read")
+    assert tunnel.get("/health", headers={**EVIL, "Sec-Fetch-Site": "cross-site"}).status_code == 200, (
+        "a read outside /api/ is refused, which the module does not say")
+    assert tunnel.get(READ, headers=EVIL).status_code == 200, (
+        "a read from a browser that sends no Sec-Fetch headers is refused, which the module says it is not")
+    pre = tunnel.options(STOP, headers={**EVIL, "Access-Control-Request-Method": "POST"})
+    assert "refused_by" not in pre.text and stops == [], ("a preflight is refused or runs the handler", pre.text[:200])
+
+    #  G4. THE REGISTRATION EXPLOIT: a simple request with a JSON body and no Content-Type
+    sent = json.dumps({"username": "w1202-stranger", "password": "w1202 a made-up password", "role": "admin"})
+    before = store.read_bytes()
+    got = tunnel.post("/api/v1/auth/register", content=sent.encode("utf-8"), headers=EVIL)
+    assert "content-type" not in {k.lower() for k in got.request.headers}, got.request.headers
+    refused(got, 403, "a page's registration")
+    assert store.read_bytes() == before, "the refused registration changed the users store"
+    monkeypatch.setenv(PAGE, "")                         # ...where the guard off does not answer the same request
+    made = tunnel.post("/api/v1/auth/register", content=sent.encode("utf-8"), headers=EVIL)
+    assert "refused_by" not in made.text, ("the leg could not fail: the guard answers with its setting empty",
+                                           made.status_code, made.text[:200])
+    store.write_bytes(before)                            # whatever the route itself did with it
+    monkeypatch.setenv(PAGE, TUNNEL)
+
+    #  G5. A PROGRAM IS NOT A PAGE
+    stop_runs(tunnel, {}, "a program, which sends no Origin")
+    stop_runs(tunnel, {"Sec-Fetch-Site": "same-origin"}, "the tunnel's page without an Origin")
+
+    #  G6. DNS REBINDING: a host name pointed at the machine is refused, reads included
+    rebound = refused(tunnel.get("/api/v1/auth/users", headers={"Host": "evil.example:8800"}), 400, "a rebound read")
+    assert "admin" not in rebound and "'evil.example:8800'" in rebound and "localhost" in rebound, rebound
+    assert tunnel.get("/api/v1/auth/users").json()["total"] == 1, "the control read does not list the made-up account"
+    stops.clear()
+    refused(tunnel.post(STOP, headers={"Host": "evil.example:8800", "Origin": "http://localhost:8800"}), 400,
+            "a rebound write")
+    assert stops == []
+
+    #  G7. THE STREAM SOCKET
+    sock = "ws://localhost:8800/api/v154/ws/streams"
+    with pytest.raises(WebSocketDisconnect) as closed:
+        with tunnel.websocket_connect(sock, headers={"origin": "http://evil.example"}):
+            pass
+    assert closed.value.code == 1008, ("a page of another site opened the stream socket", closed.value.code)
+    with tunnel.websocket_connect(sock, headers={"origin": "http://localhost:8800"}) as ws:
+        assert ws is not None
+    with pytest.raises(WebSocketDisconnect) as closed:
+        with tunnel.websocket_connect("ws://evil.example/api/v154/ws/streams",
+                                      headers={"origin": "http://localhost:8800"}):
+            pass
+    assert closed.value.code == 1008, ("a rebound host opened the stream socket", closed.value.code)
+
+    #  G8. BEHIND THE FRONT, and a split deployment
+    monkeypatch.setenv(PAGE, "https://app.example.com")
+    monkeypatch.setenv(HOSTS, "app.example.com")
+    front = TestClient(_app.app, base_url="https://app.example.com")
+    assert front.get("/health").status_code == 200, "the domain is refused"
+    assert front.get("/health", headers={"Host": "localhost:8000"}).status_code == 200, "the image's health check is refused"
+    stop_runs(front, {"Origin": "https://app.example.com"}, "the domain's own page")
+    stop_runs(front, {"Origin": "https://APP.example.com:443"}, "the domain's own page, its default port written")
+    stop_refused(front, {"Origin": "http://localhost:8800"}, "the tunnel's origin on a run that names only the domain")
+    stop_refused(front, {"Origin": "http://app.example.com"}, "the domain's origin over plain HTTP")
+    refused(front.get("/health", headers={"Host": "evil.example"}), 400, "another host behind the front")
+    monkeypatch.setenv(HOSTS, "api.example.com")
+    split = TestClient(_app.app, base_url="https://api.example.com")
+    assert split.get("/health").status_code == 200, "a split deployment's own host is refused"
+    stop_runs(split, {"Origin": "https://app.example.com"}, "a split deployment's page")
+    refused(split.get("/health", headers={"Host": "app.example.com"}), 400, "the page's host, which this backend is not")
+    monkeypatch.delenv(PAGE)
+    monkeypatch.delenv(HOSTS)
+
+    #  G9. THE CODE: the outermost layer, the script's two runs, the drill, .env.example and the module's own words
+    assert _app.app.user_middleware[0].cls is rg.OriginHostGuard, ("the guard is not the outermost layer",
+                                                                   [m.cls for m in _app.app.user_middleware])
+    assert sum(m.cls is rg.OriginHostGuard for m in _app.app.user_middleware) == 1
+    src = read("agentic_core/app_mvp.py")
+    assert src.index("app.add_middleware(\n    CORSMiddleware") < src.index("async def _horizon_observe") < src.index(
+        "app.add_middleware(_OriginHostGuard)"), "the guard is not added after both layers"
+    assert "so the membrane does not observe it" in " ".join(src.replace("#", " ").split())
+    script = read("deploy/gcp/startup.sh")
+    main = script.split("\nmain() {\n", 1)[1].split("\n}\n", 1)[0]
+    no_domain = " ".join(main.split("#  W1191 - NO DOMAIN, NO PUBLIC PORT", 1)[1].replace("\\\n", " ").split())
+    for flag in ("--env=CORS_ORIGINS=http://localhost:8800 ",
+                 "--env=WORKSTATION_PAGE_ORIGINS=http://localhost:8800,http://127.0.0.1:8800 "):
+        assert flag in no_domain, (flag, no_domain[:600])
+    assert HOSTS not in no_domain, "the no-domain run serves a host name besides the machine's own"
+    front_fn = " ".join(script.split("start_front() {", 1)[1].split("\n}\n", 1)[0].replace("\\\n", " ").split())
+    assert ('--env=CORS_ORIGINS="https://$3" --env=WORKSTATION_PAGE_ORIGINS="https://$3" '
+            '--env=WORKSTATION_SERVED_HOSTS="$3" ') in front_fn, front_fn[:900]
+    assert front_fn.count("WORKSTATION_PAGE_ORIGINS") == 1 and script.count("--env=WORKSTATION_PAGE_ORIGINS") == 2
+    drill = read("deploy/https_drill.sh")
+    assert '. "$HERE/gcp/startup.sh"' in drill and 'start_front "$IMG" drill "$DOM" true ' in drill
+    for said in ("FOREIGN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example'",
+                 "OWN_PAGE_WRITE=$(get -o /dev/null -w '%{http_code}' -X POST -H \"Origin: https://$DOM\"",
+                 "THE PAGE'S ORIGIN (W1202)"):
+        assert said in drill, ("the drill does not measure", said)
+    listed = subprocess.run(["git", "-C", str(root), "ls-files"], capture_output=True, text=True)
+    assert listed.returncode == 0, listed.stderr[-300:]
+    setter = re.compile(r"\b(WORKSTATION_PAGE_ORIGINS|WORKSTATION_SERVED_HOSTS)\s*[=:]\s*\S")
+    sets = []
+    for rel in set(listed.stdout.split()):              # what deploys or configures a platform: not code, tests or docs
+        if rel.startswith(("integration_tests/", "docs/", "_archive/", "apps/")) or rel.endswith((
+                ".md", ".py", ".ts", ".tsx", ".js", ".json", ".txt", ".lock", ".html", ".css")):
+            continue
+        p = root / rel
+        if not p.is_file() or p.is_symlink() or p.stat().st_size > 2_000_000:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if setter.search(" ".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))):
+            sets.append(rel)
+    assert sets == ["deploy/gcp/startup.sh"], ("a file other than the startup script sets the guard's settings", sets)
+    env = dotenv_values(root / ".env.example")
+    assert env.get("CORS_ORIGINS") == "" and PAGE not in env and HOSTS not in env, {k: env.get(k) for k in (
+        "CORS_ORIGINS", PAGE, HOSTS)}
+    assert not rg.guard_state(env).on, "a .env made from .env.example turns the guard on"
+    assert "# WORKSTATION_PAGE_ORIGINS and WORKSTATION_SERVED_HOSTS turn on the release machine's request guard" in read(
+        ".env.example")
+    module = " ".join(read("agentic_core/request_guard.py").split())
+    for said in ("a request with no Origin: a program", "a preflight (OPTIONS)",
+                 "a page's cross-site GET still runs, though the page cannot read its answer, when it is a link followed "
+                 "from another site or comes from a browser that sends no Sec-Fetch headers",
+                 "GET /api/v1/qep/adaptation/registry saves its store when it is read, until W1220",
+                 "GET /api/v1/intelligence/forecasts makes a gateway call and rewrites its cache, at most once an hour",
+                 "GET /api/v1/cca/impact/{cca_id} makes a gateway call for a change whose id is known",
+                 "a stream socket under such a Host is closed with code 1008 before it is accepted, with no sentence",
+                 "Unset or empty, the guard is off, in silence",
+                 "It is never keyed on CORS_ORIGINS", "the membrane, which observes only what reaches the app, does "
+                 "not observe it", "a split deployment"):
+        assert said in module, ("the module does not say", said)
+
+    #  G10. THE GUIDE AND THE ROWS
+    sec = read("docs/DEPLOYMENT.md").split("## The Google Cloud deploy, step by step (P4.5)", 1)[1].split("\n## ", 1)[0]
+    seven = " ".join(re.split(r"^\*\*Step \d+\. ", sec, flags=re.M)[7].split())
+    rows = {r.get("id"): r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)}
+    local = [r for r in rows.values() if r.get("title", "").startswith("With CORS_ORIGINS unset, or set by a .env "
+                                                                         "copied from .env.example, the Owner's own")]
+    assert len(local) == 1 and local[0]["status"] == "open", ("the local platform's row is not open", local)
+    reads = [r for r in rows.values() if r.get("title", "").startswith("Three GET routes act when a link from another "
+                                                                         "site is followed through the tunnel")]
+    assert len(reads) == 1 and (reads[0]["status"], reads[0]["slot"], reads[0]["severity"]) == ("open", "P4.1", "low"), (
+        "the reads' row is not registered open on P4.1, low", reads)
+    for said in ("GET /api/v1/intelligence/forecasts", "GET /api/v1/cca/impact/CCA_ID", "a GET calls no gateway and "
+                 "writes nothing", "Sec-Fetch-Mode not navigate"):
+        assert said in reads[0]["why"], ("the reads' row does not say", said)
+    for said in ("(CORS_ORIGINS) stops a page from another site reading the platform's ordinary answers; it does not "
+                 "stop the page's request.",
+                 "Since W1202 the platform also refuses a write or a stream socket from a page of any other origin, and "
+                 "any request whose host name is not localhost, 127.0.0.1 or the machine's domain, so a page in the "
+                 "browser cannot act through the tunnel either",
+                 "a setting the release machine alone is given: the tunnel's two origins in WORKSTATION_PAGE_ORIGINS, "
+                 "http://localhost:8800 and http://127.0.0.1:8800, so the page works opened either way",
+                 f"So the Owner's own local platform is not changed by it ({local[0]['id']}).",
+                 "A page of another site cannot have the browser read the platform's API by an image or a fetch either.",
+                 "A link followed from another site still opens, and its read still runs, though the page cannot read "
+                 "the answer, and three reads act when they run: GET /api/v1/qep/adaptation/registry saves its store, "
+                 "until W1220; GET /api/v1/intelligence/forecasts makes a gateway call and rewrites its cache, at most "
+                 "once an hour; and GET /api/v1/cca/impact/CCA_ID makes a gateway call for a change whose id is known "
+                 f"({reads[0]['id']}).",
+                 "A program on the computer still acts, since it sends no Origin, which is why sign-in is turned on "
+                 "right after the password.",
+                 "While the tunnel is open and sign-in is off, anything on the Owner's computer that opens the "
+                 "forwarded port acts as the platform's administrator.",
+                 "A program can still send failed sign-ins, and five for one name block that name's sign-in for up to "
+                 "15 minutes, and the stream socket answers a program that asks (FU-1835)."):
+        assert said in seven, ("step 7 does not say", said)
+    for gone in ("while sign-in is off the platform acts on those requests as for the administrator, making an account "
+                 "included, and its stream socket and a host name rebound to 127.0.0.1 on the Owner's computer, where "
+                 "the tunnel listens, are outside that setting", "Such a page can still send failed sign-ins",
+                 "the stream socket still answers it"):
+        assert gone not in seven, ("step 7 still says", gone)
+    fu = rows["FU-1835"]
+    assert (fu["title"], fu["slot"]) == ("With sign-in off, any page in the Owner's browser can act on the platform "
+                                         "through the SSH tunnel: nothing checks a request's Origin or Host", "P4.1")
+    indexed = subprocess.run(["git", "-C", str(root), "ls-files", "--", "agentic_core/request_guard.py"],
+                             capture_output=True, text=True)
+    assert indexed.returncode == 0, indexed.stderr[-300:]
+    if (fu["status"], fu.get("closed_by"), fu.get("because")) == ("done", "W1202", "built"):
+        note = fu.get("close_note") or ""
+        for said in ("Built in W1202: ", "agentic_core/request_guard.py", "WORKSTATION_PAGE_ORIGINS", "1008",
+                     "a program", "a preflight", "until W1220"):
+            assert said in note, ("FU-1835's close note does not say", said, note[:300])
+    else:
+        assert fu["status"] == "open" and not fu.get("closed_by"), (
+            "FU-1835 was closed, and not by this round as built", fu["status"], fu.get("closed_by"))
+        assert not indexed.stdout.strip(), (
+            "the guard is in git's index and FU-1835 is still open: the round's close step did not run")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1201 - BEFORE THE TEACHER INTERVIEWS, THE FIRST-OFFER PAPERS SAY THE DOMAIN TOOL IS FREE (FU-1876, P3.30); THE
+#  SEVENTH GATE READS THE OWNER'S BAR (FU-1879); THE BUSINESS GUARD READS ROW STATUS AND COUNTS MONEY HOWEVER IT IS
+#  WRITTEN (FU-1872, FU-1873, P5.10).
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1201 (FU-1876) - A SENTENCE THAT PAIRS THE TOOL WITH A MONEY WORD presents a free Domain tool as bought. It stands
+#  only when a denial ('no', 'not', 'never', 'nobody', 'none') or 'free' comes before its first money word; 'would'
+#  does not make it a denial. The word lists are kept narrow, so that P5.7's own questions ('What do you pay now ...?')
+#  and the canvas's 'Nobody pays for a domain tool' stand.
+_W1201_TOOL = (r"\b(?:the|this) tool\b|\blesson-plan tool\b|\ba tool that drafts\b|\bcandidates? [ABC]\b"
+               r"|\bdomain tools?\b|\bthe offer\b")
+_W1201_MONEY_WORD = (r"\b(?:pay|pays|paid|paying|buy|buys|bought|buying|price|prices|priced|pricing|licen[cs]es?"
+                     r"|subscriptions?)\b")
+_W1201_EXEMPT = ("no", "not", "never", "nobody", "none", "free")
+
+
+def _w1201_priced(text):
+    """The sentences (and table cells) of a text that pair a reference to the tool with a money word, no denial or
+    'free' coming before the first money word."""
+    import re
+    out = []
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n\s*\n|\n(?=- |\d+\. |#|\|)", text):
+        for cell in sentence.split("|"):
+            s = " ".join(cell.split())
+            m = re.search(_W1201_MONEY_WORD, s, re.I)
+            if not m or not re.search(_W1201_TOOL, s, re.I):
+                continue
+            if re.search(r"\b(?:" + "|".join(_W1201_EXEMPT) + r")\b", s[:m.start()], re.I):
+                continue
+            out.append(s)
+    return out
+
+
+#  W1201 (FU-1879) - THE SEVENTH GATE, AS THE OWNER RULED ON 2026-11-22: evidenced when at least five interviews are
+#  recorded in the notes template and the Owner's choice of offer is recorded with its reasons. An interview is
+#  recorded as a section '### Interview notes, YYYY-MM-DD' of a document under docs/business/ that fills every field
+#  of the template in FIRST_OFFER_CANDIDATES.md, one bullet each, '- <the field's opening words>: <what was said>'.
+#  The choice is a dated ruling in P5.7's block: 'OWNER RULING YYYY-MM-DD ...: the first offer is candidate X ...
+#  because ...', dated on or after the fifth interview; when P5.7 records more than one, the latest dated is the
+#  Owner's choice (review R1). A file named 'interview' is evidence of nothing.
+def _w1201_first_offer_gate(root):
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(root)
+    cand = (root / "docs/business/FIRST_OFFER_CANDIDATES.md").read_text(encoding="utf-8")
+    template = cand.split("\n## Notes template\n", 1)[1].split("\n## ", 1)[0]
+    fields = [b.split(",", 1)[0].strip() for b in re.findall(r"^- (.+)$", template, re.M)]
+    notes = []
+    for d in sorted((root / "docs/business").rglob("*.md")):
+        text = d.read_text(encoding="utf-8")
+        for m in re.finditer(r"^### Interview notes, (20\d\d-\d\d-\d\d)\n(.*?)(?=^#|\Z)", text, re.M | re.S):
+            said = {}
+            for b in re.findall(r"^- (.+)$", m.group(2), re.M):
+                k, _, v = b.partition(":")
+                said[k.strip()] = re.sub(r"\[[^\]]*\]", "", v).strip()
+            if all(said.get(f) for f in fields):
+                notes.append(m.group(1))
+    notes.sort()
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p57 = " ".join(_pf._item_blocks(_pf.delivery_plan_body(plan) or plan).get("P5.7", "").split())
+    rulings = sorted((m.group(1), m.group(2)) for m in re.finditer(
+        r"OWNER RULING (20\d\d-\d\d-\d\d)\b[^:]*: the first offer is candidate ([ABC])\b[^.]*?"
+        r"\bbecause\b\s*\S", p57))
+    choice = rulings[-1] if rulings else None
+    met = len(notes) >= 5 and bool(choice) and all(choice[0] >= d for d in notes[:5])
+    return {"fields": fields, "notes": len(notes), "dates": notes, "choice": choice, "met": met}
+
+
+def test_w1201_the_first_offer_papers_say_the_domain_tool_is_free_and_ask_only_what_a_person_spends_today():
+    """FU-1876 (W1201), P3.30. The first-offer papers presented a free Domain tool as something people pay for, and the
+    drafts' cost answer said a price may come, against P5.16 clause 1 (2026-10-12): every Domain is free, for
+    individuals and for institutions. Held here, before FU-1818's interviews use the papers:
+    1. the leading hypothesis says no pay, paid, buy, bought, price, licence or subscription;
+    2. no comparison criterion asks whether anyone would pay or buy, and the three demand rows are NOT MEASURED x3;
+       the candidates paper says the Domain tools are free and that its questions ask what a person spends today;
+    3. the drafts' cost answer says nothing is charged for using a Domain tool, by plan item P5.16 and the ruling of
+       2026-10-12, and that the Owner's charges fall only on generating an enterprise (set and not yet charged) and on
+       its profit (taken first); no draft says a price may come or names the price and the buyer, and the brand
+       screen's register no longer does;
+    4. no sentence of the three papers pairs the tool with a money word unless a denial or 'free' comes first, and
+       'would' is no denial: a planted priced sentence is found, P5.7's questions, the canvas's 'Nobody pays for a
+       domain tool' and the brand screen's LICENSE bullet are not;
+    5. P5.7 carries the dated note, naming P5.16 clause 1 and what a person spends today, after W1192's ruling;
+    6. the first-offer row (found by its title) is closed by this round as built."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _pf
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_text(encoding="utf-8")
+    cand, drafts, brand = (read("docs/business/FIRST_OFFER_CANDIDATES.md"), read("docs/business/public/FIRST_OFFER_DRAFTS.md"),
+                           read("docs/business/NAME_AND_BRAND_SCREEN.md"))
+
+    def section(text, title):
+        return text.split(f"\n## {title}\n", 1)[1].split("\n## ", 1)[0]
+
+    #  1. the leading hypothesis asks for no payment
+    lead = section(cand, "The leading hypothesis")
+    said = re.findall(r"\b(?:pay|paid|buy|bought|price|licence|subscription)\w*", lead, re.I)
+    assert not said, ("L1: the leading hypothesis has the tool bought", said)
+    assert "Teachers and tutors who plan lessons against a named framework will use a tool that drafts" in lead, (
+        "L1: the hypothesis W1151's drafts are built from is not the one leading")
+
+    #  2. no criterion asks for payment; the demand rows are not measured; the paper says the tools are free
+    table = section(cand, "The comparison")
+    rows = {ln.split("|")[1].strip(): [c.strip() for c in ln.split("|")[2:-1]]
+            for ln in table.splitlines() if ln.startswith("| ") and not ln.startswith("| Criterion") and "---" not in ln}
+    asks = [c for c in rows if re.search(r"\b(?:pay|paid|buy|bought|price)\w*", c, re.I)]
+    assert not asks, ("L2: a criterion asks whether anyone would pay", asks)
+    for demand in ("Would anyone use it again", "How often the need recurs", "What a person uses today"):
+        assert rows.get(demand) == ["NOT MEASURED"] * 3, ("L2: a demand row is not NOT MEASURED x3", demand, rows.get(demand))
+    how = " ".join(section(cand, "How to read this document").split())
+    assert ("The Domain tools are free, for individuals and for institutions, by the Owner's ruling (plan item P5.16), so "
+            "the willingness-to-pay questions below ask what a person spends today") in how, (
+        "L2: the candidates paper does not say the Domain tools are free")
+
+    #  3. the drafts' cost answer: free, by P5.16 of 2026-10-12, and the Owner's two charges, naming no amount
+    dflat, bflat = " ".join(drafts.split()), " ".join(brand.split())
+    qa = section(drafts, "5. Questions and answers — DRAFT - NOT APPROVED FOR PUBLICATION")
+    cost = [ln for ln in qa.splitlines() if ln.startswith("- What does it cost?")]
+    assert len(cost) == 1, ("L3: the drafts have no single cost answer", cost)
+    cost = cost[0]
+    for words in ("Nothing is charged for using a Domain tool: the Domain tools are free, for individuals and for "
+                  "institutions", "the Owner's ruling of 2026-10-12 (plan item P5.16)",
+                  "The Owner's charges fall only on generating an enterprise, a price paid once that is set and not yet "
+                  "charged", "and on the profit of an enterprise generated here, a quarter of it taken first"):
+        assert words in cost, ("L3: the cost answer does not say", words)
+    assert not re.search(r"\d", cost.split("[owner-defined", 1)[0].replace("2026-10-12", "").replace("P5.16", "")), (
+        "L3: the cost answer names an amount", cost)
+    for gone in ("No price is set", "a price is the Owner's to set", "the price and the buyer", "whether anyone would pay",
+                 "who would buy it", "No price, customer"):
+        assert gone not in dflat, ("L3: the drafts still say", gone)
+    assert ("no amount is named for any charge: the Domain tools are free, and the Owner's charges fall only on "
+            "generating an enterprise and on its profit") in dflat, "L3: the drafts' :13 does not say what is charged"
+    for gone in ("the price and the buyer", "about a customer, a price"):
+        assert gone not in bflat, ("L3: the brand screen still says", gone)
+    assert ("| Whether teachers would use it again, and how often the need recurs, are not measured | "
+            "`docs/business/FIRST_OFFER_CANDIDATES.md` | 2, 3 |") in brand, "L3: the brand screen's register row"
+    assert ("what the drafts say of cost is that the Domain tools are free and that the Owner's charges fall only on "
+            "generating an enterprise and on its profit; they name no amount for any charge") in bflat, (
+        "L3: the brand screen's closing sentence does not say what the drafts say of cost")
+
+    #  4. no sentence pairs the tool with a money word unless a denial comes first; driven both ways
+    for name, text in (("candidates", cand), ("drafts", drafts), ("brand screen", brand)):
+        assert _w1201_priced(text) == [], ("L4: a sentence pairs the tool with a money word", name, _w1201_priced(text))
+    planted = ("- A school would buy a licence for the lesson-plan tool. [hypothesis]",
+               "- Teachers and tutors will use, and pay for, a tool that drafts the plan. [hypothesis]",
+               "- Candidate C is priced per school. [hypothesis]",
+               "- A school pays a licence for the tool. [hypothesis]")
+    for p in planted:
+        assert _w1201_priced(p), ("L4: a priced sentence passes", p)
+    canvas = " ".join(read("docs/business/BUSINESS_MODEL_CANVAS.md").split())
+    assert "Nobody pays for a domain tool [owner-defined, 2026-10-13]" in canvas, "L4: the canvas's control moved"
+    wtp = [ln[2:] for ln in section(cand, "Willingness-to-pay questions that do not lead").splitlines() if ln.startswith("- ")]
+    controls = ("What do you pay now, in money or in time, for the way you do this?",
+                "When did you last pay for a tool for this kind of work?", "Nobody pays for a domain tool",
+                "No school pays a licence for the tool.", *wtp)
+    for c in controls:
+        assert _w1201_priced(c) == [], ("L4: a control is flagged: the rule is over-broad", c)
+    #  a smoke check, not a control (review R3): the brand screen's LICENSE bullet names no tool, so it is never flagged
+    licence = [ln for ln in brand.splitlines() if ln.startswith("- The project's licence names its copyright holder")]
+    assert len(licence) == 1 and _w1201_priced(licence[0]) == [], ("L4: the LICENSE bullet (a smoke check)", licence)
+
+    #  5. P5.7's dated note, after W1192's ruling there
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p57 = " ".join(_pf._item_blocks(_pf.delivery_plan_body(plan) or plan)["P5.7"].split())
+    note = ("W1201 (a note, not a ruling): P5.16 clause 1, ruled on 2026-10-12, the day after this item was chartered, "
+            "makes every Domain free for individuals and institutions, so clause (1)'s willingness-to-pay questions ask "
+            "what a person spends today and never price the tool; the first-offer papers say so.")
+    assert p57.count(note) == 1, "L5: P5.7 does not carry the dated note"
+    assert p57.index("OWNER RULING 2026-11-22 (the recommendations accepted): the seventh gate") < p57.index(note), (
+        "L5: P5.7's note is not after W1192's ruling")
+
+    #  6. the first-offer row, found by its title, closed by this round as built
+    reg = json.loads(read("docs/FOLLOWUPS.json"))["items"]
+    row = [r for r in reg if r.get("title") == ("The first-offer papers present a free Domain tool as something people "
+                                                "pay for, and the drafts' cost answer says a price may come")]
+    assert len(row) == 1 and row[0]["slot"] == "P3.30", ("L6: the first-offer row is not found by its title", len(row))
+    r = row[0]
+    assert (r["status"], r.get("closed_by"), r.get("because")) == ("done", "W1201", "built"), (
+        "L6: the first-offer row is not closed by this round as built", r["status"], r.get("closed_by"))
+    assert r.get("close_note", "").startswith("Built in W1201: "), ("L6: its close note", r.get("close_note", "")[:80])
+
+
+def test_w1201_p510_a_business_document_calls_open_only_a_row_that_is_open_and_its_money_is_counted_however_written():
+    """FU-1872 and FU-1873 (W1201), P5.10. The business documents' guard (_w703_faults) checked only that a named row
+    exists, and counted money only with the currency first. It now reads each row's status and each plan item's state
+    from root/docs/FOLLOWUPS.json and the plan, or from a register a test passes. Held here:
+    1. every document under docs/business passes the extended guard against the real register;
+    2. each fault planted in a good fixture is found, by its own message: a 'Between' line naming a done row, one
+       labelling an ungated row [owner decision], a cell saying the readiness round's rows are open with none named,
+       a sentence calling a done row open, a 'Between' line naming a done plan item, and money written with its
+       currency after the number, with a multiplier, in words, and with a symbol after the number;
+    3. a done row cited as evidence, an amount in words the Owner defined, 'no open row' with no id, 1 GB of memory
+       and 'the register of open rows' stay clean;
+    4. with a register copy in which the first open row the map's 'Between' lines name (FU-1095 today) is done, the
+       map is a fault, and with the real register
+       it is not;
+    5. test_w923's loop calls _w703_money, which finds '750,000 GBP' and 'two million pounds'."""
+    import copy
+    import inspect
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app1201
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row_ids = {r["id"] for r in reg}
+    routes = {(m, r.path) for r in _app1201.routes for m in (getattr(r, "methods", None) or ())}
+
+    #  1. every business document, against the real register
+    docs = sorted((root / "docs/business").rglob("*.md"))
+    assert len(docs) >= 10, docs
+    for d in docs:
+        got = _w703_faults(d.read_text(encoding="utf-8"), root, plan_slots, row_ids, routes, d.parent.name == "public")
+        assert got == [], ("L1: a business document cannot stand", d.name, got)
+
+    #  2. each plant found by its own message, against a register the test passes (independent of the real one)
+    fake = {"FU-849": {"id": "FU-849", "status": "done", "slot": "P4.1", "owner_gated": False},
+            "FU-1086": {"id": "FU-1086", "status": "open", "slot": "P5.22", "owner_gated": False},
+            "FU-1010": {"id": "FU-1010", "status": "done", "slot": "P5.9", "owner_gated": False}}
+    good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
+
+    def faults(text):
+        return _w703_faults(text, root, plan_slots, set(fake), routes, register=fake)
+
+    assert faults(good) == [], faults(good)
+    planted = {
+        "- Between this step and being relied on: row FU-849 (a planted row) [observed: `docs/FOLLOWUPS.json`].":
+            "a 'Between' line names row FU-849, which is done, as standing between a step and being relied on",
+        "- Between this step and being relied on: row FU-1086, the final audit still to be run [owner decision].":
+            "a 'Between' line labels row FU-1086 [owner decision], and it is neither slotted OWNER nor owner-gated",
+        "| P4.1 sign-in | the readiness round's rows are open | no |":
+            "it says rows are open and names none: the readiness round's rows are open",
+        "- Row FU-849 is open [observed].":
+            "it calls row FU-849 open, or the Owner's to rule, and it is done: - Row FU-849 is open [observed].",
+        "- Between this step and being relied on: plan item P5.6 [observed: `docs/FOLLOWUPS.json`].":
+            "a 'Between' line names plan item P5.6, which is done",
+        "- Pre-money 750,000 GBP [hypothesis].":
+            "a money figure is stated with no ruling behind it: - Pre-money 750,000 GBP [hypothesis].",
+        "- It is valued at 2.5 million pounds [observed].":
+            "a money figure is stated with no ruling behind it: - It is valued at 2.5 million pounds [observed].",
+        "- Worth two million pounds [inference].":
+            "a money figure is stated with no ruling behind it: - Worth two million pounds [inference].",
+        "- It costs 5 € a month [observed].":
+            "a money figure is stated with no ruling behind it: - It costs 5 € a month [observed].",
+    }
+    for plant, message in planted.items():
+        got = faults(good + plant + "\n")
+        assert got == [message], ("L2: the plant is not found by its own rule", plant, got)
+
+    #  3. what stays clean
+    for clean in ("- Revenue is recorded (row FU-1010, built in W881) [observed].",
+                  "- The price is ninety-nine pounds [owner-defined, 2026-10-13].",
+                  "- Between this step and being relied on: no open row stands between it and being relied on "
+                  "[observed: `docs/FOLLOWUPS.json`].",
+                  "- The machine has 1 GB of memory [observed].",
+                  "- The register of open rows is kept [observed]."):
+        assert faults(good + clean + "\n") == [], ("L3: a rule is over-broad", clean, faults(good + clean + "\n"))
+
+    #  4. the register a test passes is the one read
+    smap = (root / "docs/business/LIVING_STRATEGY_MAP.md").read_text(encoding="utf-8")
+    assert _w703_faults(smap, root, plan_slots, row_ids, routes) == [], "L4: the map does not stand on the real register"
+    #  the row is chosen from the map (review R2): the first open row a 'Between' line names; if none does, one is planted
+    status = {r["id"]: r.get("status") for r in reg}
+    between = [b for b in re.split(r"\n(?=- |\d+\. )", smap) if b.startswith("- Between this step and being relied on")]
+    named = [rid for b in between for rid in re.findall(r"\bFU-\d+\b", b) if status.get(rid) == "open"]
+    if not named:
+        rid = next(r["id"] for r in reg if r.get("status") == "open" and r.get("slot") != "OWNER")
+        smap += f"\n- Between this step and being relied on: row {rid} [observed: `docs/FOLLOWUPS.json`].\n"
+        named = [rid]
+    closed = copy.deepcopy(reg)
+    for r in closed:
+        if r["id"] == named[0]:
+            r["status"] = "done"
+    got = _w703_faults(smap, root, plan_slots, row_ids, routes, register=closed)
+    assert (f"a 'Between' line names row {named[0]}, which is done, as standing between a step and being relied on"
+            in got), ("L4: the status rule ignores the register it is given", named[0], got)
+
+    #  5. the guide's loop calls the one money pattern
+    src = inspect.getsource(test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recommendation)
+    assert "if _w703_money(_blk):" in src and r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d" not in src, (
+        "L5: the guide's copy keeps the currency-first pattern")
+    assert _w703_money("Pre-money 750,000 GBP") and _w703_money("Worth two million pounds"), "L5: _w703_money"
+    assert not _w703_money("The machine has 1 GB of memory"), "L5: _w703_money reads GB as a currency"
+
+
+def test_w1201_p510_the_seventh_gate_reads_the_owners_bar_of_five_recorded_interviews_and_the_owners_choice(tmp_path):
+    """FU-1879 (W1201), P5.10. test_w1126 computed the seventh investment gate as evidenced when any file under docs/
+    was named 'interview'. The Owner ruled on 2026-11-22 (FU-1818; P5.7; COST_MODEL.md): at least five interviews
+    recorded in the notes template, and the Owner's choice recorded with its reasons. Held here:
+    1. test_w1126 computes the gate with _w1201_first_offer_gate and no longer reads file names;
+    2. on this tree the gate is as the cost model marks it, and its fields are the notes template's;
+    3. on a planted tree: a file named 'interview' evidences nothing; five filled notes and a dated choice with its
+       reasons evidence it; four notes, a note missing a field, no choice, a choice with no reasons, and a choice
+       dated before the fifth interview do not; of two dated choices, the later is the one read."""
+    import inspect
+    import pathlib
+    import re
+    import shutil
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. test_w1126 reads the Owner's bar
+    src = inspect.getsource(test_w1126_fu1280_the_cost_model_marks_each_of_the_seven_gates_from_what_the_tree_shows)
+    assert "first_offer = _w1201_first_offer_gate(root)" in src and '"A first offer the interviews support": first_offer["met"]' in src, (
+        "G1: test_w1126 does not compute the gate from the Owner's bar")
+    assert "p.name" not in src and 'rglob("*")' not in src, "G1: test_w1126 still reads file names"
+
+    #  2. this tree
+    gate = _w1201_first_offer_gate(root)
+    assert gate["fields"] == ["Date", "The last instance", "What it cost them", "Who decides and who pays",
+                              "What would make them stop using the tool", "Which output the teacher judged",
+                              "Whether they agreed to be contacted again"], ("G2: the notes template's fields", gate["fields"])
+    cost = (root / "docs/business/COST_MODEL.md").read_text(encoding="utf-8").split("## The seven investment gates", 1)[1]
+    mark = re.search(r"^\| A first offer the interviews support \| .+? \| (yes|no) \|$", cost, re.M)
+    assert mark and mark.group(1) == ("yes" if gate["met"] else "no"), ("G2: the cost model's mark", gate)
+
+    #  3. a planted tree
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    end = "\n P5.8 [chartered W672"
+    assert plan.count(end) == 1
+    #  review R1: any real choice the Owner has recorded in P5.7 is taken out of the copy, so the planted cases read
+    #  only what they plant
+    a, b = plan.index("\n P5.7 "), plan.index(end)
+    plan = plan[:a] + re.sub(r"OWNER RULING 20\d\d-\d\d-\d\d\b[^:]*:\s+the\s+first\s+offer\s+is\s+candidate\s+[ABC]\b.*?\.(?=\s)",
+                             "", plan[a:b], flags=re.S) + plan[b:]
+    assert not re.search(r"the\s+first\s+offer\s+is\s+candidate", plan[a:plan.index(end)]), "G3: a real choice is left in the copy"
+
+    def tree(name, n_notes, ruling=None, drop_field=None, interview_file=False):
+        t = tmp_path / name
+        (t / "docs/business").mkdir(parents=True)
+        shutil.copy(root / "docs/business/FIRST_OFFER_CANDIDATES.md", t / "docs/business/FIRST_OFFER_CANDIDATES.md")
+        body = ["# Interview notes\n"]
+        for i in range(n_notes):
+            body.append(f"\n### Interview notes, 2027-01-{10 + i:02d}\n\n")
+            for f in gate["fields"]:
+                if i == 0 and f == drop_field:
+                    continue
+                body.append(f"- {f}: an invented answer {i} [inference]\n")
+        (t / "docs/business/INTERVIEW_NOTES_W1201.md").write_text("".join(body), encoding="utf-8")
+        if interview_file:
+            (t / "docs/interview_plan.txt").write_text("a file named interview\n", encoding="utf-8")
+        p = plan if ruling is None else plan.replace(end, "\n      " + ruling + end)
+        (t / "docs/FABLE_DELIVERY_PROMPT.md").write_text(p, encoding="utf-8")
+        return _w1201_first_offer_gate(t)
+
+    chose = "OWNER RULING 2027-01-20: the first offer is candidate C, because the five interviews said so."
+    assert not tree("named", 0, interview_file=True)["met"], "G3: a file named 'interview' evidences the gate"
+    five = tree("five", 5, chose)
+    assert five["met"] and five["notes"] == 5 and five["choice"] == ("2027-01-20", "C"), ("G3: five and a choice", five)
+    assert not tree("four", 4, chose)["met"], "G3: four interviews evidence the gate"
+    short = tree("short", 5, chose, drop_field="Which output the teacher judged")
+    assert short["notes"] == 4 and not short["met"], ("G3: a note missing a field is counted", short)
+    assert not tree("nochoice", 5)["met"], "G3: no recorded choice evidences the gate"
+    assert not tree("noreason", 5, "OWNER RULING 2027-01-20: the first offer is candidate C.")["met"], (
+        "G3: a choice with no reasons evidences the gate")
+    assert not tree("early", 5, chose.replace("2027-01-20", "2027-01-12"))["met"], (
+        "G3: a choice dated before the fifth interview evidences the gate")
+    later = tree("later", 5, chose.replace("candidate C", "candidate A") + "\n      "
+                 + chose.replace("2027-01-20", "2027-01-25"))
+    assert later["met"] and later["choice"] == ("2027-01-25", "C"), ("G3: the latest dated choice is not the one read", later)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1206b - test_w892's two-thread leg does not depend on both threads starting within one slot
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1206b_the_two_thread_limiter_leg_starts_in_debt_so_a_late_thread_still_waits():
+    """W1206b. test_w892's third leg drained the limiter to zero, and on Windows a second thread started a slot late
+    found a token earned back (waited 5 of 6). The leg now starts ten slots in debt; its assertions are unchanged."""
+    import pathlib
+    src = pathlib.Path(__file__).read_text(encoding="utf-8")
+    body = src[src.index("def test_w892_no_caller_sleeps_holding_the_limiters_lock"):]
+    body = body[:body.index("\ndef test_", 10)]
+    leg3 = body[body.index("# 3. the lock belongs to no event loop"):]
+    assert "lim._tokens, lim._last = -10.0, time.monotonic()" in leg3, "the two-thread leg is not drained into debt"
+    assert "lim._tokens, lim._last = 0.0, time.monotonic()" not in leg3, "the two-thread leg drains to zero again"
+    assert 'lim.stats()["waited"] == 6' in leg3, "the waited count was loosened"
+
+
+def test_w1196_the_avatar_and_upload_memory_is_retired_nothing_fetches_a_model_for_it_and_the_delete_answer_says_what_may_remain_elsewhere(tmp_path):
+    """W1196 (A3, FU-1843, P3.32). The Owner ruled on 2026-11-22 that the avatar and upload memory is retired: if
+    conversation memory is wanted later, it is built after sign-in, with a retention period and with no outside
+    download. memory_v01 was written by every avatar message and every extracted upload, read back by no production
+    caller, held in this process only while its docstring said it was persisted, and its first write fetched chromadb's
+    default embedding model from an outside host into the user's home (measured at HEAD: chromadb and onnxruntime
+    imported, ~/.cache/chroma made, chroma-onnx-models.s3.amazonaws.com tried). Held here:
+      A1. while pyproject.toml declares chromadb, chromadb and onnxruntime must be installed here, so the silence of
+          A4 is a measurement (an error, never a skip); once W1230 drops the declaration, A4's silence holds trivially;
+      A2. memory_v01.py holds no MemoryV01 and no instance of it, keeps the meeting log ceo.py uses, and its docstring
+          says the memory is retired, by whose ruling, and the ruling's reason;
+      A3. by the syntax tree, no module under agentic_core, scripts or products imports chromadb (by statement, or by
+          importlib.import_module or __import__ with a literal name), imports the retired memory, or calls add_exchange;
+      A4. in a child process whose HOME and USERPROFILE are an empty directory before anything is imported, with every
+          outside connection and lookup recorded and refused, the avatar chat route answers and a text upload is
+          extracted, and afterwards no outside connection or lookup was tried, no <HOME>/.cache/chroma exists, and
+          neither chromadb nor onnxruntime is in sys.modules;
+      A5. the delete answer for that upload is REMOVED and says what may remain elsewhere (the interaction log and
+          VectorMemory keep the prompt of a generation that read the file, and neither is reachable by file id), never
+          the retired long-term memory and never that nothing remains; a file with nothing extracted says no text
+          entered;
+      A6. the words that called memory_v01 a live store are gone from the files that said them, and the plan's three
+          dated lines are in place, P3.32's naming no row.
+    chromadb stays declared until W1230, so only its import is held, never its declaration."""
+    import ast
+    import importlib.util
+    import json
+    import os
+    import pathlib
+    import re
+    import subprocess
+    import sys
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda s: " ".join(s.split())
+
+    #  A1. the instrument can see what it measures: while chromadb is declared it must be installed, so its absence
+    #  from the child is a result (the review's F3: W1230 removes the declaration, and this leg then asks nothing)
+    _declared = re.search(r"(?m)^chromadb\s*=", (root / "pyproject.toml").read_text(encoding="utf-8"))
+    for _mod in (("chromadb", "onnxruntime") if _declared else ()):
+        if importlib.util.find_spec(_mod) is None:
+            raise AssertionError(f"{_mod} is not installed in this environment, so A4 would pass without measuring "
+                                 f"anything; this test needs the environment requirements.txt installs")
+
+    #  A2. the module keeps the meeting log and nothing of the retired memory
+    import agentic_core.ai.ceo.memory_v01 as M
+    assert not hasattr(M, "MemoryV01") and not hasattr(M, "memory_v01"), (
+        "memory_v01.py holds the retired avatar and upload memory again", [n for n in dir(M) if "emory" in n])
+    assert isinstance(getattr(M, "meeting_log", None), getattr(M, "MeetingLog", ())), "the meeting log ceo.py uses is gone"
+    doc = flat(M.__doc__ or "")
+    for _part in ("THE AVATAR AND UPLOAD MEMORY IS RETIRED", "as the Owner ruled on 2026-11-22 (P3.32)",
+                  "if conversation memory is wanted later, it is to be built after sign-in, with a retention period "
+                  "and with no outside download", "nothing fetches a model for it"):
+        assert _part in doc, ("memory_v01.py's docstring does not say why the memory is retired", _part)
+    assert "persisted" not in doc and "semantically searchable" not in doc, ("the docstring claims a kept memory", doc)
+
+    #  A3. the syntax tree: nothing imports chromadb, nothing imports the retired memory, nothing writes it
+    chroma, retired, writes = [], [], []
+    for top in ("agentic_core", "scripts", "products"):
+        for p in sorted((root / top).rglob("*.py")):
+            if "node_modules" in p.parts or "__pycache__" in p.parts:
+                continue
+            try:
+                tree = ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+            except SyntaxError:
+                continue
+            rel = p.relative_to(root).as_posix()
+            #  the names this file binds to the retired module or its memory (the review's F7: add_exchange is flagged
+            #  only on such a receiver, so another function of that name elsewhere is not a write to the memory)
+            bound = {"memory_v01"}
+            for n in ast.walk(tree):
+                if isinstance(n, ast.ImportFrom) and n.module == "agentic_core.ai.ceo.memory_v01":
+                    bound |= {a.asname or a.name for a in n.names}
+                elif isinstance(n, ast.ImportFrom) and n.module == "agentic_core.ai.ceo":
+                    bound |= {a.asname or a.name for a in n.names if a.name == "memory_v01"}
+                elif isinstance(n, ast.Import):
+                    bound |= {a.asname for a in n.names if a.name == "agentic_core.ai.ceo.memory_v01" and a.asname}
+            for n in ast.walk(tree):
+                if isinstance(n, ast.Import):
+                    chroma += [(rel, n.lineno) for a in n.names if a.name.split(".")[0] == "chromadb"]
+                elif isinstance(n, ast.ImportFrom):
+                    if (n.module or "").split(".")[0] == "chromadb":
+                        chroma.append((rel, n.lineno))
+                    if n.module == "agentic_core.ai.ceo.memory_v01":
+                        retired += [(rel, n.lineno, a.name) for a in n.names if a.name not in ("meeting_log", "MeetingLog")]
+                elif isinstance(n, ast.Call):
+                    f = n.func
+                    name = f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else "")
+                    if name in ("import_module", "__import__") and n.args and isinstance(n.args[0], ast.Constant) \
+                            and str(n.args[0].value).split(".")[0] == "chromadb":
+                        chroma.append((rel, n.lineno))
+                    if name == "add_exchange" and isinstance(f, ast.Attribute) and (
+                            (isinstance(f.value, ast.Name) and f.value.id in bound)
+                            or (isinstance(f.value, ast.Attribute) and f.value.attr in bound)):
+                        writes.append((rel, n.lineno))
+    assert not writes, ("a caller writes the retired avatar and upload memory", writes)
+    assert not chroma, ("a module imports chromadb, whose default embedding fetches a model from an outside host", chroma)
+    assert not retired, ("a module imports the retired memory from memory_v01.py", retired)
+
+    #  A4. a child process with an empty home: drive the avatar chat and an extracted upload, and record every outside
+    #  connection and lookup (refused, so nothing is downloaded whatever the tree does)
+    home = tmp_path / "home"
+    home.mkdir()
+    child = r'''
+import json, os, socket, sys
+sys.path.insert(0, %(root)r)
+_LOCAL = ("127.0.0.1", "::1", "localhost", "testserver", "0.0.0.0", "")
+tried = []
+_connect, _connect_ex, _gai, _cc = socket.socket.connect, socket.socket.connect_ex, socket.getaddrinfo, socket.create_connection
+def _host(a):
+    return str(a[0] if isinstance(a, tuple) and a else a)
+def connect(self, address):
+    tried.append(("connect", _host(address)))
+    if _host(address) not in _LOCAL:
+        raise ConnectionRefusedError("w1196: an outside connection was refused")
+    return _connect(self, address)
+def connect_ex(self, address):
+    tried.append(("connect_ex", _host(address)))
+    if _host(address) not in _LOCAL:
+        return 111
+    return _connect_ex(self, address)
+def getaddrinfo(host, *a, **k):
+    tried.append(("getaddrinfo", str(host)))
+    if host is not None and str(host) not in _LOCAL:
+        raise socket.gaierror("w1196: an outside lookup was refused")
+    return _gai(host, *a, **k)
+def create_connection(address, *a, **k):
+    tried.append(("create_connection", _host(address)))
+    if _host(address) not in _LOCAL:
+        raise ConnectionRefusedError("w1196: an outside connection was refused")
+    return _cc(address, *a, **k)
+socket.socket.connect, socket.socket.connect_ex = connect, connect_ex
+socket.getaddrinfo, socket.create_connection = getaddrinfo, create_connection
+from fastapi.testclient import TestClient
+from agentic_core.app_mvp import app
+out = {}
+with TestClient(app) as c:
+    r = c.post("/api/v1/avatar/chat", json={"message": "w1196 avatar marker", "context": "general"})
+    out["chat"] = [r.status_code, r.text[:300]]
+    u = c.post("/api/v1/ingest/", files={"file": ("w1196.txt", b"w1196 upload marker the platform can read", "text/plain")})
+    out["upload"] = [u.status_code, (u.json() or {}).get("status") if u.status_code == 200 else u.text[:300]]
+    out["delete"] = c.delete("/api/v1/ingest/" + u.json()["file_id"]).json() if u.status_code == 200 else None
+    b = c.post("/api/v1/ingest/", files={"file": ("w1196.bin", b"\x00\x01\x02binary", "application/octet-stream")})
+    out["delete_unread"] = c.delete("/api/v1/ingest/" + b.json()["file_id"]).json() if b.status_code == 200 else None
+    #  an unread row whose bytes are gone before its removal: the answer must not say the bytes were reached
+    from agentic_core.ingestion.api import ingestion_manager as _im
+    g = c.post("/api/v1/ingest/", files={"file": ("w1196-gone.bin", b"\x00\x01gone", "application/octet-stream")})
+    if g.status_code == 200:
+        _f = _im.upload_dir / (g.json()["file_id"] + "_w1196-gone.bin")
+        if _f.exists():
+            _f.unlink()
+        out["delete_gone"] = c.delete("/api/v1/ingest/" + g.json()["file_id"]).json()
+out["outside"] = [t for t in tried if t[1] not in _LOCAL]
+out["cache"] = os.path.exists(os.path.join(os.path.expanduser("~"), ".cache", "chroma"))
+out["home"] = os.path.expanduser("~")
+out["modules"] = sorted(m for m in ("chromadb", "onnxruntime") if m in sys.modules)
+print("RESULT" + json.dumps(out))
+''' % {"root": str(root)}
+    data = tmp_path / "data"
+    #  the review's F4: what A4 measures is the retired memory, never a deployment's providers or model host
+    env = {k: v for k, v in os.environ.items()
+           if k.upper() not in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "XDG_CACHE_HOME",
+                                "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OLLAMA_HOST")}
+    env.update({"AI_ALLOW_EXTERNAL": "false", "HOME": str(home), "USERPROFILE": str(home), "AUTH_ENABLED": "false", "AI_DISABLE_LOCAL": "1",
+                "PYTHONIOENCODING": "utf-8", "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
+                "PROJECTS_DIR": str(tmp_path / "projects"), "WORKSTATION_UEG_PATH": str(tmp_path / "ueg.jsonl")})
+    proc = subprocess.run([sys.executable, "-c", child], capture_output=True, timeout=600, env=env, cwd=str(root))
+    stdout = proc.stdout.decode("utf-8", "replace")
+    assert proc.returncode == 0, ("the child failed", proc.stderr.decode("utf-8", "replace")[-1500:])
+    marker = [ln for ln in stdout.splitlines() if ln.startswith("RESULT")]
+    assert marker, ("the child gave no result", stdout[-800:])
+    res = json.loads(marker[0][len("RESULT"):])
+    assert pathlib.Path(res["home"]).resolve() == home.resolve(), ("the child's home is not the empty one", res["home"])
+    #  the positive control: the two writers the memory had are driven, and the upload was really extracted
+    assert res["chat"][0] == 200, ("the avatar chat route did not answer, so A4 measured nothing", res["chat"])
+    assert res["upload"] == [200, "EXTRACTED"], ("the upload was not extracted, so A4 measured nothing", res["upload"])
+    assert not res["outside"], ("the avatar chat or the upload tried an outside host", res["outside"])
+    assert not res["cache"], "the avatar chat or the upload made <HOME>/.cache/chroma, where chromadb keeps its model"
+    assert not res["modules"], ("the avatar chat or the upload imported the embedding stack", res["modules"])
+
+    #  A5. the delete answer says what may remain elsewhere, and never that nothing remains
+    out = res["delete"]
+    assert out and out["status"] == "REMOVED" and out["extracted_text_may_still_be_recalled"] is True, out
+    wr, nc = flat(out["what_remains"]), flat(out["not_claimed"])
+    for _part in ("no memory store took this file's text at upload", "interaction log", "VectorMemory",
+                  "CANNOT be removed by file id"):
+        assert _part in wr, ("the delete answer does not say what may remain elsewhere", _part, wr)
+    assert "long-term" not in wr and not re.search(r"nothing (else )?remains", wr), (
+        "the delete answer names the retired memory or says that nothing remains", wr)
+    assert "interaction log" in nc and "overstate" in nc and "nothing remains" not in nc, nc
+    unread = res["delete_unread"]
+    assert unread and unread["extracted_text_may_still_be_recalled"] is False, unread
+    assert "no text entered" in unread["what_remains"], unread["what_remains"]
+    assert unread["uploaded_bytes_removed"] is True and "uploaded bytes are what this removal reached" in unread["what_remains"], unread
+    gone = res.get("delete_gone")
+    assert gone and gone["uploaded_bytes_removed"] is False, ("the removal with its bytes gone was not driven", gone)
+    assert "no uploaded bytes were found to remove" in gone["what_remains"] and \
+        "uploaded bytes are what" not in gone["what_remains"], (
+        "the delete answer says it reached bytes it did not remove", gone["what_remains"])
+    assert "the registry row is gone" in gone["not_claimed"] and "bytes are gone" not in gone["not_claimed"], gone["not_claimed"]
+
+    #  A6. the words that called it a live store are gone where they were said, and the plan's lines are in place
+    stale = {"agentic_core/avatars/api.py": ("`memory_v01` ChromaDB store",),
+             "agentic_core/ingestion/api.py": ("the store the AI CEO and the avatars read", "Long-term memory takes",
+                                               "AI's long-term memory"),
+             "agentic_core/ai/logger.py": ("VectorMemory + memory_v01",),
+             "scripts/purge_memory_contamination.py": ("unscoped memory_v01 collection",)}
+    for rel, words in stale.items():
+        text = flat((root / rel).read_text(encoding="utf-8"))
+        for w in words:
+            assert w not in text, (rel, "still calls the retired memory a live store", w)
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    for slot, end in (("\n P2.13 ", "\n P2.14 "), ("\n P3.22 ", "\n P3.23 ")):
+        body = flat(plan.split(slot, 1)[1].split(end, 1)[0])
+        assert "W1196 (2026-11-22), built (row FU-1843): the avatar and upload memory is removed" in body, slot
+    p332 = flat(plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0])
+    assert "W1196 (2026-11-22), built: the avatar and upload memory is removed, as ruled above." in p332
+    assert not re.search(r"\bFU-\d+", p332), "P3.32 names a row"
+
+
+def test_w1199_the_scholar_request_is_drafted_for_the_owner_offers_a_scholar_or_an_institute_and_names_what_is_withheld():
+    """FU-1838 (W1199; OWNER, P5.17 clause 7). The Owner accepted on 2026-11-22 that a scholar or a trusted institute
+    is to be asked now, and W1192 registered the row; no request was drafted, so the Owner had nothing to send. The
+    request is drafted in docs/letters/SCHOLAR_REVIEW_REQUEST.md for the Owner to send, and names no one. The row stays
+    open: it closes on a dated plan record of the engagement, or on a ruling that defers it. Held here:
+    1. the letter is there, drafted for the Owner and sent by no one, with the Owner's name and address and the
+       addressee left to fill in, and it offers the review to a scholar or a trusted institute, naming none;
+    2. it names what is withheld now: the adult curriculum, tajweed and translation items (A.12.3), the five religion
+       research tools' composed answers, contributions a person submits, a teacher's attestation wording (P5.17
+       clause 4) and P5.21's approval pack, whose gate stays closed until P5.12's four learner-facing headings are
+       built and an independent safeguarding review is done; and it says what an approval is: it binds the exact
+       text, nothing is shown before it, the platform composes no Quran Arabic, scores no recitation, keeps children
+       out of the tools open today, never approves by its own AI, and asks no endorsement;
+    3. it holds no Arabic-script character, no fee (a whole word), no personal detail of _W963_PERSONAL's kinds, no
+       person named by an honorific of this domain and no gendered pronoun;
+    4. the scholar row, found by its title, names the letter in its why before its closing rule and recommends sending
+       it as drafted, open (or closed later on the Owner's dated engagement); the plan's list names the letter after
+       the row's W1192 line; and the local notes'
+       Still-yours list names the row and the letter."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    path = "docs/letters/SCHOLAR_REVIEW_REQUEST.md"
+
+    #  1. THE LETTER: drafted for the Owner, sent by no one, naming no one
+    assert (root / path).is_file(), (path, "is not there")
+    raw = (root / path).read_bytes()
+    assert b"\r" not in raw, "the letter is not stored LF"
+    letter = raw.decode("utf-8")
+    text = flat(letter)
+    for frag in ("DRAFTED FOR THE OWNER TO SEND", "Nothing has been sent", "[your name]", "[your address]",
+                 "To: [the scholar or institute]", "Dear [the scholar or institute],",
+                 "I would like to ask a scholar or a trusted institute to review",
+                 "this draft names no scholar and no institute"):
+        assert frag in text, ("the letter does not say", frag)
+    head = text.split("---", 1)[0]
+    assert "(W1199, FU-1838)" in head and "send it from your own address" in head, head[:300]
+
+    #  2. WHAT IS WITHHELD NOW, AND WHAT AN APPROVAL IS
+    for frag in ("The adult curriculum and tajweed items (A.12.3).",
+                 #  W692 (A.12.3): a model's translation of teaching text is withheld like a lesson (qep_intelligence)
+                 "a tajweed lesson and a translation of non-Arabic teaching text; each is held back",
+                 #  a person's contribution waits for a rostered scholar too (reactor/religion/qep_authoring)
+                 "Contributions a person submits, such as tafsir annotations. Each is queued and shown to no learner",
+                 "The composed answers of the five religion research tools.",
+                 "The wording of a teacher's own attestation (P5.17 clause 4).",
+                 "The children's tools and their approval pack (P5.21).",
+                 "The children's gate stays closed until P5.12's four learner-facing headings are built and an "
+                 "independent safeguarding review is done"):
+        assert frag in text, ("the letter does not name", frag)
+    for frag in ("An approval binds the exact text approved.", "Nothing is shown before it is approved",
+                 "The platform never composes, generates or changes it.",
+                 "Recitation is never scored, graded or corrected by the platform",
+                 "The Quran and religion tools open today are for adults, and children do not use them. Separate "
+                 "children's tools are built and held", "It never approves, never releases and never changes a text",
+                 "Nothing in this letter asks you to endorse the platform"):
+        assert frag in text, ("the letter does not say", frag)
+
+    #  3. NO SCRIPTURE, NO FEE, NO PERSONAL DETAIL, NO PRONOUN
+    arabic = re.compile("[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]")
+    hit = arabic.search(letter)
+    assert hit is None, ("the letter holds Arabic script", letter[max(0, hit.start() - 40):hit.end() + 10])
+    fee = re.search(r"(?i)\bfee\b", letter)
+    assert fee is None, ("the letter speaks of a fee", letter[max(0, fee.start() - 60):fee.end() + 20])
+    for what, pat in _W963_PERSONAL:
+        m = re.search(pat, letter)
+        assert m is None, ("the letter carries " + what, m.group(0))
+    #  the honorifics this domain names a scholar by, beside _W963_PERSONAL's Mr, Mrs, Ms, Miss and Dr
+    titled = re.search(r"\b(?:Shaykh|Sheikh|Shaikh|Imam|Ustadh|Ustadha|Prof(?:essor)?|Mufti|Mawlana|Maulana|Hafiz|"
+                       r"Qari)\.?\s+[A-Z]", letter)
+    assert titled is None, ("the letter names a person by an honorific", titled and titled.group(0))
+    gendered = re.search(r"\b(he|him|his|himself|she|her|hers|herself)\b", letter, re.I)
+    assert gendered is None, ("the letter gives someone a gendered pronoun", gendered.group(0))
+
+    #  4. THE ROW, THE PLAN'S LIST AND THE LOCAL NOTES, each naming the letter
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    rows = [r for r in reg if r.get("title", "").startswith(
+        "OWNER: ask a scholar or a trusted institute now to review what the religious tools hold back")]
+    assert len(rows) == 1, [r["id"] for r in rows]
+    row = rows[0]
+    rid, why = row["id"], row["why"]
+    #  open until the Owner's dated engagement or a ruling that defers it; the round that closes the row keeps the
+    #  letter's path in its why and adds test_w1199 to its K
+    assert row["status"] in ("open", "done") and (row["slot"], row["owner_gated"]) == ("OWNER", True), (
+        rid, row["status"], "FU-1838 closes only on the Owner's dated engagement or a ruling that defers it")
+    assert f"W1199 drafted the request for the Owner to send, in {path}:" in why, (rid, "its why does not name the letter")
+    assert "RECOMMENDED: send it as drafted" in why, (rid, "its why does not recommend sending it")
+    assert why.index(path) < why.index("This row closes only with a dated plan record"), (rid, "the closing rule moved")
+    fable = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    line = still[still.index(f"{rid} (W1192):"):].split("(The five places", 1)[0]
+    assert f"The request is drafted in {path} (W1199)." in line, ("the plan's list does not name the letter", line[-300:])
+    assert "Recommended: send it as drafted" in line, line[-300:]
+    notes = (root / "docs" / "RESUME_ON_MY_MACHINE.md").read_text(encoding="utf-8")
+    yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    bullets = [flat(b) for b in yours.split("\n  - ") if f"`{path}`" in b]
+    assert len(bullets) == 1 and f"({rid})" in bullets[0], ("the local notes do not name the row and the letter", bullets)
+    assert bullets[0].startswith("Sending the request to a scholar or a trusted institute"), bullets[0][:120]
+
+
+def test_w1193d_the_owners_decisions_of_the_evening_of_2026_11_22_are_recorded_where_the_work_reads_them():
+    """W1193d. The decisions put in chat on the evening of 2026-11-22, each with a recommendation, and accepted that
+    evening in the Owner's words "I want to go with all your recommendations, all items for me I will return to soon
+    keep collating proceed with rest". Each ruling sentence says what was accepted and no more; what the round design
+    adds follows it, marked "Proposed by the round design, not ruled". Held here:
+    D1. P5.2: a sale posts its declared cost, naming the receipt, unless that cost is already on the books; the sale
+        piece builds to it and is not built; after the price formula's ruling; the cost event only as proposed;
+    D2. P5.7: the teacher-interview record format W1201 defines is accepted and may be written into the notes
+        template, after W1201's note, with a note saying what the format is; nothing there reads as a choice of
+        first offer;
+    D3. P5.15: the second calibration run also waits for FU-1822, settled first, in 0.5-1 round, before 2027-01-10,
+        after W1195d's note; the notes' step only as proposed;
+    D4. the register: FU-1817 carries the two written questions (the partnership_deed template, kept held meanwhile;
+        NICE's terms on quoting NG249 1.1.1 verbatim, nothing changing now) after the morning's ruling; FU-1831 the
+        ruling of D3; FU-1822 a note that says it, with no "OWNER RULING" (test_w1190, test_w1195c); partnership_deed
+        held while FU-1817 is open;
+    D5. the plan's list: a line under FU-1817's, FU-1818's, FU-1837's and FU-1838's own entries while each row is open,
+        and the evening's decisions in a paragraph of their own after the morning's, naming no row;
+    D6. the local notes: their updated line names this round; the evening's bullet whole, after the morning's and
+        before Still yours; the Still-yours lines for the second run, FU-1817, the interviews, the history scan and the
+        scholar letter, while each row is open;
+    D7. while docs/REMAINING_WORK_MEASURED.md is the measurement of 2026-11-22 at a4b96954: P5.2's and P5.15's Owner
+        parts say the answer, as given after the page was measured;
+    D8. none of these texts gives the Owner a gendered pronoun."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    RM = "OWNER RULING 2026-11-22 (evening; the recommendation accepted)"
+    PROP = "Proposed by the round design, not ruled:"
+    WORDS = ("I want to go with all your recommendations, all items for me I will return to soon keep collating "
+             "proceed with rest")
+    SALE = "a sale posts its declared cost, naming the receipt, unless that cost is already on the books"
+    WAITS = ("the second Care calibration run also waits for FU-1822, which is settled first, in 0.5-1 round, before "
+             "2027-01-10")
+    said = []
+
+    def read(rel):
+        return (root / rel).read_text(encoding="utf-8")
+
+    def flat(t):
+        return " ".join(t.split())
+
+    def holds(text, part, where):
+        assert text.count(part) == 1, (where, "does not say once", part[:120], text.count(part))
+        said.append(part)
+
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+
+    def item(iid, nxt):
+        assert fable.count(f"\n {iid} ") == 1 and fable.count(f"\n {nxt} ") == 1, (iid, nxt, "the item heads")
+        return flat(fable.split(f"\n {iid} ", 1)[1].split(f"\n {nxt} ", 1)[0])
+
+    #  D1. P5.2
+    p52 = item("P5.2", "P5.3")
+    r2 = f"{RM}: {SALE}. P5.2's sale piece builds to this ruling; it is not built yet."
+    holds(p52, r2, "D1: P5.2")
+    assert p52.index("OWNER RULING 2026-11-19 (FU-1185): price = the declared cost") < p52.index(r2), "D1: P5.2's order"
+    prop2 = p52.split(r2, 1)[1]
+    assert prop2.lstrip().startswith(f"{PROP} the cost is posted as a cost event"), ("D1: the cost event is not "
+                                                                                    "marked as proposed", prop2[:120])
+    assert "cost event" not in r2 and "COMPLETION RECORD" not in p52 and "✅" not in fable.split("\n P5.2 ", 1)[1].split(
+        "\n", 1)[0], "D1: P5.2 is said as built"
+
+    #  D2. P5.7
+    p57 = item("P5.7", "P5.8")
+    r8 = f"{RM}: the teacher-interview record format W1201 defines is accepted; it may be written into the notes template."
+    holds(p57, r8, "D2: P5.7")
+    assert p57.index("W1201 (a note, not a ruling): P5.16 clause 1") < p57.index(r8), "D2: P5.7's order"
+    fmt = ("W1193d (a note, not a ruling): that format, as W1201's gate reads it, is one section headed \"### Interview "
+           "notes, \" and the interview's date (YYYY-MM-DD), in a document under docs/business/, with one line \"- \", a "
+           "field, \": \" and the answer for each field of the notes template in docs/business/FIRST_OFFER_CANDIDATES.md")
+    holds(p57, fmt, "D2: P5.7's note")
+    assert p57.index(r8) < p57.index(fmt) and "this round writes nothing into the template." in p57, "D2: the note"
+    assert not re.search(r"the\s+first\s+offer\s+is\s+candidate", p57.split(r8, 1)[1]), "D2: a choice of first offer"
+
+    #  D3. P5.15
+    p515 = item("P5.15", "P5.16")
+    r4 = (f"{RM}: the second calibration run also waits for FU-1822, whether the reviewer may be shown the NEWS2 table, "
+          "which is settled first, in 0.5-1 round, before 2027-01-10.")
+    holds(p515, r4, "D3: P5.15")
+    assert re.search(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195d\):", p515) and p515.index("(W1195d):") < p515.index(r4), (
+        "D3: P5.15's ruling is not after W1195d's note")
+    assert p515.split(r4, 1)[1].lstrip().startswith(f"{PROP} the round that settles FU-1822 writes the second run's "
+                                                     "step into step 5 of the local notes"), "D3: the step not proposed"
+
+    #  D4. the register
+    f17, f31, f22 = reg["FU-1817"], reg["FU-1831"], reg["FU-1822"]
+    q = (f"{RM}: the Law page's partnership_deed template is added to this engagement as a written question, and it "
+         "stays held meanwhile; and NICE's terms on quoting NG249 1.1.1 verbatim are put to the solicitor here; nothing "
+         "changes now.")
+    holds(f17["why"], q, "D4: FU-1817")
+    assert f17["why"].index("OWNER RULING 2026-11-22 (morning; the recommendation accepted)") < f17["why"].index(q), (
+        "D4: FU-1817's order")
+    assert f17["why"].split(q, 1)[1].lstrip().startswith(PROP), "D4: FU-1817's question wording not marked proposed"
+    assert f17["status"] != "open" or (f17["slot"], f17["owner_gated"]) == ("OWNER", True), "D4: FU-1817 moved"
+    if f17["status"] == "open":
+        from agentic_core.legal import specialist as _sp
+        assert "partnership_deed" in _sp.HELD_FOR_A_QUALIFIED_READ, "D4: partnership_deed is not held meanwhile"
+    holds(f31["why"], f"{RM}: {WAITS}.", "D4: FU-1831")
+    assert f31["why"].index(" W1195d, a note: ") < f31["why"].index(f"{RM}: {WAITS}."), "D4: FU-1831's order"
+    n22 = ("W1193d, a note recording the Owner's ruling of the evening of 2026-11-22 (the recommendation accepted): the "
+           "second Care calibration run also waits for this row, which is settled first, in 0.5-1 round, before "
+           "2027-01-10.")
+    holds(f22["why"], n22, "D4: FU-1822")
+    assert "OWNER RULING" not in f22["why"] and f22["slot"] == "P5.15", "D4: FU-1822's note is written as a ruling"
+    assert f22["why"].split(n22, 1)[1].lstrip().startswith(PROP), "D4: FU-1822's round not marked proposed"
+
+    #  D5. the plan's list
+    raw_list = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    still = flat(raw_list)
+
+    def under(rid, head, line):
+        if reg[rid]["status"] != "open":
+            return
+        holds(still, line, f"D5: the plan's list under {rid}")
+        seg = still[still.index(head) + len(head):still.index(line)]
+        assert not re.search(r"FU-\d+ \(W\d+\):", seg), (rid, "D5: the line is not under its own entry")
+
+    under("FU-1817", "FU-1817 (W1174):", "Ruled on the evening of 2026-11-22: two more written questions go to it: the "
+          "Law page's partnership_deed template, which stays held meanwhile, and NICE's terms on quoting NG249 1.1.1 "
+          "verbatim, with nothing changing now.")
+    under("FU-1818", "FU-1818 (W1174):", "Accepted on the evening of 2026-11-22: the interview record format W1201 "
+          "defines; it may be written into the notes template (P5.7).")
+    under("FU-1837", "FU-1837 (W1191):", "Accepted on the evening of 2026-11-22: you run the full-clone credential "
+          "history scan (W1208) on a mirror clone and rotate any value not yet rotated; that is your act, later.")
+    under("FU-1838", "FU-1838 (W1192):", "Accepted on the evening of 2026-11-22: you fill the blanks and send it as "
+          "drafted; that is your act, later.")
+    opener = "(Decisions put in chat on the evening of 2026-11-22, each with a recommendation, were accepted that evening"
+    assert still.count(opener) == 1, ("D5: the list does not carry the evening's paragraph once", still.count(opener))
+    i = raw_list.index("(Decisions put in chat on the evening of 2026-11-22")
+    para = flat(raw_list[i:raw_list.index(".)\n", i) + 2])
+    assert still.index("(Six put in the early hours of 2026-11-22 and three put that morning") < still.index(opener), (
+        "D5: the evening's paragraph is not after the morning's")
+    for part in (f"in the Owner's words \"{WORDS}\":",
+                 "a sale to post its declared cost, naming the receipt, unless that cost is already on the books (P5.2);",
+                 "the Law page's partnership_deed template added to the solicitor engagement as a written question, and "
+                 "kept held meanwhile;",
+                 "the second Care calibration run also to wait for the row on the NEWS2 table, settled first, in 0.5-1 "
+                 "round, before 2027-01-10;",
+                 "NICE's terms on quoting NG249 1.1.1 verbatim put to the solicitor, nothing changing now;",
+                 "the scholar letter's blanks filled and the letter sent as drafted, and the full-clone credential "
+                 "history scan run on a mirror clone, rotating any value not yet rotated, each the Owner's act, later;",
+                 "the teacher-interview record format W1201 defines accepted, which may be written into the notes "
+                 "template;",
+                 "and the Owner's own rows, to which the Owner will return.",
+                 "nothing on this list is closed by them.)"):
+        assert part in para, ("D5: the list's paragraph does not say", part[:80])
+    assert not re.search(r"\bFU-\d+\b", para), ("D5: the list's paragraph names a row", re.findall(r"FU-\d+", para))
+    said.append(para)
+
+    #  D6. the local notes
+    notes_raw = read("docs/RESUME_ON_MY_MACHINE.md")
+    notes = flat(notes_raw)
+    upd = re.search(r"Updated (20\d\d-\d\d-\d\d) \(([^)]*)\)\.", notes)
+    assert upd and upd.group(1) >= "2026-11-22" and "W1193d" in upd.group(2).split(", "), "D6: the notes' updated line"
+    head = "- **Ruled on the evening of 2026-11-22:**"
+    assert notes_raw.count(head) == 1, ("D6: the evening's bullet", notes_raw.count(head))
+    ruled = flat(head + notes_raw.split(head, 1)[1].split("\n- **", 1)[0])
+    assert ruled == (
+        f"- **Ruled on the evening of 2026-11-22:** the decisions put in chat that evening, each taken as recommended, in "
+        f"your words \"{WORDS}\": a sale to post its declared cost, naming the receipt, unless that cost is already on "
+        "the books (P5.2, whose sale piece builds to it); the Law page's partnership_deed template added to the "
+        "solicitor engagement (FU-1817) as a written question, and kept held meanwhile; the second Care calibration run "
+        "also to wait for FU-1822, settled first, in 0.5-1 round, before 2027-01-10; NICE's terms on quoting NG249 "
+        "1.1.1 verbatim put to the solicitor (FU-1817), nothing changing now; the scholar letter (W1199): you fill the "
+        "blanks and send it as drafted, your act, later; the full-clone credential history scan (W1208): you run it on "
+        "a mirror clone and rotate any value not yet rotated, your act, later; the teacher-interview record format W1201 "
+        "defines accepted, and it may be written into the notes template; and your own rows, which you will return to. "
+        "W1193d recorded each where the work reads it; your acts stay on the list below, and none is closed."), (
+        "D6: the evening's bullet", ruled[:200])
+    said.append(ruled)
+    assert notes.index("- **Ruled on the morning of 2026-11-22:**") < notes.index(head) < notes.index(
+        "- **Still yours:**"), "D6: the order"
+    yours_raw = notes_raw.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+    subs = [flat(b) for b in yours_raw.split("\n  - ")]
+
+    def line(rid, start, part):
+        if reg[rid]["status"] != "open":
+            return
+        hits = [b for b in subs if b.startswith(start)]
+        assert len(hits) == 1, ("D6: the notes' line", start, len(hits))
+        holds(hits[0], part, f"D6: the notes' {rid} line")
+
+    line("FU-1831", "Your second calibration run of the Care reviewer", "As you ruled on the evening of 2026-11-22, it "
+         "also waits for FU-1822 (whether the reviewer may be shown the NEWS2 table), settled first, in 0.5-1 round, "
+         "before 2027-01-10; the run's step is not yet in step 5.")
+    line("FU-1817", "One solicitor's engagement before anyone but you is invited (FU-1817)", "As you ruled on the "
+         "evening of 2026-11-22, two more written questions go to it: the Law page's partnership_deed template, which "
+         "stays held meanwhile, and NICE's terms on quoting NG249 1.1.1 verbatim, with nothing changing now.")
+    line("FU-1818", "Five to eight short interviews", "As you accepted on the evening of 2026-11-22, the interview "
+         "record format W1201 defines is accepted, and it may be written into the notes template.")
+    line("FU-1837", "Revoking at their providers", "As you accepted on the evening of 2026-11-22, you run the full-clone "
+         "credential history scan (W1208) on a mirror clone and rotate any value not yet rotated; that is your act, "
+         "later.")
+    line("FU-1838", "Sending the request to a scholar or a trusted institute", "As you accepted on the evening of "
+         "2026-11-22, you fill the blanks and send it as drafted; that is your act, later.")
+
+    #  D7. the remaining-work page, while it is the measurement of 2026-11-22 at a4b96954
+    page = read("docs/REMAINING_WORK_MEASURED.md")
+    if page.startswith("# Remaining work, measured — 2026-11-22 (HEAD a4b96954)"):
+        after = "after this page was measured (recorded here by W1193d)"
+        parts = re.split(r"(?m)^## (P[1-5]\.\d+) — [^\n]*\n", page)
+        sections = {parts[i]: flat(parts[i + 1]) for i in range(1, len(parts), 2)}
+        own = lambda iid: sections[iid].split("- **Only the Owner can:**", 1)[1]   # noqa: E731
+        holds(own("P5.2"), f"so that no cost is counted twice. The Owner answered on the evening of 2026-11-22, {after}: "
+                           f"{RM}: {SALE}.", "D7: P5.2's Owner part")
+        holds(own("P5.15"), "The second calibration run before 2027-01-10, with its results committed. The Owner ruled on "
+                            f"the evening of 2026-11-22, {after}: {RM}: {WAITS}.", "D7: P5.15's Owner part")
+
+    #  D8. no gendered pronoun in what is held here
+    word = re.compile(r"\b(he|his|him|himself|she|her|hers|herself)\b", re.I)
+    found = [m.group(0) for t in said + [p52.split(r2, 1)[1][:400], p57.split(r8, 1)[1][:700],
+                                          p515.split(r4, 1)[1][:300], f17["why"].split(q, 1)[1],
+                                          f22["why"].split(n22, 1)[1]] for m in [word.search(t)] if m]
+    assert found == [], ("D8: a gendered pronoun", found)
+
+
+def _w1210_wall_clock_durations(src, rel="<src>"):
+    """W1210's matcher: the subtractions in `src` that take a duration from the settable wall clock, as
+    (rel, line, shape, name). Shape a: a wall-clock read (time.time() under any alias, from-imports included) minus
+    a name bound to a wall-clock read in the same or an enclosing function, tuple assignments included. Shape b: a
+    wall-clock read minus one of the function's own parameters. Shape c: two clocks mixed, a wall-clock read minus a
+    name bound to a monotonic read (perf_counter or monotonic) in scope, or the reverse."""
+    import ast as _ast
+    tree = _ast.parse(src)
+    mods, wall_f, mono_f = set(), set(), set()
+    for n in _ast.walk(tree):
+        if isinstance(n, _ast.Import):
+            for a in n.names:
+                if a.name == "time":
+                    mods.add(a.asname or "time")
+        elif isinstance(n, _ast.ImportFrom) and n.module == "time" and not n.level:
+            for a in n.names:
+                if a.name == "time":
+                    wall_f.add(a.asname or "time")
+                elif a.name in ("perf_counter", "monotonic"):
+                    mono_f.add(a.asname or a.name)
+
+    def _read(e, attrs, names):
+        return isinstance(e, _ast.Call) and not e.args and (
+            (isinstance(e.func, _ast.Attribute) and e.func.attr in attrs and isinstance(e.func.value, _ast.Name)
+             and e.func.value.id in mods) or (isinstance(e.func, _ast.Name) and e.func.id in names))
+
+    def wall(e):
+        return _read(e, ("time",), wall_f)
+
+    def mono(e):
+        return _read(e, ("perf_counter", "monotonic"), mono_f)
+
+    def bound(fn, clock):
+        names = set()
+        for n in _ast.walk(fn):
+            if isinstance(n, (_ast.Assign, _ast.AnnAssign, _ast.NamedExpr)) and n.value is not None:
+                for t in (n.targets if isinstance(n, _ast.Assign) else [n.target]):
+                    if isinstance(t, _ast.Name) and clock(n.value):
+                        names.add(t.id)
+                    elif isinstance(t, (_ast.Tuple, _ast.List)) and isinstance(n.value, (_ast.Tuple, _ast.List)):
+                        names.update(a.id for a, b in zip(t.elts, n.value.elts)
+                                     if isinstance(a, _ast.Name) and clock(b))
+        return names
+    hits = []
+
+    def visit(node, w_names, m_names, params):
+        for ch in _ast.iter_child_nodes(node):
+            if isinstance(ch, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.Lambda)):
+                own = {a.arg for a in ch.args.posonlyargs + ch.args.args + ch.args.kwonlyargs}
+                visit(ch, w_names | bound(ch, wall), m_names | bound(ch, mono), own)
+                continue
+            if isinstance(ch, _ast.BinOp) and isinstance(ch.op, _ast.Sub) and isinstance(ch.right, _ast.Name):
+                r = ch.right.id
+                if wall(ch.left) and r in params:
+                    hits.append((rel, ch.lineno, "b", r))
+                elif wall(ch.left) and r in w_names:
+                    hits.append((rel, ch.lineno, "a", r))
+                elif (wall(ch.left) and r in m_names) or (mono(ch.left) and r in w_names):
+                    hits.append((rel, ch.lineno, "c", r))
+            visit(ch, w_names, m_names, params)
+    visit(tree, set(), set(), set())
+    return hits
+
+
+def test_w1210_every_duration_is_read_from_the_monotonic_clock(client, monkeypatch, tmp_path):
+    """FU-1847 (W1210, key A7), P3.30. Thirty-four durations in twenty-two files were a wall-clock read minus a
+    wall-clock start: time.time() under any alias, in the same or an enclosing function, or (gateway.py's _record) a
+    start passed in. The wall clock can be set. A step back stored a negative duration, which record_outcome spends
+    as nothing (W742's max(0, ...)), and a step forward booked the jump as work; ten of them reach record_outcome and
+    so the work budget. Each is now read from time.perf_counter(), a monotonic clock, chosen over time.monotonic() on
+    host_observation.py's precedent (W746: on Windows before Python 3.13 monotonic() ticks in about 15.6 ms steps).
+    S18.1's 'wall-clock seconds' means seconds actually spent, which a monotonic clock measures. Stamps stay on the
+    wall clock, and so do the eight ages of stored stamps named below.
+
+    1 no subtraction in agentic_core (outside _archive) takes a duration from the wall clock (shapes a and b) or mixes
+      two clocks (shape c); the eight stored-stamp ages still read the wall clock, each named with its reason
+    2 the matcher flags a planted same-scope start, an aliased tuple start, a helper's parameter and a mixed pair,
+      and does not flag work_budget.py's window age, a cutoff or monitor.py's last-seen age
+    3 with resource_fabric's clock set back an hour at every read, a floor composition run through the route stores
+      a duration between 0 and the test's own elapsed time, and the work budget rose by exactly that duration
+    4 the same with the clock set forward an hour at every read: the duration is not an hour, nor is the spend
+    5 with gateway's clock set back, the stream's floor records a model_attempt row with a duration in those bounds
+    """
+    import asyncio as _aio
+    import pathlib as _pl
+    import time as _rt
+    from agentic_core.api import operational_excellence as _oe
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.api import resource_fabric as _rf
+    import agentic_core.ai.gateway as _gwm
+
+    root = _pl.Path(__file__).resolve().parents[1]
+
+    #  1. NO DURATION IS READ FROM THE WALL CLOCK. The ages below are of stamps stored earlier (or of a file's mtime)
+    #     or cutoffs against them: those must be compared with the wall clock, so they stay on it.
+    KEPT = {
+        "agentic_core/mesh/health/monitor.py": ("diff = time.time() - last_seen",
+                                                "the age of a peer's stored last-seen stamp"),
+        "agentic_core/ai/native/orchestrator.py": ("time.time() - calendar.timegm(time.strptime(",
+                                                   "the age of a stored ISO stamp"),
+        "agentic_core/config.py": ("_time.time() - _os.path.getmtime(", "the age of a lock file's mtime"),
+        "agentic_core/api/organism_status.py": ("recent_cutoff = _time.time() - 30 * 86400",
+                                                "a cutoff against stored stamps"),
+        "agentic_core/api/products.py": ("(time.time() - cache_path.stat().st_mtime) < 3600",
+                                         "the age of a cache file's mtime"),
+        "agentic_core/api/economy.py": ("_time.time() - float(cl.get(\"at_epoch\") or 0)",
+                                        "the age of a stored settle-claim stamp"),
+        "agentic_core/gaas/v5/circuit_breaker_rl.py": ("cutoff = time.time() - self.window_seconds",
+                                                       "a cutoff against stored failure stamps"),
+        "agentic_core/molecular/work_budget.py": ("time.time() - float(rec.get(\"window_started\") or 0)",
+                                                  "the age of the budget window's stored start"),
+    }
+    found = []
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        rel = p.relative_to(root).as_posix()
+        if "/_archive/" in rel:
+            continue
+        found += _w1210_wall_clock_durations(p.read_bytes().decode("utf-8").replace("\r\n", "\n"), rel)
+    assert not found, ("a duration is read from the settable wall clock (or two clocks are mixed)", found)
+    for rel, (snippet, why) in KEPT.items():
+        assert snippet in (root / rel).read_bytes().decode("utf-8"), (
+            "a stored stamp's age left the wall clock, or moved: say so here", rel, why)
+    #  the sites this round moved: each file reads perf_counter, and the two readings of the avatar cycle stay two
+    rec = (root / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(encoding="utf-8")
+    assert '"cycle_id": f"cyc_{int(start_time * 1000)}"' in rec and "start_time = time.time()\n" in rec, (
+        "the cycle's name is no longer a wall-clock stamp")
+    assert "total_duration = time.perf_counter() - start_mono" in rec, "the cycle's duration is not monotonic"
+    for rel in ("ai/gateway.py", "api/resource_fabric.py", "api/swarm.py", "api/board.py", "api/deliverables.py",
+                "api/transformation_orchestration.py", "avatars/api.py", "api/native_ai.py"):
+        assert "perf_counter() - " in (root / "agentic_core" / rel).read_bytes().decode("utf-8"), rel
+
+    #  2. THE MATCHER IS NEITHER VACUOUS NOR WIDE ENOUGH TO FLAG A STORED AGE
+    planted = {
+        "same scope": ("import time\ndef f():\n    _t0 = time.time()\n    work()\n    d = time.time() - _t0\n", "a"),
+        "alias, tuple": ("import time as _time\ndef f():\n    _t0, x = _time.time(), 1\n"
+                         "    return (_time.time() - _t0) * 1000\n", "a"),
+        "enclosing": ("from time import time as now\ndef f():\n    s = now()\n    def g():\n"
+                      "        return now() - s\n    return g\n", "a"),
+        "helper": ("import time\ndef _r(t0):\n    return time.time() - t0\n", "b"),
+        "mixed": ("import time\ndef f():\n    s = time.time()\n    return time.perf_counter() - s\n", "c"),
+    }
+    for label, (src, shape) in planted.items():
+        h = _w1210_wall_clock_durations(src)
+        assert [x[2] for x in h] == [shape], ("the matcher missed a planted wall-clock duration", label, h)
+    for src in ("import time\ndef _load(rec):\n    if time.time() - float(rec.get('window_started') or 0) > 9:\n"
+                "        return 1\n",
+                "import time\ndef f(self):\n    cutoff = time.time() - self.window_seconds\n",
+                "import time\ndef rep(self, peer):\n    last_seen = self.beats.get(peer, 0)\n"
+                "    return time.time() - last_seen\n",
+                "import time\ndef f():\n    s = time.perf_counter()\n    return time.perf_counter() - s\n"):
+        assert _w1210_wall_clock_durations(src) == [], ("the matcher flags what is not a wall-clock duration", src)
+
+    class _SetClock:
+        """A module's `time` with a settable wall clock: every time() read is `step` seconds past the last one.
+        Every other attribute (perf_counter, monotonic, strftime, gmtime, sleep) is the real module's."""
+
+        def __init__(self, step):
+            self._step, self.reads = step, 0
+
+        def time(self):
+            self.reads += 1
+            return _rt.time() + self._step * self.reads
+
+        def __getattr__(self, k):
+            return getattr(_rt, k)
+
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json", raising=False)
+    monkeypatch.setattr(_oe, "_BASELINE_STORE", tmp_path / "model_health_baselines.json", raising=False)
+    monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "W1210 clock", "usage_area": "synthesis", "resource_ids": ["bdp"],
+        "config": {"bdp": {"challenge": "W1210 a shared tool library"}}})
+    assert comp.status_code == 200, comp.text[:300]
+    cid = comp.json()["id"]
+
+    def _run(step):
+        clock = _SetClock(step)
+        monkeypatch.setattr(_rf, "time", clock)
+        before = float(_wb.state()["seconds_spent"])
+        t0 = _rt.perf_counter()
+        r = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "W1210 the clock"})
+        elapsed_ms = (_rt.perf_counter() - t0) * 1000
+        monkeypatch.setattr(_rf, "time", _rt)
+        assert r.status_code == 200 and not r.json().get("refused"), r.text[:300]
+        rows = [o for o in _oe._load() if o.get("kind") == "composition_run" and o.get("ref") == cid]
+        assert rows, "the run recorded no composition_run row to read"
+        return rows[-1], before, float(_wb.state()["seconds_spent"]), elapsed_ms, clock
+
+    #  3. THE CLOCK SET BACK: a duration within the run's own time, and spent
+    row, before, after, elapsed_ms, clock = _run(-3600)
+    assert 0 <= row["duration_ms"] <= elapsed_ms + 50, (
+        "the run's duration was read from the wall clock set back an hour", row["duration_ms"], elapsed_ms)
+    assert abs((after - before) - row["duration_ms"] / 1000.0) < 0.0015, (
+        "the work budget did not rise by the run's duration", before, after, row["duration_ms"], row.get("budget"))
+    assert str(row.get("budget", "")).startswith("spent"), row.get("budget")
+
+    #  4. THE CLOCK SET FORWARD: the jump is not booked as work
+    row, before, after, elapsed_ms, clock = _run(3600)
+    assert 0 <= row["duration_ms"] <= elapsed_ms + 50, (
+        "the run's duration was read from the wall clock set forward an hour", row["duration_ms"], elapsed_ms)
+    assert after - before < 3600 and abs((after - before) - row["duration_ms"] / 1000.0) < 0.0015, (
+        "the jump of the wall clock was spent as work", before, after, row["duration_ms"])
+
+    #  5. THE GATEWAY'S STREAM: the floor attempt's duration, with the gateway's clock set back
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setattr(_gwm, "time", _SetClock(-3600))
+
+    async def _collect():
+        return [ev async for ev in _gwm.gateway.stream_meta("W1210 say hello", agent="w1210-clock", augment=False)]
+    t0 = _rt.perf_counter()
+    evs = _aio.run(_collect())
+    elapsed_ms = (_rt.perf_counter() - t0) * 1000
+    monkeypatch.setattr(_gwm, "time", _rt)
+    assert evs and evs[-1].get("done") is True and evs[-1].get("served_by") == "native", evs[-1:]
+    att = [o for o in _oe._load() if o.get("kind") == "model_attempt" and o.get("resource") == "stream:w1210-clock"]
+    assert att and att[-1]["served_by"] == "native", ("the stream's floor recorded no model_attempt row", att)
+    assert 0 <= att[-1]["duration_ms"] <= elapsed_ms + 50, (
+        "the stream's attempt duration was read from the wall clock set back an hour", att[-1]["duration_ms"],
+        elapsed_ms)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1195b (P5.18 clause 4, its ACCEPT) - the screen W1195 built for the Law draft form and the clerk reads four
+#  more doors: the Generator, the Synthesis Studio, a refine and a fabric composition's run. Each refuses an explicit
+#  ask to prepare a reserved instrument before anything is composed or saved; an ordinary request never is.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1195b_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_generator_the_studio_a_refine_and_a_composition(client, monkeypatch):
+    """P5.18 clause 4 and its ACCEPT: "the reserved documents are refused through the route a person would use".
+    W1195 screened the Law draft form and the clerk for an explicit ask, and registered the gap: the same words were
+    composed by the Generator, by both Synthesis Studio routes and by a composition running the Generator; a refine
+    (every tool's result card, the Law page's draft among them) and a composition's run composed them as well. Held
+    here (the route legs before the captured fixtures, so a blind on a refusal turns its own leg red):
+    1. each door's sentence names its route and what it reads, and the refusal says the screen misses most other ways
+       of asking; RESERVED_SCREEN says the four doors, what each does not read, that a reserved document named as
+       another document's subject is not read as asked for, and names the generators still unscreened;
+    2. the coverage row is guarded by this test after W1194's and W1195's and says the doors and the measured figures,
+       their sample said; P5.18 says it; the gap row W1195 registered is closed as built by this round; the routes left
+       are one row, every POST route it names mounted;
+    3. the doors' own labelled phrasings (the legal review's ordinary requests among them) agree with the screen but
+       for their stated limits, each held to the opposite of its label;
+    4. the Generator: each ask in its specification, artefact type, format or domain, or split across them, is refused
+       with 409 before any composer call, naming the field, the words, the door and the reason; each ordinary request
+       is composed;
+    5. the fabric: the Generator stage says the route's refusal as a refusal, whole, never a form's; a composition's
+       run reads its objective (or, with none, its name), its usage area whatever the objective, and each resource's
+       settings and their names before any stage is built, and records no run; an ordinary composition runs;
+    6. the Synthesis Studio: /generate and /stream refuse an ask before anything is composed, saved or streamed, W659's
+       ruling check first; an ordinary request is composed and streamed, and what it kept is removed;
+    7. refine: an ask in the instruction or the title is refused before any rewrite; an ordinary instruction refines;
+       the draft is not read (the stated limit);
+    8. the pages hold the routes' own refusals (their fixtures, captured by a real request) and their rendered tests
+       say each whole; the Law page's captured templates answer is the route's."""
+    import asyncio
+    import importlib.util
+    import inspect
+    import json
+    import pathlib
+    import re
+
+    import agentic_core.api.refine as _refine
+    from agentic_core.ai.gateway import ModelGateway as _gw
+    from agentic_core.ai.native.orchestrator import NativeOrchestrator as _orch
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.gaas.v5 import horizon_guardrails as _hg
+    from agentic_core.legal import specialist as _sp
+    from agentic_core.synthesis import api as _syn
+    root = pathlib.Path(__file__).resolve().parents[1]
+    me = inspect.currentframe().f_code.co_name
+    g1194 = "test_w1194_p518_an_unlisted_template_id_is_refused_at_the_draft_form_before_anything_is_composed"
+    g1195 = "test_w1195_p518_an_explicit_ask_for_a_reserved_instrument_is_refused_at_the_draft_form_and_the_clerk"
+    ASK = "Draft the TR1 transfer of my flat to my son"
+    reason = _sp.reserved_reason()
+    help_said = "For help from a person, see the list of where help is"
+    assert help_said in reason and reason.endswith(" Nothing here is legal advice."), reason
+
+    #  1. each door's sentence, and what the screen's sentence says. A later door may be added (the rest row's THE
+    #     WORK): these four are held, not the list's length
+    door = _sp.RESERVED_DOOR_SAID
+    assert {"composition", "generator", "refine", "studio"} <= set(door), sorted(door)
+    assert _sp.RESERVED_DOOR_LIMIT == "It misses most other ways of asking, so a request it does not refuse is not cleared."
+    for k, said in (("generator", ("The Generator (POST /api/v1/generator/produce) reads a request's specification, "
+                                   "artefact type, format and domain, each on its own and together")),
+                    ("studio", ("The Synthesis Studio (POST /api/v1/synthesis/generate and /stream) reads a request's "
+                                "instructions", "before a stream starts; it does not read the files, nor the topic it "
+                                "takes from their names")),
+                    ("refine", ("A refine (POST /api/v1/refine) reads its instruction and the title it is given",
+                                "it does not read the draft")),
+                    ("composition", ("A fabric composition's run (POST /api/v1/resources/compositions/{cid}/run) reads "
+                                     "its objective (or, with none, its name), its usage area and each resource's "
+                                     "settings and their names", "before any stage is built"))):
+        for s in ((said,) if isinstance(said, str) else said):
+            assert s in door[k] and "with the screen the Law draft form and the clerk use" in door[k], (k, s)
+    for said in ("The same screen reads, and refuses there before anything is composed or saved, the words of a request "
+                 "to the Generator (its specification, artefact type, format and domain, each on its own and together), "
+                 "the Synthesis Studio's instructions (not its files, nor the topic it takes from their names), the "
+                 "instruction to refine a tool's output and the title it is given (not the output being refined), and a "
+                 "fabric composition's objective (or, with none, its name), its usage area and each of its resources' "
+                 "settings and their names.",
+                 "A reserved document named as another document's subject (\"a TR1 explainer\", \"a lesson on a legal "
+                 "charge\") is not read as asked for.",
+                 "The platform's other free-text generators are not screened, among them the deliverables' POST "
+                 "/api/v1/deliverables/produce", "the in-house assistant's POST /api/v1/native-ai/complete",
+                 "It misses most other ways of asking"):
+        assert said in _sp.RESERVED_SCREEN, ("the screen's sentence does not say", said)
+    tpl = client.get("/api/v1/law/templates").json()
+    assert tpl["reserved"]["screen_basis"] == _sp.RESERVED_SCREEN, tpl["reserved"]
+    #  a reserved name another document is about is not asked for; the reserved document itself still is
+    for t in ("Prepare a TR1 explainer for clients", "Create a lesson on a contract for the sale of land",
+              "Make the TR1 summary shorter", "Write the transfer of a flat chapter of my textbook",
+              "Write a TR1 form tutorial for paralegal students", "I need help understanding my TR1"):
+        assert _sp.reserved_match(t) is None, ("a document's subject read as asked for", t)
+    for t in ("Draft the TR1 form for my flat", ASK, "Please prepare a transfer deed for the cottage"):
+        assert _sp.reserved_match(t), ("the reserved document itself is no longer read", t)
+
+    #  2. the coverage row, the plan and the rows
+    spec = importlib.util.spec_from_file_location("_sp1195b", root / "scripts" / "screen_phrasings.py")
+    drv = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(drv)
+    lab = dict(drv.RESERVED_AT_DOORS)
+    lim = drv.RESERVED_AT_DOORS_LIMITS
+    d_fors = [t for t, x in drv.RESERVED_AT_DOORS if x == "for" and t not in lim]
+    d_nots = [t for t, x in drv.RESERVED_AT_DOORS if x == "not-for"]
+    drv_src = (root / "scripts" / "screen_phrasings.py").read_text(encoding="utf-8")
+    after = drv_src.split("#  W1195b's builder, after its legal review:", 1)[1].split("\n]\n", 1)[0]
+    review = after.split("#  W1195b's legal review: ordinary requests", 1)[1]
+    r_nots = [t for t in d_nots if repr(t) in review]
+    b_nots = [t for t in d_nots if repr(t) not in after]
+    assert len(r_nots) >= 30 and len(b_nots) >= 70 and len(d_nots) > len(r_nots) + len(b_nots), (len(r_nots), len(b_nots))
+    cov = {r["id"]: r for r in json.loads((root / "docs" / "COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    crow = cov["law-reserved-instruments"]
+    assert crow["guarded_by"][:3] == [g1194, g1195, me] and crow["state"] == "route_only", crow["guarded_by"]
+    assert "(W1194, W1195, W1195b" in crow["today"], crow["today"][-200:]
+    for said in ("the same screen reads the words of a request to the Generator's POST /api/v1/generator/produce (its "
+                 "specification, artefact type, format and domain, each on its own and together)",
+                 "POST /api/v1/refine (the instruction to refine a tool's output, the Law page's draft among them, and "
+                 "the title it is given; not the draft)", "its objective, or with none its name, its usage area, and "
+                 "each resource's settings and their names, before any stage is built",
+                 "each refusal naming its route and saying that the screen misses most other ways of asking",
+                 "the fabric's Generator stage, called in process, says the Generator's refusal as a refusal",
+                 "a reserved document named as another document's subject", "which is not a clearance",
+                 f"none of the builder's own {len(b_nots)} ordinary requests or requests about a document",
+                 "(out of sample, but not blind)", f"nor any of the legal review's {len(r_nots)} ordinary requests",
+                 "(labelled after it, so in-sample)", f"{len(d_fors)} of the builder's {len(d_fors) + len(lim)} explicit "
+                 "asks were read, a figure that is high because the builder had read the screen's patterns",
+                 "the recall that generalises is W1195's (27 of 87 on its corpus, in-sample; 1 of 50",
+                 "refuses none of 168 others", "the platform's other free-text generators are not screened, among them "
+                 "the deliverables"):
+        assert said in crow["today"], ("the coverage row does not say", said)
+    plan = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    p518 = " ".join(plan.split("\n P5.18 [chartered W711", 1)[1].split("\n P5.19 [chartered W711", 1)[0].split())
+    m = re.search(r"UPDATED \d{4}-\d{2}-\d{2} \(W1195b\): (.*?)(?= UPDATED |$)", p518)
+    assert m, p518[-800:]
+    line = m.group(1)
+    assert line.startswith("the screen W1195 built reads four more of the routes a person would use: "), line[:200]
+    rows = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    gap = [x for x in rows if x["title"].startswith(
+        "A reserved instrument asked for in another free-text generator's words is composed, among them")]
+    rest = [x for x in rows if x["title"].startswith("A reserved instrument asked for in a free-text route W1195b does "
+                                                     "not screen is composed")]
+    assert len(gap) == 1 and len(rest) == 1, ([x["id"] for x in gap], [x["id"] for x in rest])
+    gap, rest = gap[0], rest[0]
+    #  closed by this round's apply, as built, so its id never depends on the chain's order
+    assert (gap["status"], gap.get("closed_by"), gap.get("because")) == ("done", "W1195b", "built"), (
+        "the gap row W1195 registered is not closed as built by this round", gap["status"], gap.get("closed_by"))
+    for said in ("Built in W1195b: the screen W1195 built for the Law draft form and the clerk reads four more of the "
+                 "routes a person would use", "P5.18 clause 4's ACCEPT is still not met",
+                 "that the screen misses most other ways of asking", "the recall that generalises is W1195's",
+                 "its usage area, which reaches every resource as its domain", "test_w1195b holds it"):
+        assert said in (gap.get("close_note") or ""), ("the gap row's close note does not say", said)
+    for said in ("is still not met", f"This closes {gap['id']}.", f"that is {rest['id']}, registered here",
+                 f"is guarded as well by {me}.", "the draft is not read", "before any stage is built",
+                 "after W659's ruling check and before a stream starts",
+                 "one it does not read is refined, which is not a clearance",
+                 f"none of {len(b_nots)} ordinary requests or requests about a document is refused and {len(d_fors)} of "
+                 f"{len(d_fors) + len(lim)} explicit asks are read, a recall that is high because the builder had read "
+                 "the patterns", "the recall that generalises is W1195's, 27 of 87 on its corpus and 1 of 50"):
+        assert said in line, ("P5.18's W1195b line does not say", said)
+    #  the rest row: open, or closed by a later round as its THE WORK asks
+    assert (rest["slot"], rest["severity"], rest["owner_gated"]) == ("P5.18", "medium", False), rest
+    assert rest["status"] == "open" or str(rest.get("closed_by") or "") > "W1195b", (rest["status"], rest.get("closed_by"))
+    assert rest["source"].startswith("W1195b (") and {"agentic_core/api/deliverables.py", "agentic_core/api/native_ai.py",
+                                                      "agentic_core/avatars/api.py"} <= set(rest["files"]), rest["files"]
+    for said in ("POST /api/v1/deliverables/produce", "POST /api/v1/career/generate", "once a document is recorded",
+                 "POST /api/v1/native-ai/complete", "POST /api/v1/avatar/chat", "POST /api/v138/ceo/chat",
+                 "POST /api/v1/support/ask", "the Authorship engine, POST /api/v1/intelligence/authorship",
+                 "found among the routes the app mounts", "retired and answer 410 before composing anything",
+                 "POST /api/v1/vsb/spawn (W695)", "Probed on the tree before W1195b's edits",
+                 "the other routes were read in the code, not probed", "legal/specialist.refuse_reserved",
+                 "W580's method", "for a conversational route, decide first", f"closing {gap['id']}"):
+        assert said in rest["why"], ("the row of the routes left does not say", said)
+    mounted = {re.sub(r"\{[^}]*\}", "{}", getattr(r, "path", "")) for r in client.app.routes
+               if "POST" in (getattr(r, "methods", None) or ())}
+    named = {re.sub(r"\{[^}]*\}", "{}", p).rstrip(".") for p in re.findall(r"POST (/api/[^\s,;()']+)", rest["why"])}
+    assert named and not sorted(named - mounted), ("the rest row names a POST route the app does not mount",
+                                                   sorted(named - mounted))
+
+    #  3. the doors' own labelled phrasings, and their stated limits
+    assert len(lab) == len(drv.RESERVED_AT_DOORS) >= 120 and set(lim) <= {t for t, x in drv.RESERVED_AT_DOORS if x == "for"}
+    wrong = [(x, t) for t, x in drv.RESERVED_AT_DOORS if (_sp.reserved_kind(t) is not None) != (x == "for") and t not in lim]
+    assert not wrong, ("the screen and the doors' labelled list disagree", wrong)
+    assert not [t for t in lim if _sp.reserved_kind(t) is not None], "a stated limit the screen now reads"
+    assert 'results.append(_table("legal.reserved at four more doors (W1195b)", RESERVED_AT_DOORS,' in _code_only(drv_src)
+    w_fors = [t for t, x in drv.RESERVED if x == "for" and t not in drv.RESERVED_LIMITS]
+    w_nots = [t for t, x in drv.RESERVED if x == "not-for"]
+
+    #  the composers, each a recorder: what a door sends is seen, and nothing is composed for real
+    heard = []
+
+    def _hear(name, prompt, kw):
+        heard.append((name, str(kw.get("user_text") or "") + " " + str(prompt)))
+
+    async def _complete(self, prompt, *a, **kw):
+        _hear("complete", prompt, kw)
+        return {"output": "w1195b composed", "served_by": "native", "is_external": False}
+
+    async def _query(self, prompt, *a, **kw):
+        _hear("query_meta", prompt, kw)
+        return {"output": "w1195b composed", "served_by": "native", "is_external": False}
+
+    async def _stream(self, prompt, *a, **kw):
+        _hear("stream_meta", prompt, kw)
+        yield {"token": "w1195b "}
+        yield {"token": "streamed"}
+        yield {"done": True, "served_by": "native", "is_external": False, "output": "w1195b streamed"}
+
+    async def _ai(prompt, agent, **kw):
+        _hear("ai_text", prompt, kw)
+        return "w1195b refined", {"served_by": "w1195b", "is_external": False}
+    monkeypatch.setattr(_orch, "complete", _complete)
+    monkeypatch.setattr(_gw, "query_meta", _query)
+    monkeypatch.setattr(_gw, "stream_meta", _stream)
+    monkeypatch.setattr(_refine, "ai_text", _ai)
+    #  the singletons as well: an earlier test that restored a method by assignment (`_orch.complete = _real`, as
+    #  test_w708 does) left the bound original in the instance's __dict__, which shadows a patch on the class, so the
+    #  doors would compose for real behind these recorders (the K run's 'an ordinary request refused')
+    from agentic_core.ai import gateway as _gwmod1195b
+    from agentic_core.ai.native.orchestrator import orchestrator as _orch_one
+
+    async def _complete_one(prompt, *a, **kw):
+        return await _complete(_orch_one, prompt, *a, **kw)
+
+    async def _query_one(prompt, *a, **kw):
+        return await _query(_gwmod1195b.gateway, prompt, *a, **kw)
+
+    def _stream_one(prompt, *a, **kw):
+        return _stream(_gwmod1195b.gateway, prompt, *a, **kw)
+    monkeypatch.setattr(_orch_one, "complete", _complete_one)
+    monkeypatch.setattr(_gwmod1195b.gateway, "query_meta", _query_one)
+    monkeypatch.setattr(_gwmod1195b.gateway, "stream_meta", _stream_one)
+
+    def _refused(r, subject, act, where, words, kept, k):
+        assert r.status_code == 409, (words, r.status_code, r.text[:200])
+        d, mm = r.json()["detail"], _sp.reserved_match(words)
+        assert d.startswith(f"'{subject}' is not {act}: the words \"{mm['words']}\" in {where} were read as asking to "
+                            f"prepare {mm['said']}, which would fall under \"{mm['clause']}\", one of the reserved "
+                            f"documents, so nothing was {kept}. The screen reads words, not what a document is. "
+                            f"{_sp.RESERVED_DOOR_LIMIT} {door[k]} ") and d.endswith(reason) and help_said in d, d
+        return d
+
+    #  4. the Generator: every field read, on its own and together, before any composer call; an ordinary request composed
+    for t in d_fors + w_fors:
+        _refused(client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": t}),
+                 "content", "generated", "the specification", t, "composed", "generator")
+    for field, where in (("artefact_type", "the artefact type"), ("format", "the format"), ("domain", "the domain")):
+        r = client.post("/api/v1/generator/produce", json={"spec": "W1195b made up: a short note", field: ASK})
+        _refused(r, ASK if field == "artefact_type" else "content", "generated", where, ASK, "composed", "generator")
+    split = {"artefact_type": "content", "spec": "Please draft the", "format": "TR1 transfer of my flat", "domain": "general"}
+    assert not any(_sp.reserved_match(v) for v in split.values()), split
+    _refused(client.post("/api/v1/generator/produce", json=split), "content", "generated",
+             "the specification, artefact type, format and domain read together",
+             "Please draft the content TR1 transfer of my flat general", "composed", "generator")
+    assert heard == [], ("a composer was called for an explicit ask at the Generator", heard[:3])
+    for t in d_nots + w_nots:
+        r = client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": t})
+        assert r.status_code == 200 and r.json()["output"] == "w1195b composed", ("an ordinary request refused", t, r.text[:200])
+    assert len(heard) == len(d_nots + w_nots) and all(t in h for t, (_n, h) in zip(d_nots + w_nots, heard)), len(heard)
+
+    #  5. the fabric: the Generator stage's refusal, said as a refusal; a composition's run reads its words first
+    heard.clear()
+    loop = asyncio.new_event_loop()
+    g = client.post("/api/v1/generator/produce", json={"artefact_type": "content", "spec": ASK, "domain": "general",
+                                                       "format": "markdown", "model": "auto"})
+    a = loop.run_until_complete(_fab._run_real_resource_handler("generator", {"spec": ASK}, "w1195b objective", "general"))
+    b = loop.run_until_complete(_fab._run_real_resource_handler("generator", {}, ASK, "general"))
+    c = loop.run_until_complete(_fab._run_real_resource("generator", {"spec": ASK}, "w1195b objective", "general"))
+    assert a["refused"] is True and a["status"] == 409 and a["output"] is None and a["detail"] == g.json()["detail"], a
+    assert "\" in the specification were read as asking to prepare " in b["detail"] and b["refused"] is True, b
+    assert (c["outcome"], c["outcome_phrase"], c["kind_phrase"], c["endpoint"]) == (
+        "refused", _fab._ROUTE_REFUSED_PHRASE, _fab._ROUTE_REFUSED_PHRASE, "/api/v1/generator/produce"), c
+    assert "the form's own rules" not in c["outcome_phrase"] and "error" not in c and heard == [], (c, heard)
+    ok = loop.run_until_complete(_fab._run_real_resource_handler("generator", {"spec": d_nots[0]}, "o", "general"))
+    assert ok.get("output") == "w1195b composed" and not ok.get("refused"), ok
+    made = []
+
+    def _compose(name, cfg, usage="synthesis"):
+        r = client.post("/api/v1/resources/compose", json={"name": name, "resource_ids": ["generator"],
+                                                           "usage_area": usage, "config": {"generator": cfg}})
+        assert r.status_code == 200, r.text[:300]
+        made.append(r.json()["id"])
+        return r.json()["id"]
+    runs0 = len(_fab._composition_runs_read()[0])
+    heard.clear()
+    cid = _compose("w1195b composition", {"spec": ASK})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "a short note for a team"}),
+             cid, "run", "the generator resource's spec setting", ASK, "run or composed", "composition")
+    cid2 = _compose("w1195b plain composition", {"spec": d_nots[1]})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": ASK}),
+             cid2, "run", "the objective", ASK, "run or composed", "composition")
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"params": {"generator": {"format": ASK}}}),
+             cid2, "run", "the generator resource's format setting", ASK, "run or composed", "composition")
+    #  a setting's name reaches its stage as "name=value", so it is read too (W1195b's legal review, F2)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": "a short note",
+                                                                             "params": {"generator": {ASK: "yes"}}}),
+             cid2, "run", "the name of a setting of the generator resource", ASK, "run or composed", "composition")
+    cid3 = _compose(ASK, {"spec": d_nots[2]})
+    _refused(client.post(f"/api/v1/resources/compositions/{cid3}/run", json={}),
+             cid3, "run", "the composition's name", ASK, "run or composed", "composition")
+    cid4 = _compose("w1195b composition by area", {"spec": d_nots[3]}, usage=ASK)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid4}/run", json={}),
+             cid4, "run", "the composition's usage area", ASK, "run or composed", "composition")
+    #  the usage area reaches every resource as its domain, so it is read whatever the objective (review F1)
+    _refused(client.post(f"/api/v1/resources/compositions/{cid4}/run", json={"objective": "W1195b made up: a short note"}),
+             cid4, "run", "the composition's usage area", ASK, "run or composed", "composition")
+    assert heard == [] and len(_fab._composition_runs_read()[0]) == runs0, ("a refused composition ran or was recorded",
+                                                                            heard[:3])
+    #  the name is read only when no objective is sent: with one, the name reaches no stage (W1195b review F11)
+    r = client.post(f"/api/v1/resources/compositions/{cid3}/run", json={"objective": "W1195b made up: a short note"})
+    assert r.status_code == 200 and r.json().get("final"), (r.status_code, r.text[:300])
+    r = client.post(f"/api/v1/resources/compositions/{cid2}/run", json={"objective": d_nots[4]})
+    assert r.status_code == 200 and r.json().get("final"), (r.status_code, r.text[:300])
+    for x in made:
+        client.delete(f"/api/v1/resources/compositions/{x}")
+    assert not [x for x in made if client.get(f"/api/v1/resources/compositions/{x}").status_code == 200], made
+
+    #  6. the Synthesis Studio: /generate and /stream, after the ruling check, before anything is composed or saved
+    heard.clear()
+    hist = len(_syn.synthesis_manager.history)
+    files = sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*"))
+    for t in d_fors + w_fors[::4]:
+        _refused(client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report",
+                                                                  "instructions": t}),
+                 "report", "generated", "the instructions", t, "composed or saved", "studio")
+    for t in d_fors[::3] + w_fors[1::8]:
+        r = client.post("/api/v1/synthesis/stream", json={"content_ids": [], "output_type": "report", "instructions": t})
+        assert not r.headers.get("content-type", "").startswith("text/event-stream"), (t, r.headers.get("content-type"))
+        assert r.json()["detail"] == client.post("/api/v1/synthesis/generate", json={
+            "content_ids": [], "output_type": "report", "instructions": t}).json()["detail"], t
+        _refused(r, "report", "generated", "the instructions", t, "composed or saved", "studio")
+    assert heard == [] and len(_syn.synthesis_manager.history) == hist, ("the studio composed or kept an ask", heard[:3])
+    assert sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*")) == files, "the studio saved an ask"
+    both = "Draft the TR1 transfer of my flat to my son and give a fatwa on whether riba is haram in it"
+    assert _hg.religious_ruling_gate(both).get("matched") is True and _sp.reserved_match(both), both
+    for route in ("/api/v1/synthesis/generate", "/api/v1/synthesis/stream"):
+        r = client.post(route, json={"content_ids": [], "output_type": "report", "instructions": both})
+        assert r.status_code == 409 and isinstance(r.json()["detail"], dict) and r.json()["detail"].get("refused_by"), (
+            "the ruling check is no longer first", route, r.text[:200])
+    for t in d_nots:
+        r = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report", "instructions": t})
+        assert r.status_code == 200 and (r.json().get("content") or "").strip(), ("an ordinary request refused", t, r.text[:200])
+    for t in d_nots[::6]:
+        with client.stream("POST", "/api/v1/synthesis/stream",
+                           json={"content_ids": [], "output_type": "report", "instructions": t}) as st:
+            body = "".join(st.iter_text())
+        assert st.status_code == 200 and st.headers["content-type"].startswith("text/event-stream"), (t, st.status_code)
+        assert '"token"' in body and '"done"' in body, (t, body[:200])
+    #  what the ordinary requests kept is removed, so no later test reads this leg's outputs
+    del _syn.synthesis_manager.history[hist:]
+    for p in _syn.synthesis_manager.output_dir.glob("*"):
+        if p.name not in files:
+            p.unlink()
+    assert sorted(p.name for p in _syn.synthesis_manager.output_dir.glob("*")) == files
+
+    #  7. refine: the instruction and the title read, the draft not
+    heard.clear()
+    draft = "W1195b made up: a short service agreement between two firms."
+    for t in d_fors + w_fors[2::4]:
+        _refused(client.post("/api/v1/refine", json={"previous": draft, "instruction": t,
+                                                     "context": "Legal Document Generator"}),
+                 "Legal Document Generator", "refined", "the instruction", t, "composed", "refine")
+    r = client.post("/api/v1/refine", json={"previous": draft, "instruction": ASK})
+    _refused(r, "this output", "refined", "the instruction", ASK, "composed", "refine")
+    r = client.post("/api/v1/refine", json={"previous": draft, "instruction": "Do what the title says, in full",
+                                            "context": ASK})
+    _refused(r, ASK, "refined", "the title it was given", ASK, "composed", "refine")
+    assert heard == [], ("a draft was rewritten for an explicit ask", heard[:3])
+    for t in d_nots:
+        r = client.post("/api/v1/refine", json={"previous": draft, "instruction": t})
+        assert r.status_code == 200 and r.json()["refined"], ("an ordinary instruction refused", t, r.text[:200])
+    r = client.post("/api/v1/refine", json={"previous": ASK, "instruction": "Make it shorter"})
+    assert r.status_code == 200, ("the stated limit: the draft being refined is not read", r.status_code)
+    assert len(heard) == len(d_nots) + 1
+
+    #  8. the pages: each fixture's refusal is the route's own, and each rendered test says it whole
+    pages = root / "apps" / "workstation-superapp" / "src" / "pages"
+    gfx = json.loads((pages / "developers" / "Generator.fixture.json").read_text(encoding="utf-8"))
+    sfx = json.loads((pages / "synthesis" / "SynthesisStudio.fixture.json").read_text(encoding="utf-8"))
+    lfx = json.loads((pages / "domains" / "LawHub.fixture.json").read_text(encoding="utf-8"))
+    s = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "report", "instructions": ASK})
+    assert gfx["reserved"] == {"status": g.status_code, "body": g.json()} and g.status_code == 409, (
+        "the Generator page's captured refusal is not the route's: take it again with w1195b_probe.py", g.status_code)
+    assert sfx["reserved"] == {"status": s.status_code, "body": s.json()} and s.status_code == 409, (
+        "the Synthesis Studio page's captured refusal is not the route's", s.status_code)
+    assert lfx["templates"] == tpl, "the Law page's captured templates answer is not the route's"
+    for d in (gfx["reserved"]["body"]["detail"], sfx["reserved"]["body"]["detail"]):
+        assert help_said in d and len(d) > 160, d
+    gvt = _code_only((pages / "developers" / "Generator.test.tsx").read_text(encoding="utf-8"))
+    svt = _code_only((pages / "synthesis" / "SynthesisStudio.test.tsx").read_text(encoding="utf-8"))
+    for line in ("it('an explicit ask for a reserved document is refused, and the page says the route\\'s reason whole'",
+                 "serve(captured.reserved);", "generate('Draft the TR1 transfer of my flat to my son');",
+                 "expect(reason).toContain('For help from a person, see the list of where help is');",
+                 "expect(await screen.findByText(`[ERROR] Failed (HTTP 409): ${reason}`)).toBeTruthy();"):
+        assert line in gvt, ("the Generator's rendered test no longer reads this", line)
+    for line in ("it('says a reserved document asked for by the route\\'s reason, whole'",
+                 "serve({ generate: { refused: captured.reserved.status, body: captured.reserved.body } });",
+                 "expect(reason).toContain('For help from a person, see the list of where help is');",
+                 "`Generation failed for report: Failed (HTTP 409): ${reason}`));"):
+        assert line in svt, ("the studio's rendered test no longer reads this", line)
+    gen_page = _code_only((pages / "developers" / "Generator.tsx").read_text(encoding="utf-8"))
+    studio_page = _code_only((pages / "synthesis" / "SynthesisStudio.tsx").read_text(encoding="utf-8"))
+    assert "setError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in gen_page
+    assert "setErrorMsg(`Generation failed for ${type}: ${errorMessage(e)}`);" in studio_page
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1234 - the Owner's reports of 2026-11-22: five of the Owner's rows closed, the credentials among them by kind
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+_W1234_OWNER_TITLES = {
+    "record": "OWNER: file the record of the batch of 27 lessons ratified on 2026-11-22",
+}
+_W1234_QF_TITLES = {
+    "repo": "The public repository is not checked for Quran Foundation content or raw API data",
+    "privacy": "The platform has no Privacy Policy or Terms of Use of its own to check against the Quran Foundation's",
+    "ai": "No use the platform makes of Quran Foundation content is checked against the developer terms' clause",
+}
+
+
+def test_w1234_the_owners_reports_of_2026_11_22_close_five_rows_record_the_credentials_by_kind_and_the_lessons():
+    """W1234 (records). The Owner reported in three reports on the night of 2026-11-22: the outside uptime check and
+    its drill, the domain, the decisions on 38 lessons, the Quran Foundation's terms read whole, the leaked credentials
+    checked by kind, and what was read for three letters. Held here:
+    1. FU-1095, FU-1289, FU-1840, FU-1882 and FU-1837 are closed by W1234 as built, each note saying what was done and
+       when; the plan's list of what is with the Owner and the local notes' Still-yours list no longer ask for them,
+       and the list's note of the five names no row (W594's rule);
+    2. README.md says route failures are recorded, not alerted, and an outage is; docs/DEPLOYMENT.md records the check
+       and its drill at step 10, the domain at step 12, and its opening no longer says nothing was run; the business
+       documents no longer hold FU-1095 or FU-1289 open, and the name and brand screen says the domain is held;
+    3. FU-1837 is closed on the Owner's word ("close it") with the dated check by kind from the Owner's reports in
+       its why, what the OneDrive Desktop held and what was done with it, the alerts all closed, and its close note
+       naming the two points left UNCONFIRMED and the recommendation to change a password that may be in use
+       elsewhere; the plan's list says so without naming the row, and the Stripe line at its head says the two
+       earlier Stripe values were checked; the credential history scan (W1208) and checking the stale branches stay
+       the Owner's, in the close note, on the plan's list and in the notes' Still-yours list;
+    4. one OWNER row, owner-gated and saying why it is the Owner's, is on the plan's list and in the notes while open:
+       the batch's record; no row is opened for what the Owner already did (the alerts, the local .env, the Recycle
+       Bins, the two retired keys). FU-1188, FU-1283 and FU-1838 carry what the Owner read on 2026-11-22,
+       institutional addresses only: the dataset letter is addressed to its four authors; the Complex's letter says its
+       site states no terms; the library's letter asks where each resource came from and who holds its rights, and the
+       two sources rows say what was read, still permitting nothing; and the scholar row, still open, names the College
+       chosen first;
+    5. three rows of P5.17, each saying why it is there, named by P5.17's dated record: the repository holds no
+       content or raw API data, a Privacy Policy and Terms of Use set against the packet, the uses against the AI
+       clause;
+    6. the terms row is read whole on 2026-11-22 at both pages: what it permits and forbids, and no longer that AI use
+       needs written consent;
+    7. 27 lessons are in the method, each carrying the ruling, a rule, a defect citing its round or date, how to apply
+       it and an enforcer that exists or the reason there is none; P5.14 records the ruling and the 11 not ratified,
+       each with its reason;
+    8. nothing this round wrote names the domain (whose name this guard never spells out whole), carries an e-mail
+       address but an institution's, or a setting's name, and no file it wrote names the domain anywhere."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")   # noqa: E731
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    still = fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    fstill = flat(still)
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    yours = notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0]
+
+    def titled(start):
+        rows = [r for r in reg.values() if r.get("title", "").startswith(start)]
+        assert len(rows) == 1, (start, [r["id"] for r in rows])
+        return rows[0]
+
+    owner = {k: titled(t) for k, t in _W1234_OWNER_TITLES.items()}
+    qf = {k: titled(t) for k, t in _W1234_QF_TITLES.items()}
+
+    #  1. the five rows closed, with their notes, and asked for nowhere
+    said = {
+        "FU-1095": ("every five minutes from five regions with the certificate checked", "stopped at 19:57:18 UTC",
+                    "the alert e-mail came at 20:10", "started at 20:11:44", "cleared came at 20:16",
+                    "/health answered 200 after"),
+        "FU-1289": ("renews on 2027-11-22", "its A record names the release machine's fixed address",
+                    "Let's Encrypt certificate, with sign-in on", "No personal detail of the registration is recorded"),
+        "FU-1840": ("listed 38 lessons", "ratified 27 and did not ratify 11, each with its reason",
+                    "The 11 and their reasons are recorded at P5.14", owner["record"]["id"]),
+        "FU-1882": ("last updated 2026-11-20", "whole that day", "the existing pre-production account is kept",
+                    "with no exception, where the row said written consent was needed", qf["repo"]["id"],
+                    qf["privacy"]["id"], qf["ai"]["id"]),
+        "FU-1837": ("the Owner replied close it", "Two points stay UNCONFIRMED", "(the Owner's words: can not recall)",
+                    "whose provider could not be identified and which is not confirmed revoked",
+                    "RECOMMENDED: if either password may be in use elsewhere, change it there."),
+    }
+    for rid, parts in said.items():
+        r = reg[rid]
+        assert (r["status"], r["closed_by"], r.get("because")) == ("done", "W1234", "built"), (rid, r["status"])
+        assert r["close_note"].startswith(("Done on 2026-11-22, the Owner's act", "Closed on the Owner's word on "
+                                           "2026-11-22")), (rid, r["close_note"][:80])
+        for s in parts:
+            assert s in r["close_note"], (rid, "its close note does not say", s)
+        assert rid not in still, (rid, "is still put to the Owner on the plan's list")
+        assert f"({rid})" not in yours and f"{rid}:" not in yours, (rid, "is still in the notes' Still-yours list")
+    note = fstill[fstill.index("(Five that stood here were settled on 2026-11-22 and are closed (W1234)"):]
+    note = note[:note.index(".)") + 2]
+    assert not re.search(r"\bFU-\d+", note), "the list's note of the five names a row"
+    for s in ("every five minutes from five regions", "renewing on 2027-11-22", "27 ratified and now in the method, 11 "
+              "not", "the existing pre-production account kept", "closed on your word (\"close it\")",
+              "with two left UNCONFIRMED", "if either password may be in use elsewhere, change it there"):
+        assert s in note, ("the list's note of the five does not say", s)
+    step5 = notes.split("5. First, the rows only this machine can do", 1)[1].split("6. Then continue the plan", 1)[0]
+    assert "FU-1840's step here was done on 2026-11-22 and the row is closed (W1234)" in flat(step5), "step 5"
+    assert "- **Settled on 2026-11-22:** five rows, each closed in W1234" in notes
+
+    #  2. README, the runbook and the business documents
+    readme = flat(read("README.md"))
+    readme = readme[readme.index("- Analytics, and alerting"):readme.index("## Run locally")]
+    assert ("route failures are recorded, not alerted" in readme and "An outage is alerted: since 2026-11-22 an uptime "
+            "check from outside the release machine" in readme), "README.md's line on alerting"
+    assert "Analytics, and error alerting: failures are recorded, not alerted" not in readme
+    dep = read("docs/DEPLOYMENT.md")
+    s10 = flat(dep.split("**Step 10.", 1)[1].split("**Step 11.", 1)[0])
+    assert ("SET UP AND DRIVEN, 2026-11-22 (FU-1095, closed W1234): the uptime check reads https://DOMAIN/health every "
+            "five minutes from five regions") in s10 and "stopped at 19:57:18 UTC" in s10, "step 10's record"
+    s12 = flat(dep.split("**Step 12.", 1)[1].split("\n## ", 1)[0])
+    assert "The domain is the Owner's: it was registered on 2026-11-22 (FU-1289, closed W1234)." in s12, "step 12"
+    assert "DONE ON THE RELEASE MACHINE, 2026-11-22 (FU-1289, closed W1234)" in s12, "step 12's record"
+    assert "The domain is the Owner's to buy" not in dep and "Nothing here has been run against a Google account" not in dep
+    assert "## Watching the deploy: an outage is alerted, route failures are recorded\n" in dep
+    assert "so an outage on\nthe first deploy would reach no person" not in dep
+    for rel in ("docs/business/LIVING_STRATEGY_MAP.md", "docs/business/PRODUCTION_HARDENING_BRIEF.md",
+                "docs/business/NAME_AND_BRAND_SCREEN.md"):
+        t = read(rel)
+        assert "row FU-1095 (a failure on the first deployment reaches no person)" not in t, rel
+        assert "which is the Owner's to buy (row FU-1289)" not in t and "No domain:" not in t, rel
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md"))
+    assert "- A domain, registered by the Owner on 2026-11-22 and renewing on 2027-11-22" in brand, "the brand screen"
+    assert "No cloud project for the release yet" not in brand
+
+    #  3. FU-1837: closed on the Owner's word, checked by kind, its two UNCONFIRMED named
+    r37 = reg["FU-1837"]
+    why = r37["why"]
+    for s in ("THE OWNER'S CHECK, 2026-11-22 (night and late evening), by kind and never by value", "ALREADY DEAD: "
+              "the Stripe live secret key", "REVOKED OR ROTATED THAT DAY: the Stripe webhook signing secret", "ON THE "
+              "OWNER'S RECOLLECTION, NOT CHECKED INDEPENDENTLY: the e-mail password, changed on 2026-10-14", "NOTHING TO "
+              "REVOKE: the Redis address and the second MongoDB address", "a Google service-account key file whose key "
+              "was active with no expiry, now deleted at Google", "a classic GitHub token, dead", "the PC's Recycle Bin was "
+              "checked and holds no items", "is recorded as emptied on the Owner's word", "alerts 4, 6 and 7 were "
+              "closed as Revoked, so none is open", "blanked in both local .env files", "UNCONFIRMED, on two points: the "
+              "key in the openQuran archive's .env", "its provider is not identified and it is not confirmed revoked",
+              "whether the leaked database passwords", "word for word, was: can not recall", "Both stay UNCONFIRMED.",
+              "which the Owner retired rather than rotated", "deleted at Google, which can restore it for 30 days",
+              "the n8n value was the encryption key, not an API key"):
+        assert s in why, ("FU-1837's dated note does not say", s)
+    assert ("(On 2026-11-22 you checked the two earlier Stripe values the March copies hold and W729 never redacted: "
+            "the live secret key is dead") in fstill, "the Stripe line"
+    #  the two acts the rulings attached to the row stay the Owner's once it closes (W1193d's notes paragraph says the
+    #  Owner's acts stay on the Still-yours list): the history scan, and checking the stale branches. A round that
+    #  records the scan done changes these two lines on purpose.
+    assert ("The credential history scan (W1208) on a full mirror clone stays the Owner's act, later"
+            in r37["close_note"] and "neither is closed with this row" in r37["close_note"]), "FU-1837's close: the scan"
+    assert ("(The credential history scan (W1208) stays yours after the credentials' row closed on your word: run on "
+            "a full mirror clone") in fstill and "checking the stale branches the cloud session lists" in fstill, (
+        "the plan's list no longer keeps the history scan with the Owner")
+    assert "- Running the credential history scan (W1208) on a full mirror clone on this machine" in flat(yours) and (
+        "checking the stale branches the cloud session lists") in flat(yours), "the notes drop the history scan"
+
+    #  4. the OWNER row, on the list and in the notes while open
+    for k, r in owner.items():
+        assert (r["slot"], r["owner_gated"]) == ("OWNER", True) and r.get("slot_source", "").strip(), (r["id"], k)
+        assert r["source"].startswith("W1234 (the Owner's"), r["id"]
+        if r["status"] == "open":
+            assert f"{r['id']} (W1234):" in fstill, (r["id"], "is not on the plan's list")
+            assert r["id"] in flat(yours), (r["id"], "is not in the notes' Still-yours list")
+    assert not [r for r in reg.values() if r.get("source", "").startswith("W1234") and re.search(
+        r"Recycle Bin|secret-scanning alerts|rotate the live Google API key|local \.env", r.get("title", ""))], (
+        "a row for what the Owner did already")
+    #  the notes' summary of step 5 no longer names the lessons' row (FU-1165 may leave it later, on its own close)
+    summary5 = re.search(r"The rows? in step 5: ([^.]*)\.", flat(notes))
+    assert summary5 is None or "FU-1840" not in summary5.group(1), ("the notes' summary of step 5", summary5.group(0))
+    #  the letter rows: what the Owner read on 2026-11-22, institutional addresses only
+    for rid, s in (("FU-1188", "which would make the request public"), ("FU-1188", "info@qurancomplex.gov.sa"),
+                   ("FU-1188", "the letter goes to info@tarteel.ai"), ("FU-1188", "The MIT licence is not read as "
+                   "covering the data"), ("FU-1188", "So no permission can be read from the site"),
+                   ("FU-1283", "marks no corresponding author"), ("FU-1283", "CC BY 4.0 is the paper's licence"),
+                   ("FU-1838", "Cambridge Muslim College is to be asked first"),
+                   ("FU-1838", "the College has agreed to nothing, so the row stays open")):
+        assert s in reg[rid]["note"], (rid, "its note does not say", s)
+    assert reg["FU-1838"]["status"] == "open" or reg["FU-1838"].get("closed_by") != "W1234", "the scholar row closed"
+    #  the College chosen first is said under the row while it is open; its line leaves the list once the row closes
+    scholar = ""
+    if reg["FU-1838"]["status"] == "open":
+        assert "Chosen on 2026-11-22: Cambridge Muslim College is to be asked first" in fstill, "the scholar's line"
+        scholar = fstill[fstill.index("Chosen on 2026-11-22: Cambridge Muslim College"):]
+        scholar = scholar[:scholar.index("so the row stays open.") + len("so the row stays open.")]
+    letter = flat(read("docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md"))
+    assert "corresponding author named" not in letter and "The paper marks no corresponding author" in letter
+    assert ("To: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly "
+            "(Innopolis University) and Manuel Mazzara (Innopolis University)") in letter, "the letter's addressees"
+    assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", letter), "the letter carries an address"
+    kfg = flat(read("docs/letters/KFGQPC_PERMISSION_REQUEST.md"))
+    assert "We have not been able to open the Complex's website" not in kfg and (
+        "We read the Complex's website on 22 November 2026. No page of it states terms for these uses") in kfg, "KFGQPC"
+    qul = flat(read("docs/letters/QUL_DATA_PERMISSION_REQUEST.md"))
+    assert "we do not read it as covering the data" in qul and ("where each of the resources above came from, and "
+                                                                "who holds its rights") in qul, "the QUL letter"
+    assert "It is not posted as a public GitHub issue" in qul
+    for t in (kfg, qul):
+        assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", t), "a letter carries an address"
+    srcrows = {r["id"]: r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    for rid, s in (("kfgqpc-recitations-fonts", "So no permission can be read from the site."),
+                   ("tarteel-qul-data", "the MIT licence is not read as covering it")):
+        r = srcrows[rid]
+        assert r["read_on"] == "2026-11-22" and r["permits"] == [] and s in r["says"], (rid, r.get("read_on"))
+    assert srcrows["kfgqpc-recitations-fonts"]["status"] == "current" and "NOT READ" not in srcrows[
+        "kfgqpc-recitations-fonts"]["says"]
+    assert "POST /api/v1/method/amendment" in owner["record"]["why"]
+
+    #  5. the three rows of P5.17, named by its dated record
+    p517 = flat(fable.split("\n P5.17 [", 1)[1].split("\n P5.18 [", 1)[0])
+    assert "THE OWNER'S WORD, 2026-11-22 (night): clause 7's developer account is settled." in p517
+    for k, r in qf.items():
+        assert r["slot"] == "P5.17" or r["status"] != "open", (r["id"], r["slot"])
+        assert r.get("slot_source", "").startswith("P5.17, clauses 6 and 7"), r["id"]
+        assert f"{r['id']} (" in p517, (r["id"], "is not named at P5.17")
+    assert "not Owner-gated" in qf["privacy"]["why"] and qf["privacy"]["owner_gated"] is False
+    assert "train, fine-tune, evaluate or develop AI models" in qf["ai"]["why"]
+
+    #  6. the terms row, read whole
+    src = json.loads(read("docs/SOURCES.json"))
+    row = next(r for r in src["rows"] if r["id"] == "quran-foundation-developer-terms")
+    assert row["read_on"] == "2026-11-22" and row["page"] == "https://api-docs.quran.foundation/legal/developer-terms/"
+    assert "https://api-docs.quran.foundation/legal/developer-privacy/" in row["read_by"] and "whole" in row["read_by"]
+    says = row["says"]
+    assert says.startswith("Shown as last updated 2026-11-20.") and "needs written consent" not in says
+    for s in ("using the content or user data to train, fine-tune, evaluate or develop AI models, with no exception",
+              "retrieval-augmented generation shown inside the app", "including in a public repository",
+              "Content Sync (re-synced every 7 days)", "offline or direct audio also credits the reciter",
+              "PRODUCTION: not in the terms", "deletion within 30 days (90 for backups)", "within 24 hours"):
+        assert s in says, ("the terms row does not say", s)
+    assert any("evaluate or develop AI models, with no exception" in f for f in row["forbids"]), row.get("forbids")
+    assert "the terms' full text" not in row["not_read"] and "privacy" not in row["not_read"], row["not_read"]
+
+    #  7. the lessons in the method, and the eleven at P5.14
+    method = json.loads(read("docs/DELIVERY_METHOD.json"))
+    ruled = "the Owner's ruling of 2026-11-22, as one batch"
+    batch = [l for l in method["lessons"] if l.get("ratified") == ruled]
+    assert len(batch) == 27, len(batch)
+    suite = read("integration_tests/test_mvp_spine.py")
+    for l in batch:
+        assert l["group"] in method["about"]["groups"] and l["rule"].strip() and l["apply"].strip(), l["id"]
+        assert re.match(r"(W\d{3,4}[a-z]?\b|After W757|20\d\d-\d\d-\d\d,)", l["defect"]), (l["id"], l["defect"][:40])
+        assert bool((l.get("enforced_by") or "").strip()) != bool((l.get("why_not_enforced") or "").strip()), l["id"]
+        for cited in re.findall(r"([A-Za-z0-9_./]+[.](?:py|json))", l.get("enforced_by") or ""):
+            assert (root / cited).is_file(), (l["id"], cited)
+        for test in re.findall(r"::(test_[a-z0-9_]+)", l.get("enforced_by") or ""):
+            assert f"\ndef {test}(" in suite, (l["id"], test)
+    assert len({l["id"] for l in method["lessons"]}) == len(method["lessons"]), "a lesson id is used twice"
+    p514 = flat(fable.split("\n P5.14 [", 1)[1].split("\n P5.15 [", 1)[0])
+    rec = p514[p514.index("OWNER RULING 2026-11-22 (night; the Owner's word \"Accept all\")"):]
+    for s in ("27 are ratified as one batch and 11 are not", "W707's no variable named page", "W727's exclusion of two "
+              "stalling tests", "W746's git add before registering rows", "(already M-VERIF-11)", "(already M-EXCH-07)",
+              "(a tool's quirk)", "(local housekeeping)", "(it belongs in that script's help)", "(already M-VERIF-02)",
+              "(its cause is not proven)", "M-DELIV-09", owner["record"]["id"], "in a later round of this item"):
+        assert s in rec, ("P5.14's record does not say", s)
+    for lid in ("M-VERIF-11", "M-EXCH-07", "M-VERIF-02", "M-DELIV-09"):
+        assert any(l["id"] == lid for l in method["lessons"]), (lid, "is named at P5.14 and is not in the method")
+
+    #  8. no domain, no address, no setting's name in what this round wrote. The domain's name is put together here
+    #  from two parts, so that this file never holds it whole.
+    stem = "workstation" + "idbo"
+    written = [why[why.index("THE OWNER'S CHECK, 2026-11-22"):]] + [reg[rid]["close_note"] for rid in said] + [
+        r["why"] for r in list(owner.values()) + list(qf.values())] + [reg[r]["note"] for r in ("FU-1188", "FU-1283",
+                                                                                             "FU-1838")]
+    #  the plan's list: the domain nowhere on it; the address check reads the lines this round wrote there
+    assert stem not in fstill.lower(), "the domain is named on the plan's list"
+    own_lines = [fstill[fstill.index(f"{r['id']} (W1234):"):] for r in owner.values() if r["status"] == "open"]
+    own_lines = [t[:t.index(".") + 1] for t in own_lines]
+    stripe = fstill[fstill.index("(On 2026-11-22 you checked the two earlier Stripe values"):]
+    stripe = stripe[:stripe.index(".)") + 2]
+    institutional = {"info@qurancomplex.gov.sa", "info@cambridgemuslimcollege.ac.uk", "info@tarteel.ai"}
+    #  the rest of what this round wrote: P5.17's record, the notes' lines, the two sources rows, the batch, the
+    #  plan's line on the history scan, and the new lines of the name and brand screen and the hardening brief
+    nflat = flat(notes)
+    between = lambda t, a, b: t[t.index(a):t.index(b, t.index(a)) + len(b)]   # noqa: E731
+    also = [p517[p517.index("THE OWNER'S WORD, 2026-11-22 (night)"):], flat(step5),
+            between(nflat, "- **Settled on 2026-11-22:**", "change it there."),
+            between(nflat, "- Running the credential history scan (W1208)", "your explicit word."),
+            between(fstill, "(The credential history scan (W1208) stays yours", "your explicit word.)"),
+            json.dumps(srcrows["kfgqpc-recitations-fonts"]), json.dumps(srcrows["tarteel-qul-data"]),
+            between(brand, "- A domain, registered by the Owner on 2026-11-22", "set up and driven on 2026-11-22"),
+            between(flat(read("docs/business/PRODUCTION_HARDENING_BRIEF.md")), "An outage reaches the Owner:",
+                    "(FU-1095, closed in W1234)")] + [
+        between(flat(yours), "- Filing the record of the 27 lessons", f"({r['id']}).") for r in owner.values()
+        if r["status"] == "open"]
+    for t in written + own_lines + also + [note, stripe, scholar, rec, readme, s10, s12, json.dumps(row),
+                                           json.dumps(batch), letter, kfg, qul]:
+        assert stem not in t.lower(), "the domain is named"
+        assert set(re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", t)) <= institutional, "an address not an institution's"
+    for rel in ("README.md", "docs/DEPLOYMENT.md", "docs/RESUME_ON_MY_MACHINE.md", "docs/SOURCES.json",
+                "docs/DELIVERY_METHOD.json", "docs/business/LIVING_STRATEGY_MAP.md",
+                "docs/business/PRODUCTION_HARDENING_BRIEF.md", "docs/business/NAME_AND_BRAND_SCREEN.md",
+                "docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md", "docs/letters/KFGQPC_PERMISSION_REQUEST.md",
+                "docs/letters/QUL_DATA_PERMISSION_REQUEST.md"):
+        assert stem not in read(rel).lower(), (rel, "names the domain")
+    for t in written + also:
+        assert not re.search(r"(?<![/.\w])[A-Z][A-Z0-9]+_[A-Z0-9_]+(?![\w.])", t), ("a setting's name", t[:80])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1235 - the platform's container stops on SIGTERM: the image's CMD execs uvicorn, so uvicorn is PID 1
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1235_the_images_cmd_execs_uvicorn_so_docker_stop_ends_the_platform_on_sigterm():
+    """W1235. In FU-1095's drill on 2026-11-22 `docker stop` ended the platform's container with exit 137: the
+    Dockerfile's CMD ran uvicorn under `sh -c`, sh was PID 1 and passed SIGTERM to nothing, so Docker killed it after
+    ten seconds. Held here:
+    1. the image's last instruction is the CMD that execs uvicorn inside `sh -c`, so ${PORT} is still expanded and
+       uvicorn replaces the shell; no other CMD or ENTRYPOINT starts the platform without exec;
+    2. every other start of the image in the tree, the startup script's runs, both drills and both compose files,
+       uses the image's CMD: none names uvicorn, a command or an entrypoint (render.yaml's service builds no image);
+    3. the graceful shutdown's row is closed by W1235 as built, and step 10 of the runbook says the live check is the
+       next deploy's, exit 0 within seconds;
+    4. each JSON store W1235 found written in place has its own open row on P3.30 (or one a later round closed),
+       naming its file, and that file is in the tree."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    docker = (root / "Dockerfile").read_text(encoding="utf-8")
+    code = [ln for ln in docker.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
+    #  1. the CMD, exec form inside sh -c
+    assert code[-1] == 'CMD ["sh", "-c", "exec uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]', code[-1]
+    starts = [ln for ln in code if re.match(r"(CMD|ENTRYPOINT)\b", ln) and "uvicorn" in ln]
+    assert starts == [code[-1]], ("another instruction starts the platform", starts)
+    assert not re.search(r"^ENTRYPOINT\b", docker, re.M), "an ENTRYPOINT would put a process before uvicorn"
+    #  2. every other start of the image uses its CMD
+    for rel in ("docker-compose.yml", "docker-compose.prod.yml", "deploy/gcp/startup.sh", "deploy/drill.sh",
+                "deploy/https_drill.sh"):
+        t = (root / rel).read_text(encoding="utf-8")
+        assert "uvicorn" not in t, (rel, "starts uvicorn itself")
+        assert not re.search(r"^\s*(command|entrypoint)\s*:", t, re.M) and "--entrypoint uvicorn" not in t, rel
+    run = (root / "deploy/gcp/startup.sh").read_text(encoding="utf-8")
+    assert len(re.findall(r"docker run --name=workstation ", run)) == 2
+    #  3. the row and the runbook
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    shut = [r for r in reg if r.get("title", "").startswith("docker stop kills the platform's container after ten seconds")]
+    assert len(shut) == 1 and (shut[0]["status"], shut[0]["closed_by"], shut[0]["because"]) == ("done", "W1235", "built")
+    assert "exit 0 within seconds" in shut[0]["close_note"] and "no Docker daemon" in shut[0]["close_note"]
+    dep = flat((root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8"))
+    s10 = dep.split("**Step 10.", 1)[1].split("**Step 11.", 1)[0]
+    for s in ("`docker stop workstation` in that drill ended the container with exit 137",
+              "Since W1235 the CMD execs uvicorn, so uvicorn is PID 1 and shuts down on SIGTERM.",
+              "at the next deploy, `docker stop workstation` should end with exit 0, within seconds"):
+        assert s in s10, ("step 10 does not say", s)
+    #  4. the stores written in place, a row each
+    stores = [r for r in reg if r.get("source", "").startswith("W1235 (a search of agentic_core for stores written")]
+    files = sorted(f for r in stores for f in r["files"])
+    assert files == sorted(["agentic_core/ueg/ueg_manager.py", "agentic_core/api/integration_surface.py",
+                            "agentic_core/api/digital_twin.py", "agentic_core/api/sovereign_evolution.py",
+                            "agentic_core/api/vsb.py", "agentic_core/api/transformation_orchestration.py",
+                            "agentic_core/ingestion/api.py", "agentic_core/projects/api.py",
+                            "agentic_core/api/v290/realms.py"]), files
+    for r in stores:
+        assert len(r["files"]) == 1 and (root / r["files"][0]).is_file(), r["id"]
+        assert r["title"] == (f"A store in {r['files'][0]} is written in place, so a kill or a crash mid-write can "
+                              "leave it truncated"), r["id"]
+        assert r["status"] == "done" or (r["slot"] == "P3.30" and r.get("slot_source", "").startswith("P3.30")), r["id"]
+        assert r["status"] == "done" or r.get("closed_by") is None, r["id"]
+        assert "os.replace" in r["why"] and "atomic_write_json" in r["why"], r["id"]
+
+
+def test_w1236_the_owners_qep_restart_vision_and_its_24_rulings_are_recorded_where_the_work_reads_them():
+    """W1236 (records, R0): the Owner's QEP Restart Vision of 2026-11-22, and the 24 decisions put to the Owner that
+    day, which the Owner answered "I want to go with your recommendations". Held here:
+    - docs/QURAN_EDUCATION_PLATFORM_VISION.md opens with Part 0 (before Part I, with its ToC line): the dated note that
+      the restart is the Owner's and supersedes no ruling; the Owner's text from its title to the end of "Build from
+      Workstation", held whole by its SHA-256 and key lines verbatim (the markdown bold of the source kept); the local
+      source references as Owner-machine references, with no link and no home-folder path, and the Owner's closing
+      line whole; and "Decided by the Owner, 2026-11-22": 24 numbered entries, each an OWNER RULING 2026-11-22 in the
+      words put and accepted, with where it is recorded, and nothing in Part 0 left marked unresolved;
+    - the WHOLE_VISION: A.4a between A.4 and A.5, with decision 2 whole and FU-1838's closing condition; feature 15's
+      status corrected (export and deletion built by W852; five children's tools built and held), the earlier words
+      kept only inside the dated CORRECTED note, and both corrected sentences checked against the code; A.12.3's
+      extension with the 2026-10-05b words kept; a restart line under each of A.6's fifteen features;
+    - the plan: P5.17's restart paragraph and its rulings (the 30-day retention, the one-educator cap, the similarity
+      shown and not stored, the translators), P5.21's ruling (the gate's words kept, the release record a row, decision
+      11 in its words), and P3.11's dated note;
+    - the register: sixteen rows of W1236, one per round R1 to R8 and later item (a) to (h), each carrying its plan
+      text (a later round closing one leaves this green), the gate row naming the release record, each row a ruling
+      governs carrying it (the listening round R5 decision 7 as well); FU-1067's and FU-1838's rulings; and the
+      alquran.cloud row's not_read and the coverage row."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda p: (root / p).read_bytes().decode("utf-8").replace("\r\n", "\n")
+    flat = lambda t: " ".join(t.split())
+
+    #  1. PART 0, before Part I, with its ToC line and the dated note
+    qep = read("docs/QURAN_EDUCATION_PLATFORM_VISION.md")
+    head = "\n# Part 0 — Restart vision (2026-11-22) [OWNER]\n"
+    assert qep.count(head) == 1 and qep.index(head) < qep.index("\n# Part I — Provenance & Audit\n"), "Part 0 is not first"
+    assert "**Part 0 — Restart vision (2026-11-22) [OWNER]**\n- [" in qep.split("\n# Part I")[0], "no ToC line for Part 0"
+    part0 = qep.split(head, 1)[1].split("\n# Part I — Provenance & Audit\n", 1)[0]
+    p0 = flat(part0)
+    assert ("**Dated note, W1236 (2026-11-22).** The restart vision of 2026-11-22 is the Owner's" in p0 and
+            "It starts from the current Workstation implementation and its recorded rulings and supersedes no ruling. "
+            "Where its wording and a dated ruling differ, the ruling holds until the Owner rules again" in p0), \
+        "the dated note does not say the restart is the Owner's and supersedes no ruling"
+    #  the Owner's words, verbatim, the source's markdown bold kept
+    for said in ("QEP helps people **learn to read, recite and memorize, understand, and live the Quran**.",
+                 "QEP does **no automated recitation grading, pronunciation correction, mistake counting, or "
+                 "synthesized reading of the Quran**.",
+                 "Treat each as a distinct learning track with its own licensed sources and reviewer.",
+                 "| 3. Memorization | Portion plans, hidden-text and typed recall, similar-verse drills, and spaced "
+                 "review for trouble spots. | First release. |",
+                 "Children’s tools can be prepared for review while remaining gated.",
+                 "Local source review completed 22 November 2026."):
+        assert said in part0, ("the Owner's words are not in Part 0 verbatim", said[:60])
+    assert "\n## Quran Education Platform Restart Vision\n" in part0 and "\n### First release\n" in part0
+    #  ...and the whole of it as written, title to the end of "Build from Workstation", headings one level lower:
+    #  the SHA-256 of that block, so a word changed where no line above is checked is still caught
+    import hashlib
+    owner = "## Quran Education Platform Restart Vision\n" + part0.split(
+        "\n## Quran Education Platform Restart Vision\n", 1)[1].split(
+        "\n\n### Local source references (Owner-machine references, not links)\n", 1)[0]
+    assert hashlib.sha256(owner.encode("utf-8")).hexdigest() == \
+        "c615ddefa5fb0fc1206426bbca2e84cb77992a20226d4afb7d89e932f8ab6046", "the Owner's text in Part 0 is not as written"
+    assert part0.split("\n\n### Where each part is carried\n", 1)[0].rsplit("\n", 1)[1] == (
+        "Local source review completed 22 November 2026. Workstation implementation descriptions reflect static "
+        "inspection and dated records. Publisher terms and production readiness depend on the registered evidence and "
+        "release checks."), "the Owner's closing line is not kept whole before the map"
+    #  the local source references: named, never linked, no home-folder path
+    refs = part0.split("### Local source references (Owner-machine references, not links)", 1)[1].split("\n### ", 1)[0]
+    assert "](" not in refs and "../" not in refs and "Downloads/" not in refs and "github_repos" not in refs, refs[:300]
+    assert "AI Quran Recitation Checker" in refs and "On the Owner's machine" in refs
+    assert not re.search(r"(?i)\b[a-z]:[\\/]+users[\\/]|/home/|/root/|~[\\/]", part0), "Part 0 names a home folder"
+    #  the 24 rulings, each recorded where it governs; nothing unresolved
+    assert "Tensions recorded, not resolved" not in qep, "the tensions list is still there"
+    dec = part0.split("\n### Decided by the Owner, 2026-11-22\n", 1)[1]
+    assert '"I want to go with your recommendations"' in dec.split("\n1. ", 1)[0], "the Owner's word is not quoted"
+    entries = re.findall(r"^(\d+)\. \*\*(.+?)\*\* OWNER RULING 2026-11-22 \(the recommendation accepted\): (.+?) "
+                         r"\*Recorded at:\* (.+?)\.$", dec, re.M)
+    assert [int(e[0]) for e in entries] == list(range(1, 25)), [e[0] for e in entries]
+    for n, question, ruling, where in entries:
+        assert len(ruling) > 20 and where.strip(), n
+    #  every question and ruling in the words put to the Owner and accepted on 2026-11-22, none reworded: the
+    #  SHA-256 of the 24 (question, ruling) pairs, each question then its ruling, joined by newlines, as the
+    #  decisions were put that day
+    assert hashlib.sha256("\n".join(q + "\n" + r for _n, q, r, _w in entries).encode("utf-8")).hexdigest() == \
+        "e66cdcc1e5ea0affd5f6d0df76c330145d4c5ae5c1887c674669cb49837f0dc6", "a ruling in Part 0 is not the accepted words"
+    for word in ("unresolved", "not yet ruled", "PENDING", "not resolved", "open decision"):
+        assert word.lower() not in p0.lower(), ("Part 0 leaves an entry unresolved", word)
+    assert "Keep it inside goal 3 and Feature 10." in entries[0][2]
+    assert "30 days from sharing, deletable by the learner at any time" in entries[16][2]
+    #  the pointers elsewhere in the historical capture, the earlier words kept
+    assert "→ Restart statement (Owner, 2026-11-22): [Part 0](#part-0--restart-vision-2026-11-22-owner)" in qep
+    assert qep.count("> **Restart scope [OWNER 2026-11-22]**") == 15, "a feature header has no restart line"
+    assert "- Institutions can be billed based on seats or usage, with ethical pricing. *[Superseded by OWNER RULING " \
+           "2026-10-12, noted W1236 (2026-11-22), the earlier words kept" in qep
+
+    #  2. THE WHOLE VISION
+    vis = read("docs/WORKSTATION_IDBO_WHOLE_VISION.md")
+    a4a = "\n## A.4a Restart statement (Owner, 2026-11-22) · **[OWNER]**\n"
+    assert vis.count(a4a) == 1 and vis.index("\n## A.4 ") < vis.index(a4a) < vis.index("\n## A.5 "), "A.4a"
+    sec = flat(vis.split(a4a, 1)[1].split("\n## A.5 ", 1)[0])
+    assert "supersedes no ruling" in sec and "sits beside A.2" in sec and "dated Owner release record" in sec
+    #  decision 2 whole: beside A.2, and nothing withdrawn without an explicit ruling
+    assert "is not withdrawn, and nothing is withdrawn without an explicit ruling" in sec, "decision 2 is not whole"
+    #  FU-1838's own closing condition, both halves
+    assert "closes only with a dated plan record of that engagement, or with a ruling that defers it" in sec, "FU-1838"
+    f15 = flat(vis.split("**15 · Admin, Analytics & Platform Governance.**", 1)[1].split("**The shared area.**", 1)[0])
+    assert ("Learner export and deletion are built (W852, FU-1167): `GET /api/v1/qep/learner/{uid}/export` and "
+            "`DELETE /api/v1/qep/learner/{uid}`, each refused 409 while sign-in is off." in f15), "export and deletion"
+    assert "Five children's tools are built and held behind the approval pack's gate (P5.21;" in f15, "the five tools"
+    note = "*CORRECTED W1236 (2026-11-22), the earlier words kept:"
+    assert f15.count(note) == 1
+    before, kept = f15.split(note, 1)
+    assert "no children's tool is built" not in before and "or learner export and deletion exists" not in before, \
+        "feature 15 still says what is false"
+    assert ("\"No admin console, moderation, teacher or institutional analytics, embedding into another learning "
+            "platform, or learner export and deletion exists, and there is no Parental Insights dashboard: no parent "
+            "role exists, no children's tool is built, and the hub says its tools are for adults.\"" in kept), \
+        "the CORRECTED note does not keep the earlier words whole"
+    #  ...and the corrected sentences hold at the code
+    from agentic_core.religious_domain import approval_pack as _ap
+    assert len(_ap.CHILDREN_TOOLS) == 5, [t["id"] for t in _ap.CHILDREN_TOOLS]
+    from agentic_core.app_mvp import app as _app
+    _routes = {(m, getattr(r, "path", "")) for r in _app.routes for m in (getattr(r, "methods", None) or ())}
+    assert ("GET", "/api/v1/qep/learner/{uid}/export") in _routes and ("DELETE", "/api/v1/qep/learner/{uid}") in _routes
+    a123 = flat(vis.split("**A.12.3 Curriculum ownership and scholarly review", 1)[1].split("**A.12.4", 1)[0])
+    assert "A NAMED HUMAN SCHOLAR APPROVES AI-COMPOSED RELIGIOUS CONTENT BEFORE A LEARNER SEES IT" in flat(vis)
+    assert ("OWNER RULING 2026-11-22 (decisions 15 and 16; the recommendations accepted), the 2026-10-05b words above "
+            "kept:** the gate is extended from AI-composed religious content to every publishable religious lesson"
+            in a123), "A.12.3's extension"
+    a6 = vis.split("\n## A.6 ", 1)[1].split("\n## A.7 ", 1)[0]
+    assert a6.count("*Restart scope [OWNER 2026-11-22] (") == 15, "an A.6 feature has no restart line"
+
+    #  3. THE PLAN
+    plan = read("docs/FABLE_DELIVERY_PROMPT.md")
+    p517 = flat(plan.split(" P5.17 [chartered W683", 1)[1].split("\n P5.18 [chartered W711", 1)[0])
+    assert "THE OWNER'S RESTART VISION, 2026-11-22 (W1236)" in p517 and "supersedes no ruling" in p517
+    rul = p517.split("OWNER RULINGS 2026-11-22, THE QEP RESTART", 1)[1]
+    for said in ("a recording a learner shares is kept 30 days from sharing, deletable by the learner at any time and "
+                 "deleted automatically when the period ends",
+                 "the first stage is capped at one educator and one circle until it has been reviewed",
+                 "the written-recall similarity shown at the moment of the check and not stored until the Owner rules",
+                 "volunteer translators are for interface localisation only, for now",
+                 "the credentials staying in the Owner's .env and only the outcome recorded",
+                 "letter examples wait for a source whose row permits the use",
+                 "no automated pre-screening until the Owner rules on it explicitly, and a model is never the ruling "
+                 "of record",
+                 "\"Teachers are people the Owner names\"", "\"kept on the Owner's own machine during the invited "
+                 "stage\""):
+        assert said in rul, ("P5.17's rulings", said[:60])
+    p521 = flat(plan.split(" P5.21 [chartered W739", 1)[1].split("\n P5.22 [chartered W754", 1)[0])
+    assert ("Clause (3)'s words above, \"a children's tool opens only when sign-in is on AND the current pack is "
+            "approved\", are kept: the gate is to gain a third condition, a dated Owner release record" in p521)
+    assert "a guardian is a separately governed link, not an RBAC role" in p521, "decision 11 is not in its words at P5.21"
+    p311 = flat(plan.split(" P3.11 ✅ DONE W600", 1)[1].split("\n P3.12", 1)[0])
+    assert "[Superseded in part by OWNER RULING 2026-10-12, noted W1236 (2026-11-22)" in p311
+
+    #  4. THE REGISTERS
+    reg = [r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"] if isinstance(r, dict)]
+    mine = [r for r in reg if str(r.get("source", "")).startswith("W1236 ")]
+    keys = [r["source"].rsplit("its round: ", 1)[-1] for r in mine]
+    assert keys == ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"] + ["L" + c for c in "abcdefgh"], keys
+    for r in mine:
+        assert r["status"] in ("open", "done") and r["slot"] in ("P5.17", "P5.21", "P4.1"), (r["id"], r["slot"])
+        k = r["source"].rsplit("its round: ", 1)[-1]
+        lead = f"The plan's round {k}," if k.startswith("R") else f"The plan's later item ({k[1]}), not first release:"
+        assert r["why"].startswith(lead) and len(r["why"]) > 150, (r["id"], r["why"][:80])
+    gate = mine[8]
+    assert gate["slot"] == "P5.21" and "dated Owner release record" in gate["why"], gate["why"][:200]
+    #  each row a ruling governs carries it, and the lesson-schema row carries decision 15 whole
+    by_key = {r["source"].rsplit("its round: ", 1)[-1]: r for r in mine}
+    for k in ("R2", "R3", "R5", "R8", "La", "Lb", "Lc", "Ld", "Lf", "Lg"):
+        assert "OWNER RULING 2026-11-22 (the recommendation accepted):" in by_key[k]["why"], (k, "no ruling")
+    assert ("one engagement may cover several tracks, provided each approval is entered under the named person who "
+            "gave it and that person is rostered for that track" in by_key["Ld"]["why"]), "decision 15 is not whole"
+    #  the listening round carries the production ruling its plan words wait on (FU-1882 is closed)
+    assert ("OWNER RULING 2026-11-22 (decision 7; the recommendation accepted): accept the duties" in by_key["R5"]["why"]
+            and "until then, listening stays in pre-production only" in by_key["R5"]["why"]), "R5 lacks decision 7"
+    rows = {r["id"]: r for r in reg}
+    assert "OWNER RULING 2026-11-22 (W1236, the QEP restart; the recommendation accepted): the test uses no Quran " \
+           "Foundation content" in rows["FU-1067"]["why"]
+    assert "one engagement may cover several tracks, provided each approval is entered under the named person" \
+           in rows["FU-1838"]["note"]
+    src = {r.get("id"): r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    assert "which mushaf layout its page and juz metadata follow" in src["alquran-cloud-terms"]["not_read"]
+    cov = {r["id"]: r for r in json.loads(read("docs/COVERAGE_REGISTER.json"))["rows"]}
+    assert cov["qep-adult-memorisation-journey"]["domain"] == "Quran platform"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1237 - after a sign-in or a sign-out made in the page, the sidebar says the session as it now is
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1237_after_a_sign_in_or_sign_out_made_in_the_page_the_sidebar_says_the_session_as_it_now_is():
+    """W1237. Found on the live site by the Owner: after signing in, the sidebar's bottom-left still offered "Sign in".
+    The sidebar read whoami() once on mount, and the sign-in form signs in and calls nav('/') with no reload, so the
+    sidebar kept the signed-out answer; setToken and clearToken dispatch 'ws:identity', and nothing in the sidebar
+    listened. Held here:
+    1. lib/useIdentity.ts reads the session on mount, again on every 'ws:identity', and again on every 'storage'
+       event for the token or for a cleared store (a sign-in or a sign-out in another tab), removes both listeners
+       on unmount, never lets an earlier read's answer replace a later one, says "Reading the session…" while it
+       reads again, and waits for setToken to return before it asks (setToken dispatches before it stores the token);
+    2. setToken and clearToken still dispatch through _clearLocalUserData, setToken before it stores the token, as
+       the hook's comment says;
+    3. the sidebar reads the session through the hook and calls whoami() nowhere itself;
+    4. no other panel of the shell (components/layout/, App.tsx) reads the session itself;
+    5. Sidebar.test.tsx renders a sign-in and a sign-out with no remount, against a route answered by the token stored
+       when it is asked, and the hook's four other promises; the fixture keeps no token."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    #  1. the hook
+    hook = _code_only((src / "lib/useIdentity.ts").read_text(encoding="utf-8")) + "\n"
+    assert "import { whoami, type WhoAmI } from './auth';" in hook
+    assert hook.count("export function useIdentity(): WhoAmI | null {") == 1
+    eff = hook[hook.index("  useEffect(() => {"):]
+    eff = eff[:eff.index("\n  }, []);\n")]
+    assert eff.count("addEventListener(") == 2 and eff.count("removeEventListener(") == 2
+    assert "    window.addEventListener('ws:identity', onIdentity);" in eff, "the sidebar never hears a sign-in"
+    assert "    window.addEventListener('storage', onStorage);" in eff, "the sidebar never hears another tab's sign-in"
+    ret = eff[eff.index("    return () => {"):]
+    assert "      window.removeEventListener('ws:identity', onIdentity);" in ret, "the listener outlives the sidebar"
+    assert "      window.removeEventListener('storage', onStorage);" in ret, "the storage listener outlives the sidebar"
+    assert "      mounted = false;" in ret
+    st = eff[eff.index("    const onStorage = (e: StorageEvent) => {"):]
+    st = st[:st.index("\n    };") + 1]
+    assert "      if (e.key === TOKEN_KEY || e.key === null) onIdentity();" in st, (
+        "another tab's sign-in or sign-out is not heard, or every other key's change is read as one")
+    assert hook.count("const TOKEN_KEY = 'workstation_token';") == 1, "the hook listens for another key than auth.ts stores"
+    on = eff[eff.index("    const onIdentity = () => {"):]
+    on = on[:on.index("\n    };") + 1]
+    assert "      queueMicrotask(read);" in on and "read()" not in on, (
+        "the session is asked again before setToken has stored the token, and is answered 'anonymous'")
+    assert "      setIdentity(null);" in on, "the old answer stays on screen while the session is read again"
+    rd = eff[eff.index("    const read = () => {"):]
+    rd = rd[:rd.index("\n    };") + 1]
+    assert "      const n = ++asked;" in rd
+    assert "      const answered = (w: WhoAmI) => { if (mounted && n === asked) setIdentity(w); };" in rd, (
+        "an earlier read's answer can replace a later one")
+    assert "      whoami().then(answered).catch(e => answered({ mode: 'unknown', basis: String(e) }));" in rd
+    assert eff.count("\n    read();\n") == 1, "the session is not read on mount"
+    #  2. the dispatch the hook listens for, and the order its comment describes
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8"))
+    assert auth.count("window.dispatchEvent(new CustomEvent('ws:identity'));") == 1
+    assert "export const setToken = (t: string): void => { _clearLocalUserData(); localStorage.setItem(KEY, t); };" in auth, (
+        "setToken changed: the hook says it dispatches before it stores the token; make what it says true")
+    assert "export const clearToken = (): void => { localStorage.removeItem(KEY); _clearLocalUserData(); };" in auth
+    assert "const KEY = 'workstation_token';" in auth, "the rendered test stores the token under another key"
+    #  3. the sidebar
+    side = _code_only((src / "components/layout/Sidebar.tsx").read_text(encoding="utf-8"))
+    assert "import { useIdentity } from '../../lib/useIdentity';" in side
+    assert side.count("useIdentity()") == 1 and "  const identity = useIdentity();" in side
+    assert "whoami" not in side, "the sidebar reads the session itself, once"
+    #  4. no other panel of the shell reads the session itself
+    shell = [f for f in (src / "components/layout").glob("*.tsx") if not f.name.endswith(".test.tsx")] + [src / "App.tsx"]
+    assert len(shell) >= 6
+    for f in shell:
+        code = _code_only(f.read_text(encoding="utf-8"))
+        for call in ("whoami(", "getToken(", "/api/v1/auth/me"):
+            assert call not in code, (f.name, call, "a panel of the shell reads the session itself: read it through useIdentity")
+    #  5. the rendered test and its fixture
+    t = (src / "components/layout/Sidebar.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './Sidebar.fixture.json';" in t
+    assert "    const token = localStorage.getItem('workstation_token');" in t
+    assert "token === TOKEN ? captured.me_signed_in : captured.me_signed_out;" in t, (
+        "the route is not answered by the token stored when it is asked")
+    names = ('offers "Sign in" signed out, the name and "Sign out" once signed in, and "Sign in" again once signed out, '
+             'with no remount', "says the session is being read while it is read again",
+             "never lets an earlier answer replace a later one",
+             "reads the session again when another tab signs in or signs out, and not when another key changes",
+             "stops listening once unmounted")
+    for name in names:
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+
+    def body(name):
+        s = t.index(f"  it('{name}', async () => {{")
+        return t[s:t.index("\n  });\n", s)]
+    b = body(names[0])
+    for line in ("    act(() => setToken(TOKEN));", "    act(() => clearToken());",
+                 "    expect(container.querySelector('aside')).toBe(aside);",
+                 "    expect(asked).toEqual([null, TOKEN, null]);"):
+        assert line in b, (names[0], line)
+    assert b.index("setToken(TOKEN)") < b.index("expect(screen.getByText(NAME)).toBeInTheDocument();") < b.index("clearToken()")
+    assert b.rindex("expect(screen.queryByRole('button', { name: SIGN_OUT })).toBeNull();") > b.index("clearToken()")
+    assert "expect(screen.getByTestId('session-not-known').textContent).toBe('Reading the session…')" in body(names[1])
+    b = body(names[2])
+    assert b.index("await act(async () => first.letGo());") < b.rindex("expect(screen.getByRole('button', { name: SIGN_OUT })).toBeInTheDocument();")
+    b = body(names[3])
+    assert "setToken(" not in b and "clearToken(" not in b, "the other tab's sign-in is made through this tab's own event"
+    tab_in = "    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'workstation_token', newValue: TOKEN })); });"
+    other = "    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: 'ws_user_prefs_v1', newValue: null })); });"
+    cleared = "    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });"
+    for line in (tab_in, other, cleared, "    expect(asked).toEqual([null, TOKEN, null]);"):
+        assert b.count(line) == 1, (names[3], line)
+    assert (b.index("    localStorage.setItem('workstation_token', TOKEN);") < b.index(tab_in) < b.index(other)
+            < b.index("    localStorage.clear();") < b.index(cleared) < b.index("    expect(asked).toEqual([null, TOKEN, null]);"))
+    b = body(names[4])
+    assert "expect(removed.mock.calls.filter(c => c[0] === 'ws:identity')).toHaveLength(1);" in b
+    assert "expect(removed.mock.calls.filter(c => c[0] === 'storage')).toHaveLength(1);" in b
+    assert b.index("    unmount();") < b.index("    await act(async () => setToken(TOKEN));") < b.index("    expect(asked).toEqual([null]);")
+    assert b.index("    unmount();") < b.index("new StorageEvent('storage'") < b.index("    expect(asked).toEqual([null]);")
+    raw = (src / "components/layout/Sidebar.fixture.json").read_text(encoding="utf-8")
+    fx = json.loads(raw)
+    assert fx["me_signed_out"]["status"] == 401 and fx["me_signed_in"]["status"] == 200
+    assert fx["me_signed_in"]["body"]["username"] == "w1237-made-up-name"
+    assert "access_token" not in raw, "the fixture keeps a token"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1259 - the three permission letters the Owner sent on 2026-11-27, recorded; their two rows stay open
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1259_the_three_letters_say_they_were_sent_on_2026_11_27_and_their_rows_stay_open_until_an_answer():
+    """W1259 (records). The Owner sent the three permission letters from the Owner's own mail account on 2026-11-27,
+    with the text the cloud session gave and only the name filled in; no answer had come at the first check. Sending
+    is not permission. Held here:
+    1. each letter's header says it was sent by the Owner on 2026-11-27, at its time, from the Owner's own address,
+       and no longer that nothing has been sent; that no answer had arrived at the first check; and, as before, that
+       nothing from the source is used until a written answer is held;
+    2. each body is what was sent: the library's letter asks, first after the greeting, for it to reach the library's
+       maintainers; the dataset's greets its four authors by name; each ends with the name and Workstation; the From
+       and Reply to placeholders stay unfilled;
+    3. none of the three carries an e-mail address, and no letter document carries one but the two institutions';
+    4. FU-1188 and FU-1283 are open, owner-gated and slotted OWNER, each with its dated note of the send, and the
+       scholar row FU-1838 is still open;
+    5. the three sources rows still permit nothing, and their asides say the letter was sent;
+    6. the plan's list, the local notes and the name and brand screen say the letters were sent on 2026-11-27, each
+       under its own row, and the screen no longer says they are unsent; nothing new names the domain or gives the
+       Owner a gendered pronoun."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    read = lambda rel: (root / rel).read_text(encoding="utf-8")   # noqa: E731
+    flat = lambda t: " ".join(t.split())   # noqa: E731
+    address = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
+    stem = "workstation" + "idbo"   # the domain's stem, put together here so that this file never holds it whole
+
+    #  1-3. the three letters
+    letters = {"kfg": "KFGQPC_PERMISSION_REQUEST.md", "qul": "QUL_DATA_PERMISSION_REQUEST.md",
+               "qad": "QURANIC_AUDIO_DATASET_REQUEST.md"}
+    sent = {"kfg": ("11:05:08", "nothing from the Complex is used", None),
+            "qul": ("11:06:06", "nothing from the library is used",
+                    "Please could this message reach the maintainers of the Quranic Universal Library."),
+            "qad": ("11:05:27", "nothing from the dataset is downloaded or used",
+                    "Dear Raghad Salameh, Mohamad Al Mdfaa, Nursultan Askarbekuly and Manuel Mazzara,")}
+    new_sentences = []
+    for key, name in letters.items():
+        t = read(f"docs/letters/{name}")
+        head, sep, body = t.partition("\n\n---\n\n")
+        assert sep and t.count("\n\n---\n\n") == 1, (name, "the line between the header and the letter")
+        h = flat(head)
+        at, rule, added = sent[key]
+        assert "Nothing has been sent" not in t, (name, "the letter still says nothing has been sent")
+        said = f"SENT BY THE OWNER ON 2026-11-27, at {at} UK time, from the Owner's own address"
+        assert said in h, (name, "the header does not say when it was sent", h[:200])
+        assert "No answer had arrived at the first check after sending" in h, (name, "the first check")
+        assert ("FU-1188 stays open" if key != "qad" else "FU-1283 stays open") in h, (name, "its row")
+        assert "Until a written answer" in h and rule in h, (name, "the rule that nothing is used before an answer")
+        assert "stamps a header marking the drafts it creates as AI-generated" in h, (name, "the connector's mark")
+        new_sentences.append(h)
+        #  the body is what was sent
+        assert "From: [your name], for Workstation" in body and "Reply to: [your address]" in body, (
+            name, "a placeholder")
+        assert body.endswith("With thanks,\n\n[your name]\nWorkstation\n"), (name, "the letter's ending", body[-80:])
+        first = [ln for ln in body.split("Assalamu alaikum,", 1)[1].splitlines() if ln.strip()][0]
+        if added:
+            assert first == added, (name, "the line after the greeting is not the one sent", first)
+        else:
+            assert first.startswith("I am writing for Workstation"), (
+                name, "a line was added after the greeting", first)
+        assert not re.findall(address, t), (name, "a letter carries an e-mail address")
+        assert stem not in t.lower(), (name, "names the domain")
+    qad = flat(read("docs/letters/QURANIC_AUDIO_DATASET_REQUEST.md"))
+    assert ("To: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly "
+            "(Innopolis University) and Manuel Mazzara (Innopolis University)") in qad, "the addressees"
+    assert "none was left out, and none is written here" in qad and "its first author first" in qad
+    institutional = {"info@qurancomplex.gov.sa", "info@tarteel.ai"}
+    for doc in sorted((root / "docs" / "letters").glob("*.md")):
+        found = set(re.findall(address, doc.read_text(encoding="utf-8")))
+        assert found <= institutional, (doc.name, "a letter document carries an address not an institution's", found)
+
+    #  4. the two rows stay open, each with its dated note; the scholar row is still held
+    reg = {r["id"]: r for r in json.loads(read("docs/FOLLOWUPS.json"))["items"]}
+    notes_of = {
+        "FU-1188": ("2026-11-27: sent by the Owner (the letters to the King Fahd Complex and to the Quranic Universal "
+                    "Library, at 11:05:08 and 11:06:06 UK); no answer at the first check; open until a written answer "
+                    "is held."),
+        "FU-1283": ("2026-11-27: sent by the Owner (the request to the Quranic Audio Dataset's four authors, at "
+                    "11:05:27 UK); no answer at the first check; open until a written answer is held."),
+    }
+    for rid, line in notes_of.items():
+        r = reg[rid]
+        assert (r["status"], r["slot"], r["owner_gated"], r["closed_by"]) == ("open", "OWNER", True, None), (
+            rid, "sending is not permission: the row stays open until a written answer is held", r["status"])
+        assert r["note"].count(line) == 1, (rid, "its note does not carry the dated line of the send once")
+        assert set(re.findall(address, r["note"])) <= institutional, (rid, "an address not an institution's")
+    assert reg["FU-1838"]["status"] == "open", "the scholar row is held, as the Owner ruled"
+
+    #  5. the sources rows still permit nothing, and say the letter was sent
+    src = {r["id"]: r for r in json.loads(read("docs/SOURCES.json"))["rows"]}
+    for sid in ("kfgqpc-recitations-fonts", "tarteel-qul-data", "quranic-audio-dataset"):
+        assert src[sid]["permits"] == [], (sid, "a source permits something before a written answer is held")
+        assert "a letter was sent by the Owner on 2026-11-27, with no answer yet held" in src[sid]["not_read"], sid
+        assert "drafted for the Owner to send" not in src[sid]["not_read"], (sid, "still says the letter is to be sent")
+
+    #  6. the plan's list, the local notes and the brand screen
+    fable = read("docs/FABLE_DELIVERY_PROMPT.md")
+    fstill = flat(fable.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0])
+    s1188 = ("SENT BY YOU ON 2026-11-27, from your own address: the Complex's letter at 11:05:08 and the library's at "
+             "11:06:06, UK time (W1259). No answer had come at the first check; the row stays open until a written "
+             "answer is held")
+    s1283 = ("SENT BY YOU ON 2026-11-27 at 11:05:27, UK time, from your own address to the paper's four authors, its "
+             "first author first, at the addresses its author block gives; none is written in the tree (W1259). No "
+             "answer had come at the first check; the row stays open until a written answer is held.")
+    for head, s in (("FU-1188 (W948): send the two letters", s1188),
+                    ("FU-1283 (W1132): send the request drafted", s1283)):
+        assert fstill.count(s) == 1 and fstill.count(head) == 1, (head, "the plan's list does not say it was sent")
+        between = fstill[fstill.index(head) + len(head):fstill.index(s)]
+        assert fstill.index(head) < fstill.index(s) and not re.search(r"FU-\d+ \(W\d+[a-z]?\):", between), (
+            head, "the sentence is not under its own row on the plan's list")
+        new_sentences.append(s)
+    notes = read("docs/RESUME_ON_MY_MACHINE.md")
+    yours = flat(notes.split("- **Still yours:**", 1)[1].split("\n- **", 1)[0])
+    for s in ("(FU-1188), in the week from 21 November. You sent both on 2026-11-27, at 11:05 and 11:06 UK time; no "
+              "answer had come at the first check, and the row stays open until a written answer is held.",
+              "(FU-1283), in the week from 21 November. You sent it on 2026-11-27, at 11:05 UK time, to the paper's "
+              "four authors; no answer had come at the first check, and the row stays open until a written answer is "
+              "held."):
+        assert s in yours, ("the local notes do not say it was sent", s[:60])
+        new_sentences.append(s)
+    brand = flat(read("docs/business/NAME_AND_BRAND_SCREEN.md").split("## 2. What the Owner holds", 1)[1].split(
+        "\n## ", 1)[0])
+    s = ("the three letters asking for more were sent by the Owner on 2026-11-27 and await written answers (rows "
+         "FU-1188 and FU-1283)")
+    assert s in brand and "drafted and unsent" not in brand, "the brand screen still says the letters are unsent"
+    new_sentences.append(s)
+    for t in new_sentences:
+        assert stem not in t.lower(), ("names the domain", t[:60])
+        assert not re.search(r"\b(he|him|his|she|her|hers)\b", t, re.I), ("a gendered pronoun", t[:80])
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1238 - the AI CEO's reply is shown as formatted text, through one renderer shared with the conversation panel
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1238_the_ceo_reply_is_shown_as_formatted_text_through_one_shared_renderer():
+    """W1238. Found on the live site: the AI CEO chat printed its reply as plain text ({m.content}), so the structured
+    floor's frame reached the reader as raw markdown ("## Assessment", "- term", "_[...]_"). The footer's conversation
+    panel had a renderer of its own (bold, inline code and bullets). Held here:
+    1. components/RichText.tsx is the one renderer: headings ("# " to "###### "), "- " items as one list, bold, inline
+       code, italics that open and close only beside a non-letter (so a name's underscores are kept), a line per line
+       and one gap per run of empty lines; it builds React elements, sets no raw HTML and makes no link; a line is
+       read in one pass (an opener never rescans past where an earlier scan found no closer), and a value that is not
+       a string is read as its text;
+    2. no other file in the app defines a renderRichText of its own; the conversation panel renders through it;
+    3. the CEO chat renders an assistant message through it and shows a person's own words as typed, in the element
+       marked ceo-message; neither page sets raw HTML;
+    4. the rendered tests: RichText.test.tsx holds each rule, a link shown as typed, a long line of unpaired markers
+       read in time and a value that is not a string; CEOChat.test.tsx renders the floor's reply (headings, list items,
+       no marker left, the badge and the grounding chip as they were) and the person's words as typed."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    rt = _code_only((src / "components/RichText.tsx").read_text(encoding="utf-8"))
+    #  1. the renderer's rules
+    for need in ("export function inlineParts(line: string): InlinePart[] {",
+                 "export function renderRichText(text: string): React.ReactNode[] {",
+                 "export const RichText: React.FC<{ text: string }> = ({ text }) => <>{renderRichText(text)}</>;",
+                 "const HEADING = /^(#{1,6}) +(.*)$/;",
+                 "const HEADING_TAG = ['h3', 'h4', 'h5', 'h6', 'h6', 'h6'] as const;",
+                 "    if (lead.startsWith('- ')) { items.push(lead.slice(2)); continue; }",
+                 "    if (!lead) { endList(); gap = out.length > 0; continue; }",
+                 "const isWordChar = (ch: string | undefined): boolean => !!ch && /[\\p{L}\\p{N}]/u.test(ch);",
+                 "    } else if (line[i] === '_' && !isWordChar(line[i - 1]) && line[i + 1] !== undefined && line[i + 1] !== ' ' && line[i + 1] !== '_') {",
+                 "        if (line[j] === '_' && line[j - 1] !== ' ' && !isWordChar(line[j + 1])) { end = j; break; }",
+                 "  let noCloser = line.length;", "      for (let j = i + 2; j < noCloser; j++) {",
+                 "      if (end < 0) noCloser = Math.min(noCloser, i + 2);",
+                 "  for (const raw of String(text ?? '').split('\\n')) {",
+                 "    if (p.kind === 'em') return <em key={k} className=\"italic\">{p.text}</em>;",
+                 "    if (p.kind === 'bold') return <strong key={k} className=\"font-bold text-white\">{p.text}</strong>;",
+                 "<ul key={`ul${out.length}`} className=\"space-y-0.5\">",
+                 "    out.push(<p key={`p${out.length}`}>{inline(line)}</p>);"):
+        assert need in rt, need
+    for raw in ("dangerouslySetInnerHTML", "innerHTML", "__html", "DOMParser", "insertAdjacentHTML"):
+        assert raw not in rt, ("the renderer sets raw HTML", raw)
+    for link in ("href", "<a ", "<a>", "createElement('a'", 'createElement("a"'):
+        assert link not in rt, ("the renderer makes a link out of a reply's text", link)
+    #  2. one renderer in the app
+    defs = sorted(p.relative_to(src).as_posix() for p in src.rglob("*.tsx")
+                  if re.search(r"\b(function|const)\s+renderRichText\b", p.read_text(encoding="utf-8")))
+    assert defs == ["components/RichText.tsx"], ("a renderer of its own beside the shared one", defs)
+    cp = _code_only((src / "components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    assert "import { renderRichText } from '../RichText';" in cp and cp.count("{renderRichText(m.content)}") == 1
+    #  3. the CEO chat
+    chat = _code_only((src / "pages/CEOChat.tsx").read_text(encoding="utf-8"))
+    assert "import { RichText } from '../components/RichText';" in chat
+    assert chat.count("{m.role === 'assistant' ? <RichText text={m.content} /> : m.content}") == 1
+    assert "\n                     {m.content}\n" not in chat, "the chat prints a reply as plain text again"
+    assert chat.count('<div data-testid="ceo-message" className=') == 1
+    for page in (chat, cp):
+        assert "dangerouslySetInnerHTML" not in page and "innerHTML" not in page
+    #  4. the rendered tests
+    t = (src / "components/RichText.test.tsx").read_text(encoding="utf-8")
+    for name in ("renders a heading for a \"## \" line and a list for \"- \" lines, with no marker left",
+                 "gives each heading level its own element and keeps a line with no space after the hashes as a line",
+                 "renders bold, inline code and italics, and keeps the underscores of a name",
+                 "keeps each line apart, and a run of empty lines is one gap",
+                 "shows markup in a reply as text and never as HTML",
+                 "makes no link, so a link a reply carries is shown as typed and cannot be followed",
+                 "reads a long line of markers with no partner in one pass, so no reply can stall the page",
+                 "shows a value that is not a string as its text instead of failing"):
+        assert t.count(f"  it('{name}', () => {{") == 1, name
+    assert "expect(box.querySelector('a, [href]')).toBeNull();" in t and "expect(took).toBeLessThan(1000);" in t
+    ct = (src / "pages/CEOChat.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './CEOChat.fixture.json';" in ct and "<CEOChat />" in ct
+    s = ct.index("  it('renders the floor\\'s reply as formatted text: headings and list items, no marker left, the chips as they were', async () => {")
+    body = ct[s:ct.index("\n  });\n", s)]
+    for need in ("serve({ stream: FLOOR_STREAM });",
+                 "expect(within(box).getAllByRole('heading').map(h => h.textContent)).toEqual(['Assessment', 'Priorities', 'Next actions']);",
+                 "expect(within(box).getAllByRole('listitem').length).toBe(13);",
+                 "expect(box.textContent).not.toContain('##');", "expect(box.textContent).not.toContain('_[');",
+                 "expect(el.textContent?.startsWith('- ')).toBe(false);",
+                 "'handed 0 directives · 0 objectives · the answer names 0 and 0 · scope workstation');"):
+        assert need in body, need
+    assert "  it('shows the person\\'s own words as typed', async () => {" in ct
+    assert "'## Assessment'," in ct and "'- bakery cooperative', '- cooperative buy'," in ct, (
+        "the floor reply the chat test renders no longer carries the floor's headings and items")
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1239 - with no model connected, the AI CEO says so in plain words instead of showing the floor's frame
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1239_with_no_model_connected_the_ceo_says_so_instead_of_showing_the_floors_frame(client, monkeypatch):
+    """W1239. Found on the live site (no model on the machine): asked "Hi" and "what are your priorities", the AI CEO
+    answered with the structured floor's frame ("## Assessment", the request's most frequent words, "WITHHELD — no
+    domain was declared"), which answered nothing that was asked, and the greeting said a record was held on a server
+    that holds none. Held here:
+    1. with the local model off (AI_DISABLE_LOCAL) and the external-AI switch off, "Hi" and "what are your priorities"
+       are each answered with the one fixed notice: no model is connected, so this is not an answer; what the CEO holds
+       (none recorded on this server, the counts 0 and 0); how a model is added, each way the Owner's decision. No
+       floor frame reaches the reader; served_by stays native and the terminal frame says no_model with its basis;
+    2. with records held, the notice gives their counts and the recital follows, saying the reply above is a notice;
+       a store that could not be read is said as not read, never as none recorded;
+    3. with a model up, the model's reply is streamed as before; if a model serves after the check said none, its
+       held reply is shown whole and no notice is;
+    4. the check reads ollama_up, local_models, the breaker and external_allowed, and counts an external model only
+       as far as this chat asks for one (the same value the stream_meta call passes) and a provider's key is set; the
+       chat's two calls a model can answer declare person_entered; the switch is read and never set;
+    5. the greeting claims no record; the chat's fixture is the patched route's answer and its rendered test reads
+       the notice; test_w593's prompt leg carries its dated note;
+    6. what stays on the platform (the Owner's ruling 4 of 2026-11-27: religion and care stay on the floor even with
+       the switch on): a call that carries a record of the religion, care or education domain (a handed-in
+       directive's, or the scope's entity's), a domain that could not be read, or text the religious-content screen
+       flags, declares nothing, at the stream_meta call and at the meeting's; the notice says no model here can
+       answer this message and why it stays, and the terminal frame says why nothing was declared; with the switch
+       on in this test's environment only, a key set and the chat asking, no external client is built for such a
+       message, while a plain question reaches the provider."""
+    import asyncio
+    import json
+    import os
+    import pathlib
+    import ast
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai.gateway import ModelGateway, gateway as _gw
+    from agentic_core.ai.native import model_resource as _mr
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+    from agentic_core.organism import self_healing as _sh
+
+    assert os.getenv("AI_DISABLE_LOCAL") == "1" and _mr.external_allowed() is False, (
+        "this guard is run with the local model off and the external-AI switch off, as the suite runs")
+
+    def frames(message):
+        r = client.post("/api/v138/ceo/chat", json={"message": message, "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    NOT_AN_ANSWER = "No AI model is connected on this server, so this is not an answer to your question."
+    NONE_HELD = ("What the CEO holds from its records: none recorded on this server (no Board directive and no "
+                 "business-plan objective for this scope).")
+    HOW = ("A model can be added in one of two ways, and each is the Owner's decision: a local model, run on a "
+           "machine large enough to hold one, or an external model, used with the Owner's own key and the "
+           "external-AI switch turned on.")
+    #  1. a fresh server's stores: nothing held
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    said = {}
+    for ask in ("Hi", "what are your priorities"):
+        fr, text = frames(ask)
+        fin = fr[-1]
+        assert text.startswith(NOT_AN_ANSWER + "\n\n" + NONE_HELD + "\n\n" + HOW), text[:600]
+        for frame_word in ("## Assessment", "## Priorities", "## Next actions", "WITHHELD — no domain",
+                           "Structured frame over the terms", "_[Workstation native structured engine"):
+            assert frame_word not in text, ("the floor's frame reached the reader", frame_word)
+        assert fin["done"] is True and fin["served_by"] == "native" and fin["is_external"] is False, fin
+        g = fin["grounding"]
+        assert (g["directives"], g["objectives"]) == (0, 0) and g["cited"] == {"directives": 0, "objectives": 0}, g
+        assert not any(k.startswith("_") for k in g), sorted(g)
+        assert fin["grounding_conflicts"] == []
+        assert fin["no_model"] == {"local": False, "external_for_this_call": False,
+                                   "basis": ("the local model is turned off on this server (AI_DISABLE_LOCAL); "
+                                             "the external-AI switch is off"),
+                                   "said": "a fixed notice in place of the structured floor's frame"}, fin["no_model"]
+        assert fin["data_class"]["declared"] == "person_entered" and fin["data_class"]["checks"] == [], fin["data_class"]
+        assert "- Latest Board instruction:" not in text and "- Objectives in the plan:" not in text, (
+            "a recital of records nothing handed")
+        said[ask] = text
+    assert said["Hi"] == said["what are your priorities"], "the notice is not one fixed text"
+
+    #  2. records held: the counts, then the recital; a store not read is said as not read
+    monkeypatch.setattr(_board, "_load", lambda: [{"kind": "board_directive",
+                                                   "instruction": "W1239 made up: hold the van purchase",
+                                                   "chief_directive": "W1239 made up: hold the van purchase"}])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": [{"title": "W1239 made up objective"}]})
+    fr, text = frames("Hi")
+    assert text.startswith(NOT_AN_ANSWER + "\n\nWhat the CEO holds from its records: 1 Board directive and 1 "
+                           "business-plan objective for this scope; what it was handed is quoted below as stored."), text[:400]
+    rec = text.split("\n\n## What the CEO was handed (quoted as stored, not answered from)\n", 1)[1]
+    assert rec.startswith("No model answered: the reply above is a fixed notice, so nothing in it was reasoned "
+                          "from these records."), rec[:200]
+    assert '- Latest Board instruction: "W1239 made up: hold the van purchase"' in rec and "W1239 made up objective" in rec
+    g = fr[-1]["grounding"]
+    assert g["recited"]["directives"] == 1 and g["recited"]["objectives"] == 1 and g["cited"] == {
+        "directives": 0, "objectives": 0}, g
+
+    def _unreadable():
+        raise OSError("W1239 made up: the store could not be read")
+    monkeypatch.setattr(_board, "_load", _unreadable)
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    _, text = frames("Hi")
+    assert ("What the CEO holds from its records: they could not all be read here (the Board's directives could not "
+            "be read), so what it holds is not known in full.") in text, text[:400]
+    assert "none recorded" not in text
+    monkeypatch.setattr(_board, "_load", lambda: [])
+
+    #  3. a model up: its reply, as before; a model that serves after the check said none: its reply, whole
+    async def fake_model(self, augmented):
+        for tk in ("W1239 ", "a model's ", "reply."):
+            yield tk
+    monkeypatch.setattr(ModelGateway, "_stream_owned_model", fake_model)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    monkeypatch.setattr(_ceo, "_model_for_this_call", lambda: {"local": True, "external": False, "basis": "W1239 test"})
+    fr, text = frames("Hi")
+    assert text == "W1239 a model's reply." and fr[-1]["served_by"].startswith("ollama:") and "no_model" not in fr[-1]
+    assert [f["content"] for f in fr[:-1]] == ["W1239 ", "a model's ", "reply."], "a model's reply is not streamed"
+    monkeypatch.setattr(_ceo, "_model_for_this_call", lambda: {"local": False, "external": False, "basis": "W1239 test"})
+    fr, text = frames("Hi")
+    assert text == "W1239 a model's reply." and fr[-1]["served_by"].startswith("ollama:") and "no_model" not in fr[-1]
+    assert NOT_AN_ANSWER not in text
+    monkeypatch.undo()
+    assert os.getenv("AI_DISABLE_LOCAL") == "1"
+
+    #  4. the check itself, from the helpers; the switch is read, never set
+    m = _ceo._model_for_this_call()
+    assert (m["local"], m["external"]) == (False, False), m
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: ["w1239-made-up"])
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    m = _ceo._model_for_this_call()
+    assert m["local"] is True and m["basis"].startswith("the local runtime lists 1 model(s)"), m
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: endpoint == "ollama")
+    assert _ceo._model_for_this_call()["local"] is False
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    assert _ceo._model_for_this_call()["basis"].startswith("the local runtime lists no model")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: False)
+    assert _ceo._model_for_this_call()["basis"].startswith("no local model answered")
+    monkeypatch.setattr(_mr, "external_allowed", lambda: True)          # the helper's answer, not the switch
+    monkeypatch.setattr(_gw, "anthropic_key", None)
+    monkeypatch.setattr(_gw, "openai_key", None)
+    m = _ceo._model_for_this_call()
+    assert m["external"] is False and "; the external-AI switch is on; " in m["basis"] and m["basis"].endswith(
+        "; no provider's key is set"), ("an external model is counted with no key set", m)
+    monkeypatch.setattr(_gw, "anthropic_key", "w1239-placeholder-not-a-key")
+    m = _ceo._model_for_this_call()
+    assert m["external"] is _ceo._CEO_PREFERS_EXTERNAL and m["basis"].endswith("; a provider's key is set"), (
+        "an external model is counted beyond what this chat asks", m)
+    monkeypatch.undo()
+    src = pathlib.Path(_ceo.__file__).read_text(encoding="utf-8")
+    code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    assert code.count("gateway.stream_meta(") == 1 and code.count("prefer_external=_CEO_PREFERS_EXTERNAL,") == 1
+    assert "    external = _switch and _CEO_PREFERS_EXTERNAL and _keyed\n" in code
+    #  what the chat's calls carry is declared: person_entered, a class the platform names and does not bar, at the
+    #  stream_meta call (the name bound for its call from what it carries) and at the C-Suite meeting's call (the
+    #  class read from its agenda); every call here passing prefer_external declares one
+    assert _ceo._CEO_DATA_CLASS == "person_entered" and "person_entered" in _dc.CLASSES and "person_entered" not in _dc.BARRED
+    calls = [c for c in ast.walk(ast.parse(src)) if isinstance(c, ast.Call)
+             and getattr(c.func, "attr", "") in ("stream_meta", "complete")]
+    _passed = {c.func.attr: [ast.unparse(k.value) for k in c.keywords if k.arg == "data_class"] for c in calls}
+    assert len(calls) == 2 and _passed == {"stream_meta": ["_CEO_DATA_CLASS"], "complete": ["_class1239['data_class']"]}, (
+        "a call a model can answer declares nothing, or not what it carries", _passed)
+    assert code.count('    _CEO_DATA_CLASS = _class1239["data_class"]\n') == 1 and (
+        "_class1239 = _ceo_call_class(list(facts.get(\"_domains\") or []) + [_scope_domain(scope)], full_prompt)" in code)
+    #  W1241 (2026-11-27), ON PURPOSE (W1241's second review): the meeting reads the agenda and the domains the chat
+    #  gives it (the domain of the entity whose scope it answers for), so it is kept as that chat's own call is
+    assert "        _class1239 = _ceo_call_class(list(domains or []), agenda)\n" in code
+    for c in ast.walk(ast.parse(src)):
+        if isinstance(c, ast.Call) and "prefer_external" in {k.arg for k in c.keywords}:
+            assert "data_class" in {k.arg for k in c.keywords}, ("a call asks for an external model and declares nothing", c.lineno)
+            assert any(k.arg == "prefer_external" and isinstance(k.value, ast.Name)
+                       and k.value.id == "_CEO_PREFERS_EXTERNAL" for k in c.keywords), c.lineno
+    for dep in ("_mr.ollama_up()", "_mr.local_models()", '_sh.is_open("ollama")', "_mr.external_allowed()"):
+        assert dep in code, dep
+    for setter in ('environ["AI_ALLOW_EXTERNAL"]', "environ['AI_ALLOW_EXTERNAL']", 'setenv("AI_ALLOW_EXTERNAL"',
+                   "putenv("):
+        assert setter not in src, ("the CEO module sets the external-AI switch", setter)
+
+    #  5. the page, its fixture and its rendered test; the spine's prompt leg
+    pg = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    chat = (pg / "CEOChat.tsx").read_text(encoding="utf-8")
+    assert "handed the record for this scope" not in _code_only(chat), "the greeting claims a record again"
+    assert "I am handed whatever this scope\\'s records hold, which on a new server may be nothing" in chat
+    fx = json.loads((pg / "CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert "".join(str(f.get("content") or "") for f in fxf).startswith(NOT_AN_ANSWER), "the fixture is the old frame"
+    assert fxf[-1].get("no_model", {}).get("local") is False and fxf[-1]["served_by"] == "native"
+    t = (pg / "CEOChat.test.tsx").read_text(encoding="utf-8")
+    s = t.index("  it('says that no model is connected, and the greeting claims no record', async () => {")
+    body = t[s:t.index("\n  });\n", s)]
+    for need in ("'No AI model is connected on this server, so this is not an answer to your question.'",
+                 "expect(box.textContent).not.toContain('WITHHELD');",
+                 "expect(greeting).not.toContain('handed the record for this scope');"):
+        assert need in body, need
+    sp = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert sp.count("\n    #  W1239 (2026-11-22), ON PURPOSE: this leg is kept. The CEO's prompt still ends with these "
+                    "three sections") == 1, "test_w593's prompt leg lost its dated note"
+
+    #  6. WHAT STAYS ON THE PLATFORM (the Owner's ruling 4 of 2026-11-27). The class, from the helper
+    plain = "W1239 made up: should the bakery cooperative buy a third van?"
+    sacred = "W1239 made up: how should the Quran school plan its year?"
+    ok = _ceo._ceo_call_class(["", "enterprise"], plain)
+    assert ok["data_class"] == "person_entered" and ok["kept"] is None and ok["basis"].startswith(
+        "declared person_entered: "), ok
+    for dom in ("religion", "care", "education"):
+        k = _ceo._ceo_call_class(["", dom], plain)
+        assert k["data_class"] is None and k["kept"].startswith(f"it carries records of the {dom} domain, and "), (dom, k)
+        assert k["basis"] == "nothing is declared, so no external provider is sent this call: " + k["kept"], k
+    k = _ceo._ceo_call_class(["", None], plain)
+    assert k["data_class"] is None and "could not be read" in k["kept"], ("a domain not read was counted as clear", k)
+    k = _ceo._ceo_call_class([""], plain, sacred)
+    assert k["data_class"] is None and k["kept"].startswith("what it carries names religious content (") and (
+        "quran" in k["kept"]), k
+    from agentic_core.api import vsb as _vsb
+    monkeypatch.setattr(_vsb, "_load_vsb", lambda vid: {"vsb_id": vid, "domain": "care"} if vid == "vsb-w1239-care"
+                        else None)
+    assert (_ceo._scope_domain("workstation"), _ceo._scope_domain("vsb-w1239-care")) == ("", "care")
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+
+    async def _drive(scope):
+        return [json.loads(c[6:]) for c in [x async for x in _ceo.generate_ceo_stream(plain, scope, None)]
+                if c.startswith("data: ")]
+    fin = asyncio.run(_drive("vsb-w1239-care"))[-1]
+    assert fin["data_class"]["declared"] is None and "records of the care domain" in fin["kept_on_platform"], (
+        "an entity's care domain was not read for what its scope's call may declare", fin)
+
+    #  through the route: a directive of the religion domain, and a question the screen flags
+    KEPT = "This message stays on the platform whatever the external-AI switch says, so no external model is sent it: "
+    NO_MODEL_HERE = "No AI model on this server can answer this message, so this is not an answer to your question.\n\n"
+    monkeypatch.setattr(_board, "_load", lambda: [{"kind": "board_directive", "domain": "religion",
+                                                   "instruction": "W1239 made up: hold the van purchase",
+                                                   "chief_directive": "W1239 made up: hold the van purchase"}])
+    fr, text = frames("Hi")
+    fin = fr[-1]
+    why = "it carries records of the religion domain, and religious content is not sent outside the platform"
+    assert text.startswith(NO_MODEL_HERE) and KEPT + why + "." in text and fin["served_by"] == "native", text[:1400]
+    assert fin["data_class"]["declared"] is None and fin["kept_on_platform"] == (
+        "nothing is declared, so no external provider is sent this call: " + why), fin
+    assert fin["no_model"]["basis"].endswith("; this call declares nothing: " + why), fin["no_model"]
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    fr, text = frames(sacred)
+    assert fr[-1]["data_class"]["declared"] is None and "names religious content (" in fr[-1]["kept_on_platform"], fr[-1]
+    assert text.startswith(NO_MODEL_HERE) and KEPT + "what it carries names religious content (" in text, text[:1400]
+
+    #  the switch on, in this test's environment only, a placeholder key and the chat asking: nothing is built for
+    #  the message that stays, and the plain question reaches the provider (so the leg is not vacuous)
+    import anthropic as _an
+    built = []
+
+    class _FakeStream:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _g():
+                for tk in ("W1239 ", "an external ", "reply."):
+                    yield tk
+            return _g()
+
+        async def get_final_message(self):
+            return None
+
+    class _FakeMessages:
+        def stream(self, *a, **k):
+            return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            built.append(k.get("api_key"))
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setattr(_gw, "anthropic_key", "w1239-placeholder-not-a-key")
+    monkeypatch.setattr(_gw, "openai_key", None)
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    monkeypatch.setattr(_ceo, "_CEO_PREFERS_EXTERNAL", True)
+    fr, text = frames(sacred)
+    assert built == [] and fr[-1]["served_by"] == "native" and fr[-1]["is_external"] is False, (built, fr[-1])
+    assert fr[-1]["data_class"]["declared"] is None and fr[-1]["data_class"]["checks"][0]["send"] is False, fr[-1]
+    assert text.startswith(NO_MODEL_HERE), ("the floor's frame was streamed for a message that stays", text[:300])
+    fr, text = frames(plain)
+    assert built == ["w1239-placeholder-not-a-key"] and fr[-1]["served_by"] == "claude", (built, fr[-1])
+    assert fr[-1]["data_class"]["declared"] == "person_entered" and text == "W1239 an external reply.", text[:300]
+
+    #  the C-Suite meeting: the class read from its agenda, at each of its six calls
+    asked = []
+
+    async def _complete1239(prompt, **kw):
+        asked.append(kw.get("data_class", "not passed"))
+        return {"output": ""}           # nothing is minuted for an officer whose reply came back empty
+    monkeypatch.setattr(_ceo.orchestrator, "complete", _complete1239)
+    asyncio.run(_ceo.ToolRegistry().call_meeting(plain))
+    asyncio.run(_ceo.ToolRegistry().call_meeting(sacred))
+    assert asked == ["person_entered"] * 6 + [None] * 6, asked
+    monkeypatch.undo()
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true", "the switch was left on"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1240 - without a model, the AI CEO recites the plan's open items as stored, in the plan's own order
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1240_without_a_model_the_ceo_recites_the_plans_open_items_as_stored_in_the_plans_order(client, monkeypatch, tmp_path):
+    """W1240. Asked "what are your priorities" with no model, the AI CEO had nothing to say about the delivery plan:
+    none of its open items was in the grounding, though the image holds docs/. Held here:
+    1. on the floor, "what are your priorities" is followed by the recital "Plan's open items, quoted as stored, in
+       the plan's own order": the next unheld build item, then the first five open items, each with the slot, title
+       and hold plan_followups.plan_now gives for the same files, in that order, nothing ranked;
+    2. grounding.plan_items and grounding.recited.plan_items count them; grounding.cited still counts only the
+       directives and objectives the reply named, so a plan item in an answer is never counted as cited;
+    3. the read is cached on the two files' modification times and sizes, and read again when either changes; a
+       hold is said only while the item it names is open;
+    4. a missing plan doc is said as unavailable with its reason, never as an empty list, and counted as null;
+    5. the chip says the count; the page's fixture is the patched route's answer; living_plan's docstring no longer
+       says the docs are not copied into the image, which the Dockerfile does."""
+    import json
+    import os
+    import pathlib
+    from agentic_core import plan_followups as _fu
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+
+    def frames(message):
+        r = client.post("/api/v138/ceo/chat", json={"message": message, "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    HEAD = "\n### Plan's open items, quoted as stored, in the plan's own order\n"
+    #  1. the recital, against the plan's own reader over the same files
+    now = _fu.plan_now(_fu.load(_fu.REGISTER), _fu.read_doc(_fu.PROMPT))
+    assert now["readable"] and now["next_unheld"] and len(now["open_items"]) >= 5, "the plan has too little to recite"
+    fr, text = frames("what are your priorities")
+    fin = fr[-1]
+    assert fin["served_by"] == "native" and text.startswith("No AI model is connected on this server"), text[:200]
+    assert text.count(HEAD) == 1, text[-1500:]
+    lines = text.split(HEAD, 1)[1].rstrip("\n").split("\n")
+
+    def q(it):
+        t = " ".join(str(it["title"] or "").split())
+        return f'{it["slot"]} "{t}"' if t else f"{it['slot']} (its line names no title)"
+    nu = now["next_unheld"]
+    assert lines[0] == f"- next unheld build item: {q(nu)}", (lines[0], nu["slot"], nu["title"])
+    first = now["open_items"][:5]
+    assert lines[1] == f"- the first 5 of {len(now['open_items'])} open items:", lines[1]
+    want = [f"- {q(o)}" + (f" (held until {o['held_until']})" if o["held"] else "") for o in first]
+    assert lines[2:] == want, ("the open items are not the plan's first five, in its order, as stored", lines[2:], want)
+    g = fin["grounding"]
+    n = len({o["slot"] for o in first} | {nu["slot"]})
+    assert g["plan_items"] == n and g["recited"]["plan_items"] == n, g
+    assert "in the plan's own order" in g["plan_items_basis"] and "nothing is ranked" in g["plan_items_basis"]
+    assert "none is ranked" in g["recited_basis"], g["recited_basis"]
+    #  the grounding the model would be handed carries the same lines, in label form
+    grounding, facts = _ceo._ceo_grounding("what are your priorities", "workstation", None)
+    assert "Plan's open items, quoted as stored, in the plan's own order:\n" + "\n".join(lines) in grounding, grounding[-1200:]
+
+    #  2. cited stays apart from recited
+    assert set(g["cited"]) == {"directives", "objectives"}, g["cited"]
+    c = _ceo._cited(f"- {q(nu)} is first", facts)
+    assert set(c["cited"]) == {"directives", "objectives"} and c["cited"] == {"directives": 0, "objectives": 0}, c
+    reply_only = text.split("\n\n## What the CEO was handed", 1)[0]
+    assert nu["title"][:20] not in reply_only, "a plan item is in the reply itself, so the recital is not apart"
+
+    #  3. the cache: one read for unchanged files, a new one when a file changes
+    calls = []
+    real = _fu.plan_now
+    monkeypatch.setattr(_fu, "plan_now", lambda reg, prompt: (calls.append(1), real(reg, prompt))[1])
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+    a = _ceo._plan_open_items()
+    b = _ceo._plan_open_items()
+    assert len(calls) == 1 and a is b and a["available"], ("the 3 MB register is read again for unchanged files", calls)
+    reg_copy, prompt_copy = tmp_path / "FOLLOWUPS.json", tmp_path / "FABLE_DELIVERY_PROMPT.md"
+    reg_copy.write_bytes(_fu.REGISTER.read_bytes())
+    prompt_copy.write_bytes(_fu.PROMPT.read_bytes())
+    monkeypatch.setattr(_fu, "REGISTER", reg_copy)
+    monkeypatch.setattr(_fu, "PROMPT", prompt_copy)
+    _ceo._plan_open_items()
+    assert len(calls) == 2, "another pair of files was answered from the cache"
+    _ceo._plan_open_items()
+    assert len(calls) == 2
+    prompt_copy.write_bytes(prompt_copy.read_bytes() + b"\n")
+    os.utime(prompt_copy, ns=(prompt_copy.stat().st_atime_ns, prompt_copy.stat().st_mtime_ns + 10_000_000))
+    _ceo._plan_open_items()
+    assert len(calls) == 3, "a changed plan was answered from the cache"
+    #     a hold is said only while the item it names is open, as plan_now decides (the live plan holds no other case)
+    monkeypatch.setattr(_fu, "plan_now", lambda reg, prompt: {
+        "readable": True, "next_unheld": None,
+        "open_items": [{"slot": "P9.1", "title": "W1240 made up", "held_until": "P9.2", "held": False}]})
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+    made = _ceo._plan_open_items()
+    assert made["open_items"] == [{"slot": "P9.1", "title": "W1240 made up", "held_until": None}], made
+    assert _ceo._plan_item_lines(made) == [
+        "- next unheld build item: none (every open build item is held, or none is open)",
+        "- the first 1 of 1 open items:", '- P9.1 "W1240 made up"'], _ceo._plan_item_lines(made)
+
+    #  4. a missing plan doc: unavailable, with its reason, never an empty list
+    monkeypatch.setattr(_fu, "PROMPT", tmp_path / "docs-missing" / "FABLE_DELIVERY_PROMPT.md")
+    gone = _ceo._plan_open_items()
+    assert gone == {"available": False, "reason": "FABLE_DELIVERY_PROMPT.md is not in this server's files"}, gone
+    fr, text = frames("what are your priorities")
+    assert HEAD + "- unavailable: FABLE_DELIVERY_PROMPT.md is not in this server's files\n" in text, text[-600:]
+    assert "next unheld build item" not in text and "open items:" not in text
+    g = fr[-1]["grounding"]
+    assert g["plan_items"] is None and g["recited"]["plan_items"] is None, g
+    assert g["plan_items_basis"] == "unavailable: FABLE_DELIVERY_PROMPT.md is not in this server's files", g
+    monkeypatch.undo()
+    _ceo._PLAN_ITEMS_CACHE.update(key=None, value=None)
+
+    #  5. the chip, the fixture, the docstring
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pg = root / "apps/workstation-superapp/src/pages"
+    chat = _code_only((pg / "CEOChat.tsx").read_text(encoding="utf-8"))
+    assert ("{m.grounding.recited && m.grounding.recited.plan_items !== undefined ? (m.grounding.recited.plan_items === "
+            "null ? ' · the plan\\'s items: unavailable' : ` · the plan's items recited: ${m.grounding.recited.plan_items}`) "
+            ": ''}") in chat
+    assert "m.grounding.recited ?" in chat
+    fx = json.loads((pg / "CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert HEAD in "".join(str(f.get("content") or "") for f in fxf) and fxf[-1]["grounding"]["recited"]["plan_items"] > 0
+    t = (pg / "CEOChat.test.tsx").read_text(encoding="utf-8")
+    assert "  it('recites the plan\\'s open items after the notice, and the chip counts them', async () => {" in t
+    lp = (root / "agentic_core/api/living_plan.py").read_text(encoding="utf-8")
+    doc = lp[lp.index("def get_followups():"):lp.index("from agentic_core import plan_followups as fu", lp.index("def get_followups():"))]
+    assert "not copied into the runtime image" not in " ".join(doc.split()) and "not shipped in the runtime image" not in lp
+    assert "image copies docs/ (the Dockerfile's COPY docs ./docs;" in doc
+    dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+    assert "\nCOPY docs ./docs\n" in dockerfile.replace("\r\n", "\n"), "the image no longer copies docs/: the docstring is false"
+    ignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    assert not any(ln.strip() in ("docs", "docs/", "docs/*", "docs/**") for ln in ignore), "the build context leaves docs/ out"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1241 - the AI CEO asks for an external model and declares what it sends; inert until the Owner turns it on
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1241_the_ceo_asks_for_an_external_model_and_declares_its_class_and_nothing_leaves_while_the_switch_is_off(client, monkeypatch):
+    """W1241. The Owner's rulings of 2026-11-22: the AI CEO on the release machine is to use an external small model
+    with the Owner's own key and a spend cap set at the provider, and the Board's directives and the workstation
+    business plan are copied from the Owner's machine to the release machine's data disk. Held here:
+    1. the one stream_meta call asks for an external model and declares person_entered, a class the platform names
+       and does not bar, so the class check lets it go to either provider;
+    2. with the switch off (as the suite runs) and a key set, no external client is built: the notice answers and
+       says the switch is off;
+    3. with the switch on in this test's environment only and a placeholder key, the provider serves: served_by names
+       it, the reply is its text, and the terminal frame says what was declared and that the check let it go;
+    4. with the switch on and no key, nothing is built and the notice says no provider's key is set;
+    5. a call that may go to an external model recalls no earlier interaction and is handed no minuted C-Suite debate:
+       with the switch on and a key set the gateway's recall is not asked for and the provider is sent no recalled
+       line and no minuted argument, and with the switch off, or no key, the chat recalls and is handed the debate as
+       before (W1241's review and second review);
+    6. the C-Suite meeting the chat calls reads the domain of the entity whose scope the chat answers for: it
+       declares person_entered at each of its six calls for a domain that is not kept, and nothing for religion,
+       care, education or a domain not read (W1241's second review);
+    7. the notice says the Owner has chosen the external way, and the chat's fixture is that answer; the switch is
+       read and never set in the module;
+    8. docs/DEPLOYMENT.md records both rulings in the Owner's words, that turning the switch on stays the Owner's act,
+       that the startup script passes no key or switch yet, and the copy of the two record files to the folder the
+       startup script mounts as the container's /app/data, owned by the image's user, with its check; it names no
+       model and no personal path, and sets no switch."""
+    import json
+    import os
+    import pathlib
+    import re
+    import anthropic as _an
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai.gateway import gateway as _gw
+    from agentic_core.api import board as _board
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api.v138 import ceo as _ceo
+
+    #  1. what the call asks for and declares
+    assert _ceo._CEO_PREFERS_EXTERNAL is True and _ceo._CEO_DATA_CLASS == "person_entered"
+    assert "person_entered" in _dc.CLASSES and "person_entered" not in _dc.BARRED
+    for provider in ("anthropic", "openai"):
+        assert _dc.preflight(provider, _ceo._CEO_DATA_CLASS)["send"] is True, provider
+    src = pathlib.Path(_ceo.__file__).read_text(encoding="utf-8")
+    code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    assert code.count("gateway.stream_meta(") == 1
+    call = code[code.index("gateway.stream_meta("):]
+    call = call[:call.index("\n            if \"token\" in ev:")]
+    assert "prefer_external=_CEO_PREFERS_EXTERNAL," in call and "data_class=_CEO_DATA_CLASS)" in call, call
+    assert "augment=_recall1241," in call, call
+
+    built = []
+    sent = []          # what the provider was sent, each call's messages
+
+    class _FakeStream:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _g():
+                for tk in ("W1241 ", "an external ", "reply."):
+                    yield tk
+            return _g()
+
+        async def get_final_message(self):
+            return None
+
+    class _FakeMessages:
+        def stream(self, *a, **k):
+            sent.append(str(k.get("messages")))
+            return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            built.append(k.get("api_key"))
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+    monkeypatch.setattr(_board, "_load", lambda: [])
+    monkeypatch.setattr(_bp, "_load", lambda scope: {"objectives": []})
+    #  the person's recalled interactions, planted at the gateway's recall, so a call that recalls is seen to (W1241's
+    #  review): the planted line stands for an earlier call's stored prompt, a kept one's among them
+    import importlib
+    _gwm = importlib.import_module("agentic_core.ai.gateway")
+    recalled = []
+    asked_with = []    # the chat's prompt, each time the gateway's recall was asked for
+
+    def _recall(prompt, owner_id=None):
+        recalled.append(owner_id)
+        asked_with.append(prompt)
+        return f"{_gwm.RECALL_OPEN}\n- W1241-PLANTED-RECALL\n{_gwm.RECALL_CLOSE}\n\nUser: {prompt}"
+    monkeypatch.setattr(_gw, "_augment", _recall)
+    #  the C-Suite's minuted debate, planted in the meeting log, so a call handed it is seen to be (W1241's second
+    #  review): the planted argument stands for a kept meeting's minutes, which the log holds for every scope
+    monkeypatch.setattr(_ceo.meeting_log, "log", [{"agent": "CBO", "argument": "W1241-PLANTED-DEBATE", "stance": "",
+                                                   "served_by": "native", "at": "2026-11-27T00:00:00+00:00"}])
+
+    def frames():
+        r = client.post("/api/v138/ceo/chat", json={"message": "Hi", "context": []})
+        assert r.status_code == 200, r.text[:200]
+        fr = [json.loads(ln[6:]) for ln in r.text.splitlines() if ln.startswith("data: ")]
+        return fr, "".join(str(f.get("content") or "") for f in fr)
+
+    #  2. the switch off, a key set: nothing is built
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true", "this guard is run with the switch off"
+    monkeypatch.setattr(_gw, "anthropic_key", "w1241-placeholder-not-a-key")
+    monkeypatch.setattr(_gw, "openai_key", None)
+    fr, text = frames()
+    assert built == [], ("an external client was built with the switch off", built)
+    assert fr[-1]["served_by"] == "native" and fr[-1]["is_external"] is False
+    assert text.startswith("No AI model is connected on this server") and fr[-1]["no_model"]["basis"].endswith(
+        "; the external-AI switch is off"), fr[-1]["no_model"]
+    assert fr[-1]["data_class"]["declared"] == "person_entered" and fr[-1]["data_class"]["checks"] == [], fr[-1]["data_class"]
+    assert recalled, "with the switch off the chat no longer recalls its earlier interactions"
+    assert "W1241-PLANTED-DEBATE" in asked_with[-1], "with the switch off the chat is no longer handed the debate"
+
+    #  3. the switch on, in this test's environment only, and a placeholder key: the provider serves
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    from agentic_core.organism import self_healing as _sh
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)   # no breaker left open by another test
+    recalled.clear()
+    fr, text = frames()
+    fin = fr[-1]
+    assert built == ["w1241-placeholder-not-a-key"], built
+    #  5. a call that may go out recalls nothing, so the provider is sent no earlier interaction
+    assert recalled == [], ("a call that may go to an external model asked for the person's recalled interactions",
+                            recalled)
+    assert sent and "W1241-PLANTED-RECALL" not in sent[-1], "the provider was sent a recalled interaction"
+    #  ... and no minuted argument from the meeting log, which the grounding says it was not handed (second review)
+    assert "W1241-PLANTED-DEBATE" not in sent[-1], "the provider was sent the C-Suite's minuted debate"
+    assert "not handed to a call that may go to an external model" in sent[-1], sent[-1][:400]
+    assert fin["served_by"] == "claude" and fin["is_external"] is True and "no_model" not in fin, fin
+    assert text == "W1241 an external reply.", text
+    assert [f["content"] for f in fr[:-1]] == ["W1241 ", "an external ", "reply."], "the reply is not streamed"
+    assert fin["data_class"]["declared"] == "person_entered" and fin["data_class"]["checks"][0]["provider"] == "anthropic"
+    assert fin["data_class"]["checks"][0]["send"] is True, fin["data_class"]
+    #  4. the switch on and no key: nothing is built, and the notice says why
+    built.clear()
+    monkeypatch.setattr(_gw, "anthropic_key", None)
+    fr, text = frames()
+    assert built == [] and fr[-1]["served_by"] == "native" and text.startswith("No AI model is connected")
+    assert fr[-1]["no_model"]["basis"].endswith(
+        "; the external-AI switch is on; this chat asks for an external model; no provider's key is set"), fr[-1]["no_model"]
+    assert recalled, "with no key set the call cannot go out, and the chat no longer recalls"
+    assert "W1241-PLANTED-DEBATE" in asked_with[-1], "with no key set the chat is no longer handed the debate"
+    monkeypatch.undo()
+    assert os.getenv("AI_ALLOW_EXTERNAL", "false").lower() != "true"
+
+    #  6. the C-Suite meeting the chat calls reads the domain of the entity whose scope it answers for (W1241's second
+    #  review): its six calls declare person_entered for a domain that is not kept, and nothing for one kept or not read
+    import asyncio
+    asked = []
+
+    async def _complete1241(prompt, **kw):
+        asked.append(kw.get("data_class", "not passed"))
+        return {"output": ""}           # nothing is minuted for an officer whose reply came back empty
+    monkeypatch.setattr(_ceo.orchestrator, "complete", _complete1241)
+    agenda = "W1241 made up: should the bakery cooperative buy a third van?"
+    for doms in ([""], ["religion"], ["care"], ["education"], [None]):
+        asyncio.run(_ceo.ToolRegistry().call_meeting(agenda, domains=doms))
+    assert asked == ["person_entered"] * 6 + [None] * 24, asked
+    assert 'tool_registry.call_tool("call_meeting", agenda=prompt, domains=[_scope_domain(scope)])' in code, (
+        "the chat calls the C-Suite meeting without the domain of the entity whose scope it answers for")
+    monkeypatch.undo()
+
+    #  7. the notice, and the switch never set in the module
+    assert ("The Owner has chosen the second (2026-11-22): this chat asks for an external model, and the gateway "
+            "tries one once the Owner's key is set and the Owner turns the switch on.") in _ceo._no_model_notice({}, False)
+    for setter in ('environ["AI_ALLOW_EXTERNAL"]', "environ['AI_ALLOW_EXTERNAL']", 'setenv("AI_ALLOW_EXTERNAL"',
+                   "putenv(", "AI_ALLOW_EXTERNAL="):
+        assert setter not in src, setter
+
+    #  the chat's fixture is the patched route's answer
+    root = pathlib.Path(__file__).resolve().parents[1]
+    fx = json.loads((root / "apps/workstation-superapp/src/pages/CEOChat.fixture.json").read_text(encoding="utf-8"))
+    fxf = [json.loads(ln[6:]) for ln in fx["stream"].splitlines() if ln.startswith("data: ")]
+    assert "The Owner has chosen the second (2026-11-22)" in "".join(str(f.get("content") or "") for f in fxf)
+    assert fxf[-1]["data_class"]["declared"] == "person_entered", fxf[-1].get("data_class")
+
+    #  8. docs/DEPLOYMENT.md
+    dep =(root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    head = ("## The AI CEO on the release machine: its model and its records (the Owner's rulings of 2026-11-22)\n")
+    assert dep.count(head) == 1 and dep.index("## AI posture") < dep.index(head) < dep.index("## Backend (Render)\n")
+    sec = dep[dep.index(head):dep.index("## Backend (Render)\n")]
+    flat = " ".join(sec.split())
+    for need in ('the Owner answered in chat: "I want to go with your recommendations"',
+                 "**The model (OWNER RULING 2026-11-22).** The AI CEO is to use an external small model, with the "
+                 "Owner's own key and a spend cap the Owner sets at the provider.",
+                 "A call that carries a record of the religion, care or education domain, or text the "
+                 "religious-content screen flags, declares nothing and stays on the platform whatever the switch says",
+                 "The C-Suite meeting the chat calls, on a question that names a meeting or a debate, hands each of its "
+                 "six officers that question and no record; it declares nothing in the chat of an entity of those "
+                 "domains, or on a question the screen flags, as that chat's own call does, and each of its calls that "
+                 "may go out takes the class check and the hourly cap.",
+                 "A call that may go to an external model carries no recalled interaction. The chat recalls earlier "
+                 "interactions only while its call cannot go out (the switch off, no provider's key set, or nothing "
+                 "declared)",
+                 "Nor is such a call handed the C-Suite's minuted debate: the chat is handed it only while the switch "
+                 "is off or no provider's key is set",
+                 "The switch is off by default, and nothing in this repository turns it on. Turning it on is the "
+                 "Owner's act,",
+                 "NOT BUILT: `deploy/gcp/startup.sh` starts the platform with neither a provider's key nor the switch "
+                 "in its environment",
+                 "**The records (OWNER RULING 2026-11-22).**",
+                 "gcloud compute scp data/board_directives.json data/business_plans/workstation.json workstation:/tmp/ "
+                 "\\ --zone=us-central1-a",
+                 "sudo cp /tmp/board_directives.json /mnt/disks/data/board_directives.json",
+                 "sudo cp /tmp/workstation.json /mnt/disks/data/business_plans/workstation.json",
+                 "sudo chown 1000:1000 /mnt/disks/data/board_directives.json /mnt/disks/data/business_plans \\ "
+                 "/mnt/disks/data/business_plans/workstation.json",
+                 "docker restart workstation",
+                 'sudo cp -a "/mnt/disks/data/$f" "/mnt/disks/data/$f.before-copy"',
+                 "THE CHECK: open the AI CEO chat and ask anything. The chip under the reply reads \"handed N "
+                 "directives · M objectives\""):
+        assert need in flat, need
+    st = (root / "deploy/gcp/startup.sh").read_text(encoding="utf-8")
+    assert 'MNT="${WORKSTATION_MNT:-/mnt/disks/data}"' in st and '--volume="$MNT":/app/data' in st, (
+        "the startup script mounts the data disk elsewhere now: the copy step names the wrong folder")
+    assert 'chown 1000:1000 "$MNT"' in st, "the image's user is no longer uid 1000 in the startup script"
+    assert "ANTHROPIC_API_KEY" not in st and "AI_ALLOW_EXTERNAL" not in st, (
+        "the startup script now passes a key or the switch: the NOT BUILT line is false")
+    assert "data_path(\"board_directives.json\")" in (root / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    assert "data_path(\"business_plans\")" in (root / "agentic_core/api/business_plan.py").read_text(encoding="utf-8")
+    for no in ("AI_ALLOW_EXTERNAL=", "/home/", "C:\\", "Users/", "~/"):
+        assert no not in sec, ("the section sets the switch or names a personal path", no)
+    assert not re.search(r"(?i)\b(claude-|gpt-|sonnet|haiku|opus)", sec), "the section names a model"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242 - OWNER RULING 2026-11-22: with the switch on and no in-house model reachable, a declared AI call tries the
+#  external provider before the floor, on the query and the stream path; and the Genesis journey declares its class
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242_with_the_switch_on_and_no_in_house_model_a_declared_call_tries_the_external_before_the_floor(
+        client, monkeypatch):
+    """W1242. The Owner wrote on 2026-11-22, in chat, after the recommendations were put: "I want to go with all your
+    recommendations". It amends the ruling of 2026-11-06 (W755, FU-1124, option (a)), under which a caller had to pass
+    prefer_external and no product journey did. Driven IN THIS PROCESS ONLY: the Owner's switch is read through
+    model_resource.external_allowed, which this test replaces (it never sets AI_ALLOW_EXTERNAL); the key is a
+    placeholder in this test's environment; the provider is a fake client that records every call, so nothing is sent
+    anywhere. Held here:
+    1. with the switch off nothing external is attempted, on either path, a declared call with a key set included;
+    2. with the switch on and the local model disabled, a declared call that does not ask reaches the provider on the
+       stream and the query path; an undeclared call does not, nor does a barred class (the legal matter), each kept
+       on the floor with the check's reason; the hourly cap still bounds it; and with no key set nothing is sent;
+    3. with a local model up, it is used first on both paths, and when it fails the floor answers, not the provider;
+       with every local model's breaker open, or the local runtime not answering with a model, none is reachable,
+       and a declared call goes out on both paths;
+    4. the Genesis journey declares person_entered, except the religion, care and education domains and a problem
+       the religious subject screen flags; a declared journey reaches the provider, a kept one does not and says why,
+       and a journey every call of which was floor-served says, in plain words, that no model answered, what was
+       saved and how a model is added; the routes' decorator and the establish stream's wrapper put the class in
+       force where the calls run;
+    5. the dated OWNER RULING 2026-11-22 notes are where the 2026-11-06 ruling is recorded, the old words kept, and
+       test_w755 says why it changed; nothing in the three files sets the switch."""
+    import asyncio
+    import importlib
+    import pathlib
+    import sys
+    import time
+    import types
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai import gateway as _g
+    from agentic_core.api import genesis as _gen
+    from agentic_core.organism.self_healing import self_healer as _sh
+    _o = importlib.import_module("agentic_core.ai.native.orchestrator")     # the MODULE (W734's note)
+    _mr = importlib.import_module("agentic_core.ai.native.model_resource")
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sent = []
+
+    class _Stream:
+        def __init__(self, **kw):
+            sent.append("stream")
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen1():
+                for t in ("w1242 ", "external ", "reply."):
+                    yield t
+            return _gen1()
+
+        async def get_final_message(self):
+            return types.SimpleNamespace(usage=None)
+
+    class _Messages:
+        async def create(self, **kw):
+            sent.append("query")
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="w1242 external reply.")], usage=None)
+
+        def stream(self, **kw):
+            return _Stream(**kw)
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+    fa = types.ModuleType("anthropic")
+    fa.AsyncAnthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    switch = {"on": False}
+    monkeypatch.setattr(_mr, "external_allowed", lambda: switch["on"])      # the Owner's switch, never set here
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242-placeholder-not-a-key")   # this test's environment only
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    monkeypatch.setattr(_o.NativeOrchestrator, "_external_calls", [])
+    monkeypatch.setattr(_o, "_reorder_by_health", lambda order: order)    # no earlier record decides the order
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_sh, "record_failure", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_sh, "record_success", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242-placeholder-not-a-key")
+    monkeypatch.setattr(_g.gateway, "openai_key", None)
+
+    def stream(**kw):
+        async def _go():
+            return [ev async for ev in _g.gateway.stream_meta("w1242: name one risk", agent="w1242", **kw)]
+        return asyncio.run(_go())[-1]
+
+    _real_complete, _seen = _o.orchestrator.complete, []
+
+    async def _spy(prompt, **kw):                  # what the orchestrator tried, which query_meta does not return
+        _r = await _real_complete(prompt, **kw)
+        _seen.append(_r)
+        return _r
+    monkeypatch.setattr(_o.orchestrator, "complete", _spy)
+
+    def query(cls):
+        async def _go():
+            with _dc.declared(cls):
+                return await _g.gateway.query_meta("w1242: name one risk", agent="w1242")
+        _seen.clear()
+        _m = asyncio.run(_go())
+        assert len(_seen) == 1, ("the query did not reach the orchestrator once", len(_seen))
+        return {**_m, "resources_tried": _seen[0].get("resources_tried")}
+
+    #  1. THE SWITCH OFF: nothing external is attempted, a declared call with a key set included
+    s0, q0 = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s0["served_by"] == "native" and q0["served_by"] == "native", (sent, s0["served_by"], q0)
+    assert not any(t.startswith(("anthropic", "openai")) for t in q0.get("resources_tried") or []), q0
+    assert s0["data_class"]["external"] == "not attempted" and not s0["data_class"]["checks"], s0["data_class"]
+
+    #  2. THE SWITCH ON, the local model disabled: a declared call that does not ask goes out, on both paths
+    switch["on"] = True
+    s1 = stream(data_class="person_entered")
+    assert sent == ["stream"] and s1["served_by"] == "claude" and s1["is_external"] is True, (sent, s1["served_by"])
+    assert s1["data_class"]["declared"] == "person_entered" and s1["data_class"]["external"] == "sent", s1["data_class"]
+    q1 = query("person_entered")
+    assert sent == ["stream", "query"] and q1["served_by"] == "anthropic" and q1["is_external"] is True, (sent, q1)
+    #    an undeclared call does not, nor does a barred class; each is kept on the floor with the check's reason
+    sent.clear()
+    s2, q2 = stream(), query(None)
+    assert sent == [] and s2["served_by"] == "native" and q2["served_by"] == "native", (sent, s2["served_by"], q2)
+    assert "declared no data class" in s2["data_class"]["checks"][0]["why"], s2["data_class"]
+    assert any(t.startswith("anthropic (not sent: the call declared no data class") for t in q2["resources_tried"]), (
+        q2["resources_tried"])
+    s3, q3 = stream(data_class="legal_matter"), query("legal_matter")
+    assert sent == [] and s3["served_by"] == "native" and q3["served_by"] == "native", (sent, s3["served_by"], q3)
+    assert "2026-10-03c" in s3["data_class"]["checks"][0]["why"], s3["data_class"]
+    assert any("2026-10-03c" in t for t in q3["resources_tried"]), q3["resources_tried"]
+    #    the hourly cap still bounds it: a full window sends nothing, and the floor answers
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
+    _o.NativeOrchestrator._external_calls = [time.time()]
+    s4, q4 = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s4["served_by"] == "native" and q4["served_by"] == "native", (sent, s4["served_by"], q4)
+    assert any("hourly external budget reached (1/hour)" in t for t in q4["resources_tried"]), q4["resources_tried"]
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    _o.NativeOrchestrator._external_calls = []
+    #    no key set: nothing is sent on either path, the switch on and the class declared
+    monkeypatch.setattr(_g.gateway, "anthropic_key", None)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    s4k, q4k = stream(data_class="person_entered"), query("person_entered")
+    assert sent == [] and s4k["served_by"] == "native" and q4k["served_by"] == "native", (sent, s4k["served_by"], q4k)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242-placeholder-not-a-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242-placeholder-not-a-key")
+
+    #  3. A LOCAL MODEL UP is used first on both paths; when it fails, the floor answers and not the provider
+    _real = (_mr.ollama_up, _mr.local_models, _o.NativeOrchestrator._run_model, _g.ModelGateway._stream_owned_model)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    local = {"ok": True}
+
+    async def _run_model(self, name, prompt, **_k):
+        if name.startswith("ollama"):
+            if not local["ok"]:
+                raise TimeoutError("w1242: the local model timed out")
+            return "w1242 local answer"
+        sent.append(f"query:{name}")
+        return "w1242 external reply."
+    monkeypatch.setattr(_o.NativeOrchestrator, "_run_model", _run_model)
+
+    async def _owned(self, augmented, **_k):
+        if not local["ok"]:
+            raise RuntimeError("w1242: the local model is down")
+        for t in ("w1242 ", "local ", "answer."):
+            yield t
+    monkeypatch.setattr(_g.ModelGateway, "_stream_owned_model", _owned)
+    assert _g.in_house_reachable() is True
+    q5, s5 = query("person_entered"), stream(data_class="person_entered")
+    assert q5["served_by"] == "ollama" and q5["resources_tried"][0] == "ollama", q5
+    assert s5["served_by"].startswith("ollama") and sent == [], (s5["served_by"], sent)
+    local["ok"] = False
+    q6, s6 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == [] and q6["served_by"] == "native" and s6["served_by"] == "native", (sent, q6, s6["served_by"])
+    assert q6["resources_tried"] == ["ollama", "native"], q6["resources_tried"]
+    #    every local model's breaker open: none is reachable, so a declared call goes out on both paths
+    local["ok"] = True
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: endpoint == "ollama")
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: name == "ollama" or name.startswith("ollama:"))
+    assert _g.in_house_reachable() is False
+    q7, s7 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == ["query:anthropic", "stream"] and q7["served_by"] == "anthropic" and s7["served_by"] == "claude", (
+        sent, q7["resources_tried"], s7["served_by"])
+    sent.clear()
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    #    the local runtime not answering with a model, the local model not turned off and no breaker open (a server
+    #    with no local model installed): none is reachable, so a declared call goes out on both paths, the stream's
+    #    after its local attempt fails
+    monkeypatch.setattr(_mr, "ollama_up", lambda: False)
+    local["ok"] = False
+    assert _g.in_house_reachable() is False, "a local runtime that does not answer was counted as reachable"
+    q8, s8 = query("person_entered"), stream(data_class="person_entered")
+    assert sent == ["query:anthropic", "stream"] and q8["served_by"] == "anthropic" and s8["served_by"] == "claude", (
+        sent, q8["resources_tried"], s8["served_by"])
+    sent.clear()
+    #    the orchestrator's own ordering, read directly: externals move before the floor only with no local model
+    assert _o._external_before_floor(["native", "anthropic", "openai"]) == ["anthropic", "openai", "native"]
+    assert _o._external_before_floor(["ollama", "native", "anthropic"]) == ["ollama", "native", "anthropic"]
+    #    the local model off again, and the real resources back, for the journeys below
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    for _obj, _name, _was in ((_mr, "ollama_up", _real[0]), (_mr, "local_models", _real[1]),
+                              (_o.NativeOrchestrator, "_run_model", _real[2]),
+                              (_g.ModelGateway, "_stream_owned_model", _real[3])):
+        monkeypatch.setattr(_obj, _name, _was)
+
+    #  4. GENESIS declares what it carries, and says what a floor-served journey left
+    for dom, cls in (("science", "person_entered"), ("law", "person_entered"), ("employment", "person_entered"),
+                     ("religion", None), ("care", None), ("education", None)):
+        jc = _gen.journey_data_class(dom, "w1242: a delivery van for a bakery cooperative")
+        assert jc["data_class"] == cls and jc["may_leave"] is (cls is not None), (dom, jc)
+    assert "religious content is not sent outside the platform" in _gen.journey_data_class("religion", "x")["basis"]
+    assert "children's data" in _gen.journey_data_class("education", "x")["basis"]
+    _fl = _gen.journey_data_class("science", "w1242: an app for Quran memorisation classes")
+    assert _fl["data_class"] is None and "quran" in _fl["basis"], _fl
+
+    def journey(domain, problem):
+        r = client.post("/api/v1/genesis/journey", json={"problem": problem, "domain": domain})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+    sent.clear()
+    switch["on"] = True
+    jd = journey("science", "w1242: a delivery van rota for a bakery cooperative")
+    assert sent and set(sent) == {"query"}, ("a declared journey did not reach the provider", sent)
+    assert jd["ai_provenance"]["served_by"].get("anthropic", 0) >= 1 and jd["no_model"] is None, (
+        jd["ai_provenance"]["served_by"], jd["no_model"])
+    assert jd["external_ai"]["data_class"] == "person_entered", jd["external_ai"]
+    sent.clear()
+    jr = journey("religion", "w1242: a weekly study circle for a mosque")
+    assert sent == [] and set(jr["ai_provenance"]["served_by"]) == {"native"}, (sent, jr["ai_provenance"]["served_by"])
+    nm = jr["no_model"]
+    assert nm["said"].startswith("No AI model can be used for this journey: no local model is running, and this "
+                                 "journey's content is not sent to the external model set up on this server."), nm
+    assert nm["how"] == ("Adding a model is the Owner's decision. A local model run on this server would be used for "
+                         "this journey. An external model would not: " + jr["external_ai"]["basis"] + "."), nm
+    switch["on"] = False
+    jf = journey("science", "w1242: a delivery van rota for a bakery cooperative")
+    nf = jf["no_model"]
+    assert sent == [] and nf["said"] == ("No AI model is connected, so these steps could not write anything. What each "
+                                         "step shows below is a fallback that repeats your own words under its "
+                                         "headings."), nf
+    assert nf["saved"].startswith("What was saved: no entity was registered, because establishing one was not asked "
+                                  "for"), nf
+    assert nf["how"].startswith("Adding a model is the Owner's decision.") and "external-AI switch on" in nf["how"], nf
+    assert nf["all_calls_floor_served"] == jf["ai_provenance"]["served_by"]["native"], nf
+    #    the three routes declare it: the journey and the establish route by their decorator, the stream where it runs
+    gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert gsrc.count("\n@_declares_journey_class ") == 2 and (
+        '@router.post("/journey")\n@_declares_journey_class ' in gsrc
+        and '@router.post("/establish")\n@_declares_journey_class ' in gsrc), "a route runs its calls undeclared"
+    assert "StreamingResponse(_within_class(_stream(), journey_data_class(req.domain, req.problem)[\"data_class\"])," in gsrc
+    #    and the class is in force where the calls run: inside the decorated route, and inside the stream's body
+
+    async def _route_probe(req, user=None):
+        return _dc.current()
+    _probe = _gen._declares_journey_class(_route_probe)
+    assert asyncio.run(_probe(types.SimpleNamespace(domain="science", problem="w1242: a van rota"))) == "person_entered"
+    assert asyncio.run(_probe(req=types.SimpleNamespace(domain="care", problem="w1242: a van rota"))) is None
+
+    async def _stream_probe():
+        yield _dc.current()
+
+    async def _drain(agen):
+        return [x async for x in agen]
+    assert asyncio.run(_drain(_gen._within_class(_stream_probe(), "person_entered"))) == ["person_entered"]
+    assert asyncio.run(_drain(_gen._within_class(_stream_probe(), None))) == [None] and _dc.current() is None
+
+    #  5. THE RECORDS: the dated notes where the 2026-11-06 ruling is recorded, the old words kept
+    gw = (root / "agentic_core/ai/gateway.py").read_text(encoding="utf-8")
+    assert "OWNER RULING 2026-11-22 (W1242): the Owner wrote, in chat" in gw and "I want to go\n    with all your" in gw
+    assert ('"2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the\n    caller asks '
+            '(prefer_external)') in gw, "the 2026-11-06 words are not kept in the class docstring"
+    assert "OWNER RULING 2026-11-22 (W1242) amends it" in gw and "a caller must also ask (prefer_external)" in gw
+    assert "if _switch1242 and (prefer_external or _no_in_house1242):" in gw
+    fab = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _at = fab.index("    · FU-1124: option (a), the in-house-first order.")
+    assert fab.index("OWNER RULING 2026-11-22 (W1242), amending this one") - _at < 900, "the plan's note is not at FU-1124"
+    import json
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in reg["items"]}
+    assert "OWNER RULING 2026-11-22 (W1242)" in rows["FU-1124"]["note"] and rows["FU-1124"]["close_note"].startswith(
+        "Owner ruling 2026-11-06 option (a)"), rows["FU-1124"]
+    titles = [r["title"] for r in reg["items"] if "W1242" in str(r.get("source"))]
+    #  CHANGED ON PURPOSE by W1242c (2026-11-27): its own row, the saved profile the gateway puts before every prompt
+    #  (source "W1242c (its review of 2026-11-27)"), is a fifth row whose source names W1242
+    assert len(titles) == 5 and sum("says no plain no-model notice" in t for t in titles) == 3, titles
+    assert sum(t.startswith("The saved profile the gateway puts before every prompt") for t in titles) == 1, titles
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    w755 = spine[spine.index("\ndef test_w755_fu1124_a_stream_reaches_an_external_only_when_asked("):]
+    w755 = w755[:w755.index("\ndef ", 10)]
+    assert "CHANGED ON PURPOSE by W1242, citing the OWNER RULING of 2026-11-22" in w755
+    assert '_declared = _run(data_class="person_entered")' in w755
+    _setter = "setenv(" + '"AI_ALLOW_' + 'EXTERNAL"'
+    for rel in ("agentic_core/ai/gateway.py", "agentic_core/ai/native/orchestrator.py", "agentic_core/api/genesis.py"):
+        _t = (root / rel).read_text(encoding="utf-8")
+        assert _setter not in _t and 'environ["AI_ALLOW_' + 'EXTERNAL"] =' not in _t, (rel, "sets the Owner's switch")
+    mine = spine[spine.index("\ndef test_w1242_"):]
+    assert _setter not in mine, "this guard sets the Owner's switch"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242b - the Genesis page says first, in plain words, that no model answered; the fallback's frames are folded;
+#  the technical labels sit in closed disclosures
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242b_genesis_says_first_that_no_model_answered_and_folds_what_the_fallback_produced(client):
+    """W1242b (the Owner's ruling of 2026-11-22, its second part). The Owner's genesis attempt of 2026-11-22 had all 14
+    calls floor-served, and the page printed six identical word-count lists under every lens and stage, with the
+    technical labels above them. Held here:
+    1. the page draws the route's no_model, its three sentences each in its own element, at the top of the result,
+       and draws nothing of it when the answer carries none;
+    2. every stage text the page prints (phase 1's three sections, design, develop, commercialisation, research and
+       operations) passes through the one fold, which opens on its own toggle per heading and is inert when nothing
+       is to be folded;
+    3. the technical labels are kept whole and sit inside a details disclosure: each rail tile's reason, the served and
+       stage-checks cards, the rank stage's method and measures, the completion card's calls, gate and chips;
+    4. the rendered test drives the notice, the fold and the disclosures, and the captured journey carries the
+       live route's no_model, field for field."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis"
+    page = (src / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    t = (src / "GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    #  1. the notice: first in the result, the route's own words, and only when the route gave it
+    res = page[page.index("      {/* Result */}\n      {result && (\n        <div className=\"space-y-4\">\n"):]
+    first = res[:res.index("{result.product_source && (")]
+    #  CHANGED ON PURPOSE by W1242c: the notice is the establishment's once an entity is established, the journey's before
+    assert "{notice && (" in first, "the no-model notice is not the first thing in the result"
+    assert "  const notice = vsb && 'no_model' in vsb ? vsb.no_model : result?.no_model;\n" in page
+    for k in ("said", "saved", "how"):
+        assert f'data-testid="genesis-no-model-{k}"' in first and f"{{notice.{k}}}</p>" in first, k
+    assert "  no_model?: { said: string; saved: string; how: string; all_calls_floor_served?: number } | null;" in page
+    #  2. the fold: one component, every stage text through it, inert without no_model
+    assert "  const fold = !!result?.no_model;\n" in page
+    assert page.count("fold={fold}") == 10 and page.count("<PlainText text={") == 5 and page.count("<Section icon={") == 3
+    assert len(re.findall(r"<PlainText text=\{[^}]+\} fold=\{fold\} />", page)) == 5
+    fold = page[page.index("const FloorFold: React.FC"):page.index("const PlainText: React.FC")]
+    assert "  if (!fold) return <>{children}</>;" in fold and "{shown && <div data-testid=\"floor-fold-text\"" in fold
+    assert "'Show what the fallback produced'" in fold and "useState(false)" in fold
+    for comp in ("const PlainText: React.FC", "const Section: React.FC"):
+        body = page[page.index(comp):]
+        body = body[:body.index("\n);") + 3]
+        assert "<FloorFold fold={fold}>" in body and "whitespace-pre-wrap\">{text}</p>" in body, comp
+    #  3. the technical labels, each word kept, inside a disclosure
+    def inside_details(marker):
+        at = page.index(marker)
+        return page.rfind("<details", 0, at) > page.rfind("</details>", 0, at)
+    for marker in ("data-testid={`rail-why-${i + 1}`}", "What served this journey", "Stage checks — coverage and structure",
+                   "{result.stage_5_model_simulate_rank.method}</p>", "{result.stage_5_model_simulate_rank.honesty}</p>",
+                   "Not measured at selection time:", 'data-testid="journey-engines-basis"', 'data-testid="engines-used-basis"',
+                   'data-testid="journey-intent-gate"', "checkpoint {result.governance.checkpoint ?? '—'}",
+                   "qmsChip(result.quality_assurance.quality, 'Living-QMS gate:')"):
+        assert page.count(marker) == 1 and inside_details(marker), ("a technical label is not in a disclosure", marker)
+    for marker in ('data-testid="genesis-no-model"', 'data-testid="rank-not-alternatives"', 'data-testid={`rail-state-${i + 1}`}',
+                   'data-testid="journey-complete-heading"'):
+        assert not inside_details(marker), ("a plain label was moved into a disclosure", marker)
+    #  an `open` attribute anywhere in a disclosure's tag (bare, or open={true}), not only straight after `<details`
+    assert not re.search(r"<details\b[^>]*\sopen(?:=\{true\})?[\s/>]", page), "a disclosure opens itself"
+    #  4. the rendered test, and the captured journey against the live route
+    for name in ("a journey no model answered says so first, in plain words, and folds what the fallback produced",
+                 "a journey a model answered shows no notice and folds nothing"):
+        assert t.count(f"  it('{name}', async () => {{") == 1, name
+    assert "expect(screen.queryAllByTestId('floor-fold-text')).toHaveLength(0);" in t
+    assert "expect(d?.open).toBe(false);" in t
+    #  the served and checks cards and the rank stage's two disclosures are read closed too, not only the rail and the calls
+    assert "for (const id of ['rail-why-1', 'genesis-technical-details', 'rank-method-details', 'rank-measured-details'," in t
+    fx = json.loads((src / "GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    live = client.post("/api/v1/genesis/journey", json=fx["request"])
+    assert live.status_code == 200, live.text[:300]
+    nm, cap = live.json()["no_model"], fx["journey"]["no_model"]
+    assert nm and cap and set(cap) == set(nm), (cap, nm)
+    for k in sorted(nm):
+        assert cap[k] == nm[k], (k, cap[k], nm[k])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1242c - religious content under any domain stays on the platform; the two-step establish says when no model
+#  answered; the Native AI status says what serves next by what a call declares
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1242c_religious_content_stays_in_under_any_domain_and_the_status_says_what_serves_next(client, monkeypatch):
+    """W1242c, after W1242 and W1242b (the Owner's ruling of 2026-11-22). Held here:
+    1. the screen for an external call flags the Owner's own genesis attempt of 2026-11-22 under every domain, each
+       term the brief named in its usual spellings, and Arabic-script text; it flags none of the near misses, which are
+       declared person_entered; the curriculum screen is not widened by it; and a flagged journey still runs, on the
+       platform, with nothing sent and the reason said;
+    1b. the same attempt in English (the name of God), letters with marks over or under them, the one-word spellings
+       and the religious-ruling screen's faith terms are flagged too; Arabic script is shown with plain abjad letters;
+    2. the two-step establish, blocking and streamed, carries the no-model notice naming the entity it registered,
+       read from the platform's own record of the journey; an establishment whose journey a model answered carries none;
+    2b. with the switch on, nothing is declared for: an establishment whose concept (or name, design, research...)
+       the screen flags, on both paths, its notice saying why; the native-AI console's completion, swarm and tree; the
+       resource fabric's composition run, ad-hoc cascade and orchestrator stage; a care entity's own cascade, by its
+       domain; each answer says why. The same calls with plain text, and a science entity's cascade, go out, so the
+       screen and the domain are what keep them in. The AI CEO's class reads this screen; the saved profile the
+       gateway adds is registered as a row;
+    3. the status says what serves next by what a call declares: with the switch on (replaced here, never set), a
+       placeholder key and no local model, a declared call's is the external provider and an undeclared call's the
+       floor, while active_model and is_real_model, which the form tools' sentence reads, stay the floor's; a full
+       hourly cap or the switch off gives the floor; a local model up is next for both;
+    4. the two pages print what the routes say, and their captured answers are the live routes'."""
+    import asyncio
+    import importlib
+    import json
+    import pathlib
+    import sys
+    import time
+    import types
+    from agentic_core.api import genesis as _gen
+    from agentic_core.religious_domain import subject_screen as _ss
+    from agentic_core.taxonomy import DOMAINS
+    _o = importlib.import_module("agentic_core.ai.native.orchestrator")     # the MODULE (W734's note)
+    _mr = importlib.import_module("agentic_core.ai.native.model_resource")
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    #  4 (first, before anything is replaced). THE CAPTURED ANSWERS ARE THE LIVE ROUTES'
+    nfx = json.loads((src / "pages/developers/NativeAI.fixture.json").read_text(encoding="utf-8"))
+    live_next = client.get("/api/v1/native-ai/status").json()["next_to_serve"]
+    cap_next = nfx["answers"]["/api/v1/native-ai/status"]["body"]["next_to_serve"]
+    assert {k: cap_next[k] for k in ("declared_class", "no_class", "basis")} == {
+        k: live_next[k] for k in ("declared_class", "no_class", "basis")}, (cap_next, live_next)
+    gfx = json.loads((src / "pages/synthesis/GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    est_cap = gfx["establish"]
+
+    #  1. THE SCREEN. The Owner's attempt of 2026-11-22, as its page showed it: the subject and the fallback's word list
+    attempt = ("Subject: AI mediated Working to seek love and pleasure of Allah SWT (domain: religion).\n"
+               "- mediated working\n- pleasure allah\n- working seek\n- seek love\n- allah swt")
+    for dom in tuple(DOMAINS) + ("enterprise", ""):
+        jc = _gen.journey_data_class(dom, attempt)
+        assert jc["data_class"] is None and jc["may_leave"] is False, ("the Owner's attempt may leave under", dom, jc)
+    assert "names religious content (allah)" in _gen.journey_data_class("science", attempt)["basis"]
+    #    the same attempt in English names God: kept in under every domain too (the religious-ruling screen's terms)
+    attempt_en = attempt.replace("Allah SWT", "God").replace("allah", "god")
+    for dom in tuple(DOMAINS) + ("enterprise", ""):
+        assert _gen.journey_data_class(dom, attempt_en)["data_class"] is None, ("the attempt in English may leave", dom)
+    assert "names religious content (god)" in _gen.journey_data_class("science", attempt_en)["basis"]
+    for text, term in (("All\u0101h's mercy", "allah"), ("the Qur\u02be\u0101n and its tafs\u012br", "qur'an"),
+                       ("\u1e24ad\u012bth for children", "hadith"), ("InshaAllah we open in May", "inshaallah"),
+                       ("a zakat calculator", "zakat"), ("prayer times on the shop screen", "prayer"),
+                       ("a Ramadan meal box", "ramadan"), ("a theology reading group", "theology"),
+                       ("prayer reminders for salah", "salah"), ("a salat timetable", "salat"),
+                       ("a du'a journal", "du'a"), ("a du’a journal", "du'a"), ("duaa cards", "duaa"),
+                       ("Quran study notes", "quran"), ("Qur'an study notes", "qur'an"), ("Qur’an circle", "qur'an"),
+                       ("Koran translations", "koran"), ("Quranic Arabic classes", "quranic"),
+                       ("a surah of the week", "surah"), ("an ayah a day", "ayah"), ("ayat on the wall", "ayat"),
+                       ("hadiths for children", "hadith"), ("a hadeeth reader", "hadeeth"), ("sunnah foods", "sunnah"),
+                       ("tafsir notes", "tafsir"), ("tafseer notes", "tafseer"), ("tajwid lessons", "tajwid"),
+                       ("tajweed lessons", "tajweed"), ("the fiqh of trade", "fiqh"), ("a fatwa archive", "fatwa"),
+                       ("fatawa on loans", "fatawa"), ("inshallah we open in May", "inshallah"),
+                       ("the Islamic calendar", "islamic"), ("a sharia board", "sharia"),
+                       ("the pleasure of Allaah", "allaah"), ("Subhanahu wa Ta'ala", "subhanahu"),
+                       ("Allah Subhanahu wa Ta’ala", "ta'ala"), ("a Bible study group's rota", "bible"),
+                       ("Torah portion reminders", "torah"), ("a psalm for each week", "psalm")):
+        r = _ss.screen_religious_content(text)
+        assert r["flagged"] is True and term in r["matched"], (text, term, r)
+    #    Arabic script, whatever it says: four plain abjad letters stand in, and no scripture is typed here
+    _abjad = chr(0x627) + chr(0x628) + chr(0x62C) + chr(0x62F)
+    ar = _ss.screen_religious_content("a sign that reads " + _abjad)
+    assert ar["flagged"] is True and ar["arabic_script"] is True and "Arabic-script" in ar["names"], ar
+    near = ("Arabic script tutoring for adults", "Allahabad mango exporters", "Islamabad courier service",
+            "a salad bar for office workers", "dual-fuel boiler servicing", "a Salahuddin Road bakery",
+            "Surat textile exporters", "a halal butcher's delivery rota", "a fatigue study for night nurses",
+            "ayahuasca research summaries", "a sundial makers' cooperative", "Godalming furniture removals",
+            "an intermittent fasting meal planner", "a religious discrimination claim at work",
+            "an eID card reader for a council", "a Church Road bakery's rota", "Biblio bookshop stock counts")
+    for text in near:
+        r = _ss.screen_religious_content(text)
+        assert r["flagged"] is False and r["matched"] == [], ("a near miss was flagged", text, r)
+        assert _gen.journey_data_class("science", text)["data_class"] == "person_entered", text
+    #    the curriculum screen, which refuses, is not widened: it still does not hold the name of God
+    assert _ss.screen_subject(attempt)["flagged"] is False, "the curriculum screen was widened"
+    assert set(_ss.RELIGIOUS_SUBJECT_TERMS) <= set(_ss.RELIGIOUS_CONTENT_TERMS)
+    ssrc = (root / "agentic_core/religious_domain/subject_screen.py").read_text(encoding="utf-8")
+    assert "#  WHERE THE LIST CAME FROM:" in ssrc and "no scholar has reviewed them" in ssrc
+    assert "screen_religious_content(problem)" in (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    #    a flagged journey still runs, on the platform: switch on, a placeholder key, a fake client that records calls
+    sent = []
+
+    class _Messages:
+        async def create(self, **kw):
+            sent.append("query")
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="w1242c external reply.")], usage=None)
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+    fa = types.ModuleType("anthropic")
+    fa.AsyncAnthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    switch = {"on": True}
+    monkeypatch.setattr(_mr, "external_allowed", lambda: switch["on"])     # the Owner's switch, never set here
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w1242c-placeholder-not-a-key")   # this test's environment only
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    monkeypatch.setattr(_o.NativeOrchestrator, "_external_calls", [])
+    monkeypatch.setattr(_o, "_reorder_by_health", lambda order: order)
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    r = client.post("/api/v1/genesis/journey", json={"problem": attempt, "domain": "science"})
+    assert r.status_code == 200, r.text[:300]
+    jf = r.json()
+    assert sent == [] and set(jf["ai_provenance"]["served_by"]) == {"native"}, (sent, jf["ai_provenance"]["served_by"])
+    assert jf["external_ai"]["data_class"] is None and "names religious content (allah)" in jf["no_model"]["how"], jf
+
+    #  2. THE TWO-STEP ESTABLISH carries the notice, naming the entity, from the journey's own record
+    switch["on"] = False
+    j = client.post("/api/v1/genesis/journey", json={"problem": "w1242c: a tool library's loans and returns",
+                                                     "domain": "science"}).json()
+    body = {"problem": "w1242c: a tool library's loans and returns", "domain": "science", "realm": "enterprise",
+            "concept": j["phase_1_conceptualisation"]["concept"], "design": j["phase_2_design_development"],
+            "commercialisation": j["phase_3_commercialisation"], "journey_id": j["journey_id"],
+            "ai_provenance": {"served_by": {"ollama:w1242c-claimed": 14}}}        # the record wins over this claim
+    #    (2026-11-27) the platform's own record of the journey keys its section 11 verdicts by framework id
+    #    ("sharia_halal"): the chosen candidate is read by its values, so that id keeps no establishment in, and words
+    #    in the candidate are still read
+    _cand = ((_gen._read_journey(j["journey_id"]) or {}).get("candidates") or [{}])[0]
+    assert "sharia_halal" in str(_cand), ("the record keys no verdict by that id; this leg reads nothing", _cand)
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate=_cand)) is None
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate={
+        **_cand, "approach": "a weekly tafsir circle's rota"}))["matched"] == ["tafsir"]
+    #    (the review of 2026-11-27) only the section 11 ids are passed over, and only as keys: a key a caller wrote
+    #    is still read
+    assert _gen._carried_flagged1242c(_gen.EstablishRequest(problem="w1242c: a van rota", selected_candidate={
+        **_cand, "tafsir circle": "weekly"}))["matched"] == ["tafsir"]
+    #    and the candidate the named journey's record gives is read before the blocking route declares its calls,
+    #    which is before _apply_journey_record puts it in place of the caller's
+    _held_rec = {"journey_id": "jny-w1242cheld0", "candidates": [{**_cand, "approach": "a weekly tafsir circle's rota"}]}
+    with pytest.MonkeyPatch.context() as _m:
+        _m.setattr(_gen, "_read_journey", lambda jid: _held_rec if jid == _held_rec["journey_id"] else None)
+        assert _gen._carried_flagged1242c(_gen.EstablishRequest(
+            problem="w1242c: a van rota", journey_id=_held_rec["journey_id"]))["matched"] == ["tafsir"]
+        assert _gen._carried_flagged1242c(_gen.EstablishRequest(
+            problem="w1242c: a van rota", journey_id="jny-w1242cnone0")) is None
+    e = client.post("/api/v1/genesis/establish", json=body)
+    assert e.status_code == 200, e.text[:300]
+    en = e.json()
+    nm = en["no_model"]
+    assert nm and nm["said"] == j["no_model"]["said"] and nm["how"] == j["no_model"]["how"], (nm, j["no_model"])
+    assert nm["saved"].startswith(f"What was saved: your own words, in the entity {en['vsb_id']}, which is registered"), nm
+    assert nm["all_calls_floor_served"] == j["ai_provenance"]["served_by"]["native"], nm
+    s = client.post("/api/v1/genesis/establish/stream", json=body)
+    assert s.status_code == 200, s.text[:300]
+    frames = [json.loads(ln[6:]) for ln in s.text.splitlines() if ln.startswith("data: ")]
+    done = [f for f in frames if f.get("stage") == "complete"][-1]["data"]
+    assert done["no_model"]["saved"].startswith(f"What was saved: your own words, in the entity {done['vsb_id']}, "), done
+    assert done["no_model"]["said"] == nm["said"] and done["no_model"]["how"] == nm["how"]
+    served = client.post("/api/v1/genesis/establish", json={**body, "journey_id": ""})    # no record: the claim stands
+    assert served.status_code == 200 and served.json()["no_model"] is None, served.json().get("no_model")
+    one = client.post("/api/v1/genesis/establish", json={**body, "journey_id": "", "ai_provenance": {"served_by": "native"}})
+    assert one.status_code == 200 and one.json()["no_model"]["saved"].startswith(
+        f"What was saved: your own words, in the entity {one.json()['vsb_id']}"), one.text[:300]   # one server, as a string
+    #    the captured establishment says the same, for its own entity
+    assert est_cap["no_model"]["said"] == nm["said"] and est_cap["no_model"]["how"] == nm["how"]
+    assert est_cap["no_model"]["saved"] == nm["saved"].replace(en["vsb_id"], est_cap["vsb_id"]), est_cap["no_model"]
+
+    #  2b. WHAT ELSE IS SCREENED (the review of 2026-11-27). The AI CEO's class reads this screen (W1239 looks for it),
+    #      so the Owner's attempt keeps its calls in, which the curriculum screen alone would not
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai import gateway as _g
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.api.v138 import ceo as _ceo
+    from agentic_core.organism.self_healing import self_healer as _sh
+    k = _ceo._ceo_call_class([""], attempt)
+    assert k["data_class"] is None and "allah" in k["kept"], ("the AI CEO does not read the religious-content screen", k)
+    #    an establishment's other texts: the class of its calls, and of its stream's body, reads them too
+    gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert "    _stream = _kept_in_stream1242c(_stream, req)\n" in gsrc
+    assert gsrc.count("_establish_class1242c(journey_data_class(req.domain, req.problem") == 2
+
+    async def _now():
+        yield _dc.current()
+
+    async def _drain(agen):
+        return [x async for x in agen]
+    _held = _gen.EstablishRequest(problem="w1242c: a van rota", research="notes from the hadith circle")
+    _open = _gen.EstablishRequest(problem="w1242c: a van rota", research="notes from the drivers' meeting")
+    assert asyncio.run(_drain(_gen._within_class(_gen._kept_in_stream1242c(_now, _held)(), "person_entered"))) == [None]
+    assert asyncio.run(_drain(_gen._within_class(_gen._kept_in_stream1242c(_now, _open)(), "person_entered"))) == [
+        "person_entered"] and _dc.current() is None
+    #    with the switch on (replaced here, never set), a placeholder key and no local model
+    monkeypatch.setattr(_sh, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_sh, "record_failure", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_sh, "record_success", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w1242c-placeholder-not-a-key")
+    monkeypatch.setattr(_g.gateway, "openai_key", None)
+    switch["on"] = True
+    plain = "w1242c: name one risk of a late delivery"
+    est = {"problem": "w1242c: a tool library's loans and returns", "domain": "science", "ship_output": False,
+           "ai_provenance": {"served_by": "native"}}
+    sent.clear()
+    kept = client.post("/api/v1/genesis/establish", json={**est, "concept": "a weekly tafsir circle's rota"})
+    assert kept.status_code == 200 and sent == [], ("an establishment whose concept names religious content left", sent)
+    assert "carries beside its problem names religious content (tafsir)" in kept.json()["no_model"]["how"], kept.json()
+    #    the native-AI console: what the screen flags declares nothing and says why; a plain prompt is declared
+    c1 = client.post("/api/v1/native-ai/complete", json={"prompt": attempt})
+    assert c1.status_code == 200 and sent == [], ("the console sent religious content out", sent)
+    assert c1.json()["data_class"]["declared"] is None and "names religious content (allah)" in c1.json()["kept_in"], c1.json()
+    for path, body in (("/api/v1/native-ai/swarm", {"context": attempt}), ("/api/v1/native-ai/tree", {"goal": attempt}),
+                       ("/api/v1/resources/swarm/run", {"context": attempt, "stages": [
+                           {"role": "analyst", "instruction": "w1242c: summarise the brief"}]})):
+        rr = client.post(path, json=body)
+        assert rr.status_code == 200 and sent == [], (path, "sent religious content out", sent, rr.text[:300])
+        assert "names religious content (allah)" in rr.json().get("kept_in", ""), (path, rr.text[:300])
+    #    the resource fabric: a composition's run and its orchestrator stage, the same way
+    comp = client.post("/api/v1/resources/compose", json={"name": "w1242c-rig", "resource_ids": ["bdp"],
+                                                          "usage_area": "synthesis"}).json()
+    cr = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": attempt})
+    assert cr.status_code == 200 and sent == [], ("a composition's run sent religious content out", sent, cr.text[:300])
+    assert "names religious content (allah)" in cr.json().get("kept_in", ""), cr.text[:300]
+    f1 = asyncio.run(_rf._run_real_resource("native_orchestrator", {"prompt": attempt}, "w1242c: a van rota", "science"))
+    assert sent == [] and "names religious content (allah)" in (f1 or {}).get("kept_in", ""), (sent, f1)
+    #    an entity's own cascade (Genesis gives each one, its mission and domain as the context) declares nothing when
+    #    the entity's domain is kept on the platform, whatever its text says: no word screen reads a care matter
+    _care = client.post("/api/v1/genesis/establish", json={**est, "domain": "care",
+                                                           "problem": "w1242c: a weekly visiting rota"})
+    assert _care.status_code == 200 and sent == [], ("a care establishment left the platform", sent, _care.text[:300])
+    _care_cid = client.get(f"/api/v1/vsb/{_care.json()['vsb_id']}").json()["native_swarm"]["cascade_id"]
+    _care_run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _care_cid})
+    assert _care_run.status_code == 200 and sent == [], ("a care entity's cascade left the platform", sent)
+    assert "an entity of the care domain, and care and health material is not sent" in _care_run.json().get(
+        "kept_in", ""), _care_run.text[:300]
+    assert _rf._KEPT_DOMAINS1242C.keys() >= {"religion", "care", "education"}
+    #    and what the screen does not flag is declared, so these are the screen's doing: each goes out
+    c2 = client.post("/api/v1/native-ai/complete", json={"prompt": plain})
+    assert c2.status_code == 200 and sent == ["query"] and "kept_in" not in c2.json(), (sent, c2.json().get("kept_in"))
+    assert c2.json()["data_class"]["declared"] == "person_entered", c2.json()["data_class"]
+    sent.clear()
+    f2 = asyncio.run(_rf._run_real_resource("native_orchestrator", {"prompt": plain}, "w1242c: a van rota", "science"))
+    assert sent == ["query"] and "kept_in" not in (f2 or {}), (sent, f2)
+    sent.clear()
+    went = client.post("/api/v1/genesis/establish", json={**est, "concept": "a tool library's loan desk"})
+    assert went.status_code == 200 and sent, ("a plain establishment did not reach the provider", sent)
+    assert "carries beside its problem" not in went.json()["no_model"]["how"], went.json()["no_model"]
+    sent.clear()
+    #    the cascade of that science entity is declared and goes out: the care entity's was kept in by its domain
+    _sci_cid = client.get(f"/api/v1/vsb/{went.json()['vsb_id']}").json()["native_swarm"]["cascade_id"]
+    _sci_run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _sci_cid})
+    assert _sci_run.status_code == 200 and sent and "kept_in" not in _sci_run.json(), (sent, _sci_run.text[:300])
+    sent.clear()
+    #    no call that can leave declares person_entered over text the screen has not read
+    for rel in ("agentic_core/api/native_ai.py", "agentic_core/api/resource_fabric.py"):
+        _src = (root / rel).read_text(encoding="utf-8")
+        assert 'declared("person_entered")' not in _src and _src.count('with _dc899.declared(_cls1242c["data_class"])') == 3, rel
+    #    the gap left, registered: the saved profile the gateway puts before every prompt is read by no screen
+    _reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _mine = [r for r in _reg["items"] if isinstance(r, dict) and str(r.get("title") or "").startswith(
+        "The saved profile the gateway puts before every prompt is read by no religious-content screen")]
+    assert len(_mine) == 1 and (_mine[0].get("status") != "open" or _mine[0].get("slot") == "P4.2"), _mine
+
+    #  3. THE STATUS: what serves next, by what a call declares
+    def status():
+        return client.get("/api/v1/native-ai/status").json()
+    switch["on"] = True
+    st = status()
+    nx = st["next_to_serve"]
+    assert (nx["declared_class"]["resource"], nx["no_class"]["resource"]) == ("anthropic", "native"), nx
+    assert nx["declared_class"]["is_model"] is True and "W1242" in nx["declared_class"]["basis"], nx
+    assert (st["active_model"], st["is_real_model"]) == ("native", False), (
+        "the registry's head changed meaning: the form tools' serving sentence would claim a model for a call the "
+        "floor answers", st["active_model"], st["is_real_model"])
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
+    _o.NativeOrchestrator._external_calls = [time.time()]
+    assert status()["next_to_serve"]["declared_class"]["resource"] == "native", "a full hourly cap still named the provider"
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "100")
+    _o.NativeOrchestrator._external_calls = []
+    switch["on"] = False
+    assert status()["next_to_serve"]["declared_class"]["resource"] == "native", "the switch off still named the provider"
+    switch["on"] = True
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    nl = status()["next_to_serve"]
+    assert (nl["declared_class"]["resource"], nl["no_class"]["resource"]) == ("ollama", "ollama"), nl
+    assert sent == [], ("the status called a provider", sent)
+
+    #  4. THE PAGES print what the routes say
+    page = (src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    for tid, field in (("native-status-next-declared", "declared_class"), ("native-status-next-undeclared", "no_class")):
+        assert f'data-testid="{tid}"' in page and f"{{status.next_to_serve.{field}.resource}} — " \
+            f"{{status.next_to_serve.{field}.basis}}." in page, tid
+    nt = (src / "pages/developers/NativeAI.test.tsx").read_text(encoding="utf-8")
+    for name in ("says next to serve by what a call declares, in the route\\'s own words",
+                 "with an external provider next for a declared call, says it beside the floor for an undeclared one"):
+        assert nt.count(f"  it('{name}', async () => {{") == 1, name
+    gp = (src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "  const notice = vsb && 'no_model' in vsb ? vsb.no_model : result?.no_model;\n" in gp
+    gt = (src / "pages/synthesis/GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    assert gt.count("  it('after a two-step establish the notice names the entity that keeps the founder\\'s words', "
+                    "async () => {") == 1
+    assert "if (url === '/api/v1/genesis/establish' && init?.method === 'POST') return reply(200, captured.establish);" in gt
+    _setter = "setenv(" + '"AI_ALLOW_' + 'EXTERNAL"'
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert _setter not in spine[spine.index("\ndef test_w1242c_"):], "this guard sets the Owner's switch"
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1251 - every file a route loads at runtime is in the image, or is said in words where it is not
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1251_every_file_a_route_loads_at_runtime_is_in_the_image_or_is_said_in_words(client, monkeypatch, tmp_path):
+    """W1251. The Owner's live test of image 34dd9709: GET /api/v1/care/tools answered 503 "The register of sources
+    could not be read (FileNotFoundError)". registers._script loads scripts/<name>.py by path and the Dockerfile copied
+    no scripts/, so every route that loads one failed there. Held here, from the Dockerfile and the code, so that a load
+    added without a copy fails:
+    - the image's COPY set is read from the Dockerfile's last stage with .dockerignore, and every _script("...") call in
+      agentic_core names a script the image holds at the same path, or one registers.NOT_IN_THE_IMAGE names with its
+      reason; every script the image copies is one a route loads; no file is loaded by path anywhere but _script;
+    - each copied check imports only what the image holds and loads no file by path, and every file it reads (its
+      ROOT-relative constants, the register's scan places and the files its rows name) is held or named;
+    - loading a check leaves the serving process's environment and sys.path as they were (auth_perimeter sets
+      AI_DISABLE_LOCAL and WORKSTATION_DRIVE for its own command line);
+    - driven on a root holding what the image holds of these: the coverage answer says the suite's tests were not
+      checked, the sources answer names the places it did not read, and the Care catalogue answers;
+    - driven on a root with no scripts: the four routes refuse with 503 in words that say what is missing and what to
+      do next, never an exception's class name; a submitted commitment records NOT MEASURED in words."""
+    import ast
+    import fnmatch
+    import json as _json
+    import pathlib
+    import re
+    import shutil
+    import sys
+    import agentic_core.api.registers as _regs
+    from agentic_core.api.change_control import CAPACITY_NOT_HELD, CAPACITY_UNREAD
+    root = pathlib.Path(__file__).resolve().parents[1]
+    real_root = _regs._ROOT
+    class_name = re.compile(r"\b[A-Z][A-Za-z]*(?:Error|Exception)\b")
+
+    #  1. THE IMAGE'S COPY SET: what the last stage copies from the build context, and where it lands under /app
+    df = (root / "Dockerfile").read_text(encoding="utf-8")
+    stage = df.split("\nFROM ")[-1]
+    assert stage.startswith("python:"), "the Dockerfile's last stage is not the Python image that runs"
+    assert re.findall(r"(?m)^WORKDIR\s+(\S+)", stage) == ["/app"], "the image does not run from /app"
+    ignored = {ln.strip().rstrip("/") for ln in (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+               if ln.strip() and not ln.lstrip().startswith("#")}
+
+    def _norm(p):
+        p = p[len("/app/"):] if p.startswith("/app/") else ("" if p in ("/app", ".", "./") else p)
+        while p.startswith("./"):
+            p = p[2:]
+        return p.rstrip("/")
+    copies = []                                     # (source, where it lands, "file" | "dir")
+    for ln in stage.splitlines():
+        m = re.match(r"^COPY\s+(?!--from)(.+)$", ln.strip())
+        if not m:
+            continue
+        parts = [p for p in m.group(1).split() if not p.startswith("--")]
+        dest = _norm(parts[-1])
+        into = parts[-1].endswith("/") or len(parts) > 2 or dest == ""       # "." is the working folder itself
+        for s in map(_norm, parts[:-1]):
+            if (root / s).is_dir():
+                copies.append((s, dest, "dir"))
+            else:
+                copies.append((s, (dest + "/" if dest else "") + s.rsplit("/", 1)[-1] if into else dest, "file"))
+    assert copies, "no COPY line of the last stage was read, so nothing was examined"
+
+    def _ignored(rel):
+        segs = rel.split("/")
+        heads = ["/".join(segs[:i]) for i in range(1, len(segs) + 1)]
+        return any(any(fnmatch.fnmatch(s, p[3:]) for s in segs) if p.startswith("**/")
+                   else any(fnmatch.fnmatch(h, p) for h in heads) for p in ignored)
+
+    def held(rel):
+        """The file or folder `rel` of this tree is in the image, at the same path under /app."""
+        rel = _norm(rel)
+        return not _ignored(rel) and any(
+            (k == "file" and rel == s and to == s) or (k == "dir" and to == s and (rel == s or rel.startswith(s + "/")))
+            for s, to, k in copies)
+    assert held("agentic_core/app_mvp.py") and held("docs/SOURCES.json") and held("config")
+    assert not held("integration_tests/test_mvp_spine.py") and not held("docs/fidelity_runs/x.json"), \
+        "the reading of .dockerignore leaves nothing out, so a file it keeps out would be read as held"
+
+    #  2. EVERY LOAD OF A FILE BY PATH IN agentic_core: only registers._script, and each of its names held or said
+    loaders = {"spec_from_file_location", "SourceFileLoader", "run_path", "exec_module", "load_source"}
+
+    def _fname(call):
+        return call.func.id if isinstance(call.func, ast.Name) else (
+            call.func.attr if isinstance(call.func, ast.Attribute) else "")
+    calls, elsewhere, examined = {}, [], 0
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        if "__pycache__" in f.parts:
+            continue
+        rel = f.relative_to(root).as_posix()
+        text = f.read_text(encoding="utf-8")
+        examined += 1
+        if not any(k in text for k in ("_script", *loaders)):
+            continue
+        tree = ast.parse(text, filename=rel)
+        names, allowed = set(), set()
+        if rel == "agentic_core/api/registers.py":
+            fn = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_script"]
+            assert len(fn) == 1, "registers.py no longer defines the one loader _script"
+            names, allowed = {"_script"}, {id(n) for n in ast.walk(fn[0])}
+        for n in ast.walk(tree):
+            if isinstance(n, ast.ImportFrom) and n.module == "agentic_core.api.registers":
+                names |= {a.asname or a.name for a in n.names if a.name == "_script"}
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Call):
+                continue
+            if _fname(n) in loaders and id(n) not in allowed:
+                elsewhere.append(f"{rel}:{n.lineno} {_fname(n)}")
+            if (isinstance(n.func, ast.Name) and n.func.id in names) or (
+                    isinstance(n.func, ast.Attribute) and n.func.attr == "_script"):
+                a = n.args[0] if n.args else None
+                if isinstance(a, ast.Constant) and isinstance(a.value, str):
+                    calls.setdefault(f"scripts/{a.value}.py", []).append(f"{rel}:{n.lineno}")
+                else:
+                    elsewhere.append(f"{rel}:{n.lineno} _script with a name this test cannot read")
+    assert examined > 100, ("the scan read almost nothing, so it shows nothing", examined)
+    assert elsewhere == [], ("a file is loaded by path outside registers._script, so whether the image holds it is "
+                             "not checked", elsewhere)
+    assert {"scripts/sources_check.py", "scripts/coverage_register.py", "scripts/auth_perimeter.py",
+            "scripts/session_forecast.py"} <= set(calls), ("a route's load of a script was not found", sorted(calls))
+    for rel, where in sorted(calls.items()):
+        assert (root / rel).is_file(), (rel, where, "a route loads a script the tree does not hold")
+        assert held(rel) or rel in _regs.NOT_IN_THE_IMAGE, (
+            rel, where, "a route loads a script the image does not copy, and nothing says what the route does without it")
+    for rel, why in _regs.NOT_IN_THE_IMAGE.items():
+        assert (root / rel).exists() and not held(rel) and why.strip(), (
+            rel, "is named as not in the image, and the image holds it or the tree does not")
+    copied_scripts = sorted({s for s, _, _ in copies if s == "scripts" or s.startswith("scripts/")})
+    assert copied_scripts and set(copied_scripts) <= set(calls), (
+        "the image copies a script no route loads, or copies none", copied_scripts)
+
+    #  3. WHAT EACH COPIED CHECK IMPORTS AND READS is in the image, or is said by its route where it is not
+    stdlib, reads = set(sys.stdlib_module_names), set()
+    for rel in copied_scripts:
+        text = (root / rel).read_text(encoding="utf-8")
+        assert "ROOT = pathlib.Path(__file__).resolve().parents[1]" in text, (rel, "its ROOT is not the folder above it")
+        tree = ast.parse(text, filename=rel)
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call):
+                assert _fname(n) not in loaders, (rel, n.lineno, "a copied check loads a file by path of its own")
+            tops = ([a.name.split(".")[0] for a in n.names] if isinstance(n, ast.Import) else
+                    [(n.module or "").split(".")[0]] if isinstance(n, ast.ImportFrom) and not n.level else [])
+            for top in tops:
+                local = any((root / x).exists() for x in (top, f"{top}.py", f"scripts/{top}.py"))
+                assert top in stdlib or top == "__future__" or held(top) or not local, (
+                    rel, top, "a copied check imports a module of this tree that the image does not hold")
+        for n in tree.body:
+            if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+                parts, v = [], n.value
+                while (isinstance(v, ast.BinOp) and isinstance(v.op, ast.Div) and isinstance(v.right, ast.Constant)
+                       and isinstance(v.right.value, str)):
+                    parts.insert(0, v.right.value)
+                    v = v.left
+                if parts and isinstance(v, ast.Name) and v.id == "ROOT":
+                    reads.add("/".join(parts))
+    sc = _regs._script("sources_check")
+    reg = sc.load()
+    reads |= {p["dir"] for p in reg.get("scan") or []} | {p for p, _ in sc.REACH_PLACES}
+    reads |= {u for r in reg["rows"] for u in r.get("used_by") or []}
+    assert {"docs/SOURCES.json", "docs/COVERAGE_REGISTER.json", "docs/PUBLIC_ROUTES.json", "agentic_core",
+            "integration_tests/test_mvp_spine.py", "apps/workstation-superapp/src"} <= reads, sorted(reads)
+    for rel in sorted(reads):
+        assert held(rel) or rel in _regs.NOT_IN_THE_IMAGE, (
+            rel, "a copied check reads what the image does not hold, and nothing says what its route does without it")
+
+    #  3b. LOADING A CHECK CHANGES NOTHING IN THE SERVING PROCESS. auth_perimeter sets AI_DISABLE_LOCAL and
+    #      WORKSTATION_DRIVE for its own command line when it is imported; on the image that would switch the local model
+    #      off and mark the platform as not the Owner's own process. Driven on a probe script, then on the real one.
+    import os
+    probe = tmp_path / "probe"
+    (probe / "scripts").mkdir(parents=True)
+    (probe / "scripts/w1251_probe.py").write_text(
+        'import os, sys\nos.environ["W1251_ADDED"] = "by the script"\nos.environ["W1251_KEPT"] = "changed by the script"\n'
+        'sys.path.insert(0, "w1251-not-a-folder")\nLOADED = True\n', encoding="utf-8")
+    with monkeypatch.context() as mp:
+        mp.setenv("W1251_KEPT", "as it was")
+        for k in ("AI_DISABLE_LOCAL", "WORKSTATION_DRIVE", "W1251_ADDED"):
+            mp.delenv(k, raising=False)
+        env_before, path_before = dict(os.environ), list(sys.path)
+        mp.setattr(_regs, "_ROOT", probe)
+        assert _regs._script("w1251_probe").LOADED is True
+        mp.setattr(_regs, "_ROOT", real_root)
+        assert _regs._script("auth_perimeter").verdict([], False) == 0
+        assert dict(os.environ) == env_before and sys.path == path_before, (
+            "loading a script left its own set-up in the serving process",
+            {k: os.environ.get(k) for k in ("AI_DISABLE_LOCAL", "WORKSTATION_DRIVE", "W1251_ADDED", "W1251_KEPT")})
+
+    #  4. DRIVEN ON WHAT THE IMAGE HOLDS OF THESE: no suite, no page source - each answers and says what it did not read
+    img = tmp_path / "image"
+    for rel in [s for s in copied_scripts if s.endswith(".py")] + ["docs/SOURCES.json", "docs/COVERAGE_REGISTER.json"]:
+        (img / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / rel, img / rel)
+    monkeypatch.setattr(_regs, "_ROOT", img)
+    cov = client.get("/api/v1/registers/coverage")
+    assert cov.status_code == 200, ("the coverage answer needs the test suite, which the image does not hold", cov.text[:300])
+    c = cov.json()
+    real_rows = _json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]
+    assert c["tests_checked"] is False and c["tests_said"] == _regs.TESTS_NOT_CHECKED, c.get("tests_said")
+    assert len(c["rows"]) == len(real_rows) and c["problems"] == [], c["problems"][:5]
+    src = client.get("/api/v1/registers/sources")
+    assert src.status_code == 200, src.text[:300]
+    chk = src.json()["check"]
+    assert chk["places_not_held"] == ["agentic_core", "apps/workstation-superapp/src"], chk["places_not_held"]
+    assert chk["places_said"].startswith("This installation does not hold agentic_core and apps/workstation-superapp/src, "
+                                         "so no name written there was read here."), chk["places_said"]
+    care = client.get("/api/v1/care/tools")
+    assert care.status_code == 200 and care.json()["tools"], care.text[:300]
+    #  ... and where the tree holds them, nothing is said as unread
+    monkeypatch.setattr(_regs, "_ROOT", real_root)
+    c = client.get("/api/v1/registers/coverage").json()
+    assert c["tests_checked"] is True and c["tests_said"] is None, c.get("tests_said")
+    chk = client.get("/api/v1/registers/sources").json()["check"]
+    assert chk["places_not_held"] == [] and chk["places_said"] is None, chk["places_not_held"]
+
+    #  5. DRIVEN WITH NO SCRIPT: each route says which file is missing and what to do, never a class name
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    monkeypatch.setattr(_regs, "_ROOT", bare)
+    for path, script, opens in (("/api/v1/registers/sources", "sources_check", "The register of sources could not be read: "),
+                                ("/api/v1/registers/coverage", "coverage_register", "The coverage register could not be read: "),
+                                ("/api/v1/registers/perimeter", "auth_perimeter", "The perimeter could not be measured: "),
+                                ("/api/v1/care/tools", "sources_check", "The register of sources could not be read: ")):
+        r = client.get(path)
+        assert r.status_code == 503, (path, r.status_code, r.text[:200])
+        said = r.json()["detail"]
+        assert said.startswith(opens + f"this installation does not hold scripts/{script}.py, which this answer runs"), \
+            (path, said)
+        assert said.endswith(" " + _regs.NEXT_STEP) and not class_name.search(said), (path, said)
+    #  a register the script reads and the installation does not hold is named by its place in the tree
+    half = tmp_path / "half"
+    (half / "scripts").mkdir(parents=True)
+    shutil.copyfile(root / "scripts/sources_check.py", half / "scripts/sources_check.py")
+    monkeypatch.setattr(_regs, "_ROOT", half)
+    r = client.get("/api/v1/registers/sources")
+    assert r.status_code == 503 and ("this installation does not hold docs/SOURCES.json, which this answer reads"
+                                     in r.json()["detail"]), r.text[:300]
+    for e in (OSError("w1251"), ValueError("w1251"), RuntimeError("w1251"),
+              FileNotFoundError(2, "No such file or directory", "/elsewhere/w1251/SOURCES.json")):
+        said = _regs.unread_said(e)
+        assert said and not class_name.search(said) and "/elsewhere" not in said, (e, said)
+
+    #  6. A COMMITMENT SUBMITTED WITHOUT THE ROUND HISTORY: NOT MEASURED, in words, and the submission stands
+    monkeypatch.setattr(_regs, "_ROOT", bare)
+    body = {"title": "w1251 a commitment with no round history", "description": "w1251: the capacity said in words",
+            "committed_rounds": 1, "commitment_basis": "one round, to read how the record says an unmeasured pace"}
+    sub = client.post("/api/v1/cca/submit", json=body)
+    assert sub.status_code == 200, sub.text[:300]
+    com = sub.json()["commitment"]
+    assert com["capacity_at_submit"] is None and com["capacity_basis"] == CAPACITY_NOT_HELD, com
+    assert CAPACITY_NOT_HELD.startswith("NOT MEASURED: ") and not class_name.search(CAPACITY_NOT_HELD + CAPACITY_UNREAD)
+
+    class _History:
+        @staticmethod
+        def round_durations():
+            raise KeyError("w1251: a history in another shape")
+    monkeypatch.setattr(_regs, "_script", lambda name: _History)
+    sub = client.post("/api/v1/cca/submit", json=body)
+    assert sub.status_code == 200, sub.text[:300]
+    assert sub.json()["commitment"]["capacity_basis"] == CAPACITY_UNREAD, sub.json()["commitment"]
+    monkeypatch.setattr(_regs, "_ROOT", real_root)
+    for rel in ("agentic_core/api/registers.py", "agentic_core/api/care.py"):
+        assert "type(e).__name__" not in (root / rel).read_text(encoding="utf-8"), (rel, "a refusal names its class")
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W1253 - a session that runs out is renewed in place; one that cannot be goes to sign in, saying so, and back
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w1253_a_session_that_runs_out_is_renewed_once_and_one_that_cannot_be_says_so_and_keeps_what_was_typed(
+        client, tmp_path, monkeypatch):
+    """W1253. Found on the live site by the Owner (finding 3 of 2026-11-27): sessions last 60 minutes
+    (ACCESS_TOKEN_TTL); on expiry the page cleared the token and jumped to /login with no message, and unsaved input
+    was lost. The sign-in route hands out a refresh token beside the access token, and the page never kept it.
+    Held here:
+    1. THE ROUTES' CONTRACT, the one the page renews on, through the real routes on a made-up store (sign-in stays as
+       it is set): the sign-in answers both tokens and expires_in; POST /api/v1/auth/refresh takes { refresh_token }
+       with no bearer and answers a new pair for the same account (sub, uid, kind); an access token that has run out
+       is refused 401 by the decoder every bearer passes first, which is the 401 the page renews on; a refresh token
+       that has run out, or a value that is no token, is refused 401, and an access token 400;
+    2. lib/auth.ts keeps the refresh token (cleared at every change of who is signed in), renews a 401 once with it
+       through one shared exchange sent past the token layer, sends the call again once (an axios call marked so),
+       renews no route that hands out tokens, never sends the refresh token as the bearer, and only when the renewal
+       fails goes to the sign-in page with ?session=ended and ?next=, read back as a path on this site only;
+    3. the sign-in page keeps the refresh token, says the session ended in plain words, and sends the person back;
+    4. lib/drafts.ts keeps a box's text in this tab for the account that typed it, never shows it to another, and
+       drops it once used; Genesis's idea box and the cockpit's Converse box use it;
+    5. the rendered tests drive each of these."""
+    import inspect
+    import json
+    import pathlib
+
+    import pytest
+    from fastapi import HTTPException
+
+    from agentic_core.auth import core
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    #  1. THE ROUTES' CONTRACT
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(core, "_USER_STORE", store)
+    monkeypatch.setattr(core, "_ATTEMPTS", {})          # failed sign-ins other tests counted are not this test's
+    password = "w1253 a made-up password"
+    store.write_text(json.dumps({"w1253-made-up": {
+        "user_id": "w1253-made-up-id", "username": "w1253-made-up", "hashed_password": core._pwd_ctx.hash(password),
+        "role": "user", "created_at": "2026-11-27T10:00:00Z", "api_keys": []}}), encoding="utf-8")
+    got = client.post("/api/v1/auth/token", data={"username": "w1253-made-up", "password": password})
+    assert got.status_code == 200, got.text[:200]
+    first = got.json()
+    assert first["access_token"] and first["refresh_token"] and first["expires_in"] == core._ACCESS_TTL * 60, first
+    assert set(core.RefreshRequest.model_fields) == {"refresh_token"}, "the page sends { refresh_token } and no more"
+    assert {"access_token", "refresh_token", "expires_in"} <= set(core.TokenResponse.model_fields)
+    again = client.post("/api/v1/auth/refresh", json={"refresh_token": first["refresh_token"]})   # no bearer
+    assert again.status_code == 200, again.text[:200]
+    for tok, kind in ((again.json()["access_token"], "access"), (again.json()["refresh_token"], "refresh")):
+        claims = core._decode_token(tok)
+        assert (claims.get("sub"), claims.get("uid"), claims.get("type")) == ("w1253-made-up", "w1253-made-up-id", kind)
+    who = core._get_user("w1253-made-up")
+    with pytest.raises(HTTPException) as ran_out:
+        core._decode_token(core._make_token(core._claims(who, "access"), -1))
+    assert ran_out.value.status_code == 401 and ran_out.value.headers == {"WWW-Authenticate": "Bearer"}
+    gcu = inspect.getsource(core.get_current_user)
+    assert gcu.index("payload = _decode_token(token)") < gcu.index('if payload.get("type") != "access":'), (
+        "a bearer that has run out is not refused 401 before anything else is read")
+    old = core._make_token(core._claims(who, "refresh"), -1)
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": old}).status_code == 401
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": "w1253-not-a-token"}).status_code == 401
+    assert client.post("/api/v1/auth/refresh", json={"refresh_token": first["access_token"]}).status_code == 400
+
+    #  2. THE TOKEN LAYER
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"
+    assert "const REFRESH_KEY = 'workstation_refresh';" in auth
+    assert "  try {\n    localStorage.removeItem(REFRESH_KEY);\n    localStorage.removeItem('ws_output_history_v1');" in auth, (
+        "the last sign-in's refresh token outlives a change of who is signed in")
+    assert "export const setToken = (t: string): void => { _clearLocalUserData(); localStorage.setItem(KEY, t); };" in auth
+    ex = auth[auth.index("async function exchange(): Promise<string | null> {"):]
+    ex = ex[:ex.index("\n}\n") + 3]
+    assert "    r = await sendRaw('/api/v1/auth/refresh', {" in ex and "body: JSON.stringify({ refresh_token: held })," in ex
+    assert "  if (getRefreshToken() !== held || getToken() !== from) return null;" in ex, (
+        "a renewal's answer is stored over a sign-in or a sign-out made while it was out")
+    assert "  localStorage.setItem(KEY, d.access_token);\n  setRefreshToken(d.refresh_token ?? held);" in ex
+    assert "setToken(" not in ex, "a renewal clears the person's own data as a change of who is signed in would"
+    rt = auth[auth.index("async function retryToken(sentWith: string | null | undefined, url: string): Promise<string | null> {"):]
+    rt = rt[:rt.index("\n}\n") + 3]
+    for need in ("  if (!sentWith || handsOutTokens(url)) return null;",
+                 "  if (renewed && renewed.from === sentWith && now === renewed.to) return now;",
+                 "  if (now !== sentWith) return null;",
+                 "  if (!renewing) renewing = exchange().finally(() => { renewing = null; });"):
+        assert need in rt, ("concurrent 401s do not share one renewal, or one is renewed that should not be", need)
+    assert ("  ['/api/v1/auth/token', '/api/v1/auth/refresh', '/api/v1/auth/signup'].includes(url.split('?')[0]);"
+            in auth), "a route that hands out tokens is renewed"
+    ia = auth[auth.index("export function installAuth(): void {"):]
+    ia = ia[:ia.index("\n}\n") + 3]
+    fw = ia[ia.index("  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {"):]
+    assert fw.count("await origFetch(") == 2 and "    const second = await origFetch(spare, {" in fw, (
+        "the call is sent again through the token layer, which could renew it again: a loop")
+    assert "await window.fetch(" not in auth and "    if (second.status === 401) ended401(fresh, url);" in fw
+    assert "    if (!cfg || cfg._w1253Again) return null;" in ia and "    cfg._w1253Again = true;\n    return axios.request(cfg);" in ia, (
+        "an axios call sent again is not marked, so its 401 is renewed again: a loop")
+    assert ia.count("const second = await again(cfg, url);") == 2, "axios's two ways of answering a 401 are not both renewed"
+    assert "    (cfg as typeof cfg & Sent)._w1253SentWith = t;" in ia
+    for line in auth.splitlines():
+        if "Bearer" in line:
+            assert "efresh" not in line and "held" not in line, ("the refresh token is sent as the bearer", line)
+    sa = auth[auth.index("export function signInAddress(ended: boolean): string {"):]
+    sa = sa[:sa.index("\n}\n") + 3]
+    assert "  if (ended) q.set('session', 'ended');" in sa and "  if (back !== '/') q.set('next', back);" in sa
+    rp = auth[auth.index("export function returnPath(raw: string | null | undefined): string {"):]
+    rp = rp[:rp.index("\n}\n") + 3]
+    for need in (r"  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';",
+                 "  if ([...raw].some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) return '/';",
+                 "  try { u = new URL(raw, origin); } catch { return '/'; }",
+                 r"  if (u.origin !== origin || path.startsWith('//') || u.pathname.replace(/\/+$/, '') === '/login') return '/';"):
+        assert need in rp, ("the address a sign-in returns to may be on another site", need)
+
+    #  3. THE SIGN-IN PAGE
+    page = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    login = _code_only(page)
+    assert "import { clearToken, returnPath, setRefreshToken, setToken, whoami, WhoAmI } from '../lib/auth';" in login
+    assert "      setToken(d.access_token);\n      setRefreshToken(d.refresh_token);" in login, "the refresh token is not kept"
+    assert "const back = returnPath(sp.get('next'));" in login and "nav(back);" in login and "nav('/')" not in login
+    assert "  const ended = sp.get('session') === 'ended';" in login and "{ended && who?.mode !== 'authenticated' && (" in login
+    flat = " ".join(page.split())
+    assert 'data-testid="session-ended"' in page and "Your session ended. Sign in again to carry on.</p>" in flat
+    assert ("Once you are signed in you will go back to the page you were on. What you were typing in the Genesis idea "
+            "box or in an enterprise's Converse box is still there.") in flat
+
+    #  4. WHAT WAS TYPED
+    dr = _code_only((src / "lib/drafts.ts").read_text(encoding="utf-8"))
+    for need in ("const PREFIX = 'ws_draft_';", "export const GENESIS_DRAFT = 'genesis-idea';",
+                 "export const converseDraft = (vsbId: string): string => `cockpit-converse:${vsbId}`;",
+                 "    const uid = claims?.uid ?? claims?.sub;",
+                 "    if (by === null || !text.trim()) { sessionStorage.removeItem(PREFIX + key); return false; }",
+                 "    sessionStorage.setItem(PREFIX + key, JSON.stringify({ by, text }));",
+                 "    if (by !== null && kept?.by === by && typeof kept?.text === 'string') return kept.text;\n"
+                 "    sessionStorage.removeItem(PREFIX + key);",
+                 "      if (typeof kept?.text !== 'string' || kept.text.trim() !== sent.trim()) return false;"):
+        assert need in dr, ("a draft is kept, shown or dropped other than for the account that typed it", need)
+    assert "localStorage" not in dr and "fetch(" not in dr and "silenceIsRight" not in dr
+    gj = _code_only((src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    for need in ("import { GENESIS_DRAFT, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';",
+                 "  const [keptIdea] = useState<string>(() => takeDraft(GENESIS_DRAFT));",
+                 "  useEffect(() => { keepDraft(GENESIS_DRAFT, problem); }, [problem]);",
+                 "      setResult(data);\n      dropDraft(GENESIS_DRAFT, problem);",
+                 "{keptIdea && problem === keptIdea && !result && (", 'data-testid="genesis-draft-restored"'):
+        assert need in gj, ("Genesis's idea box does not keep what was typed", need)
+    assert gj.index("const seed = readGenesisSeed(sid);") < gj.index("    return sp.get('problem') || keptIdea;"), (
+        "a seed handed from another page no longer comes before the kept idea")
+    ck = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    for need in ("import { converseDraft, dropDraft, keepDraft, takeDraft } from '../../lib/drafts';",
+                 "    const kept = selected ? takeDraft(converseDraft(selected)) : '';\n    setKeptMsg(kept);\n    setChatInput(kept);\n  }, [selected]);",
+                 "onChange={e => { setChatInput(e.target.value); keepDraft(converseDraft(selected), e.target.value); }}",
+                 "|| ents.find(e => !!takeDraft(converseDraft(e.vsb_id)))",
+                 "{keptMsg && chatInput === keptMsg && (", 'data-testid="cockpit-draft-restored"'):
+        assert need in ck, ("the Converse box does not keep what was written", need)
+    sc = ck[ck.index("  const sendChat = async (override?: string) => {"):]
+    sc = sc[:sc.index("\n  };\n")]
+    assert (sc.index("const r = await axios.post('/api/v1/avatar/chat', body);")
+            < sc.index("dropDraft(converseDraft(selected), msg);") < sc.index("} catch (e: unknown) {")), (
+        "the message is let go before a reply came")
+
+    #  5. THE RENDERED TESTS
+    tests = {
+        "lib/session.test.ts": (
+            "renews a 401 once with the stored refresh token and sends the call again, and the person stays on the page",
+            "shares one renewal among 401s that come together, and sends one that comes after it with the token it gave",
+            "sends the person to sign in once when the renewal is refused, saying the session ended and where they were, and sends nothing again",
+            "never sends a call a third time: one refused again after the renewal sends the person to sign in",
+            "renews an axios call that axios throws for on a 401, the same way and once",
+            "renews an axios call whose caller takes every status, the same way and once",
+            "never sends an axios call a third time, and sends the person to sign in once",
+            "renews nothing for a route that hands out tokens: its 401 is its answer, and the page stays",
+            "the boot probe renews a session that ran out, and sends one it could not renew to sign in, saying it ended",
+            "the sign-in page is never sent back to an address on another site, nor to itself"),
+        "lib/drafts.test.ts": (
+            "keeps a box\\'s text for the account signed in, and gives it back to that account only",
+            "never shows one account\\'s text to another: it is dropped unread",
+            "keeps text with sign-in off, keeps nothing for a box left empty, and nothing under a sign-in it cannot read",
+            "is dropped once used, but not when the box was changed while the work was out"),
+        "pages/Login.session.test.tsx": (
+            "says the session ended, keeps both tokens the sign-in hands out, and sends the person back to their page",
+            "never follows an address on another site: the sign-in lands on the home page, and nothing says a session ended",
+            "says a session ended with no page to go back to only as that"),
+        "pages/synthesis/GenesisJourney.draft.test.tsx": (
+            "puts the idea back when the page opens again, says so, and lets it go once the journey ran",
+            "never shows one account\\'s idea to another: it is dropped unread",
+            "keeps the idea when the session ends as the journey is sent, and puts it back once the same person signs in again"),
+        "pages/enterprise/VSBCockpit.draft.test.tsx": (
+            "puts the message back when the enterprise opens again, says so, and lets it go once a reply came",
+            "keeps a message no reply came for, and never shows it to another account: it is dropped unread"),
+    }
+    text = {rel: (src / rel).read_text(encoding="utf-8") for rel in tests}
+    for rel, names in tests.items():
+        assert text[rel].count("\n  it('") == len(names), (rel, text[rel].count("\n  it('"))
+        for name in names:
+            assert text[rel].count(f"\n  it('{name}', ") == 1, (rel, name)
+    st = text["lib/session.test.ts"]
+    for need in ("expect(calls.map(c => c.url)).toEqual([DATA, RENEW, DATA]);",
+                 "expect(JSON.parse(String(calls[1].body))).toEqual({ refresh_token: REFRESH });",
+                 "expect(calls.filter(c => c.url === RENEW)).toHaveLength(1);",
+                 "expect(assign).toHaveBeenCalledWith('/login?session=ended&next=%2Fgenesis%3Fdomain%3Dscience');",
+                 "expect(assign).toHaveBeenCalledWith('/login?session=ended&next=%2Fmy-work');",
+                 "'/.//elsewhere', 'javascript:void(0)'"):
+        assert need in st, need
+    assert "import captured from './Login.fixture.json';" in text["pages/Login.session.test.tsx"]
+    assert "<Route" not in text["pages/Login.session.test.tsx"], (
+        "the sign-in page's test defines a route of its own: App.tsx is the one file that does (test_w499)")
+    assert "import captured from './GenesisJourney.fixture.json';" in text["pages/synthesis/GenesisJourney.draft.test.tsx"]
+    assert "installAuth();" in text["pages/synthesis/GenesisJourney.draft.test.tsx"], (
+        "the case where a session ends as the journey is sent no longer runs through the real token layer")
+    assert "import captured from './VSBCockpit.chat.fixture.json';" in text["pages/enterprise/VSBCockpit.draft.test.tsx"]

@@ -3044,6 +3044,20 @@ async def name_vsb(vsb_id: str, req: NameRequest, user: dict | None = Depends(ge
             "previous": old, "ship": shipped}
 
 
+#  W1205 (FU-1845) - A GATE CHANGE OR A DECISION IS SAVED ONLY WITH ITS SEALED RECORD (§17.5, append-only
+#  DCS-audited). Both routes seal before they save. The DCMS ledger now refuses a commit it cannot keep
+#  (StoreUnavailable) and lets a failed write raise, which answered 500 with nothing saved and no word why: each
+#  route now refuses with 503 and the reason, and nothing is saved.
+def _seal_refused1205(lead: str, exc: Exception) -> HTTPException:
+    from agentic_core.vbs.dcms import AppendNotUndone
+    _kept = (" Its sealed record may still be in the ledger: it was not confirmed durable."
+             if isinstance(exc, AppendNotUndone) else "")
+    return HTTPException(status_code=503, detail=(
+        f"{lead}: the document-control ledger could not keep its record ({type(exc).__name__}: {exc}), and this "
+        "route saves a change only with its sealed record. Nothing was saved; send it again once the ledger "
+        "can be written." + _kept))
+
+
 class ReviewGatesRequest(BaseModel):
     stages: list[str] = []
 
@@ -3091,7 +3105,11 @@ async def set_review_gates(vsb_id: str, req: ReviewGatesRequest, user: dict | No
     rg["decisions"] = {k: v for k, v in (rg.get("decisions") or {}).items() if k in rg["stages"]}
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
-    dcs_hash = await qms.control_document(f"vsb_review_gates:{vsb_id}", {"stages": rg["stages"]}, "Owner")
+    from agentic_core.config import StoreUnavailable as _SU1205
+    try:
+        dcs_hash = await qms.control_document(f"vsb_review_gates:{vsb_id}", {"stages": rg["stages"]}, "Owner")
+    except (_SU1205, OSError) as _exc1205:     # W1205 (FU-1845) - refused and said, nothing saved
+        raise _seal_refused1205("The review gates were NOT changed", _exc1205) from _exc1205
     _rederive(vsb)   # W614 — the gates changed, so the status read from them is derived again
     _save_vsb(vsb)
     try:
@@ -3141,8 +3159,13 @@ async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, 
     rg.setdefault("decisions", {})[stage] = rec
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
-    dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec,
-                                          _principal661 if (_auth_on661() and _principal661) else "unidentified-caller")
+    from agentic_core.config import StoreUnavailable as _SU1205
+    try:
+        dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec,
+                                              _principal661 if (_auth_on661() and _principal661) else
+                                              "unidentified-caller")
+    except (_SU1205, OSError) as _exc1205:     # W1205 (FU-1845) - refused and said, nothing saved
+        raise _seal_refused1205("The review decision was NOT recorded", _exc1205) from _exc1205
     _rederive(vsb)   # W614 — a decision moves the gate, so the status read from it is derived again
     _save_vsb(vsb)
     return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash,
@@ -3433,7 +3456,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
 
     async def _stream():
         vsb_id = f"vsb-{uuid.uuid4().hex[:10]}"
-        started = time.time()
+        started = time.perf_counter()
 
         def _event(stage: str, label: str, content: str, data: dict = None) -> str:
             payload = {"stage": stage, "label": label, "content": content}
@@ -3684,7 +3707,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "cascade_analysis": _stored_cascade_record(cascade_result),     # P3.30 (R2.14)
             "mjm_result": mjm_result,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "elapsed_seconds": round(time.time() - started, 2),
+            "elapsed_seconds": round(time.perf_counter() - started, 2),
         }
         # §3.3 invariant — every generated VSB carries its own Board + Chief (the Owner's standing
         # charter, not a trained twin — W492/FU-188),

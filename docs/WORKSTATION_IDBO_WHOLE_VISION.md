@@ -591,6 +591,15 @@ platform touches sacred text, honesty constraints bind harder than anywhere else
 5. **AI content is labelled AI-assisted with provenance — never authoritative**; learners are
    directed to qualified teachers.
 
+**Five content roles (the Owner's restart, 2026-11-22; A.4a).** "Keep Arabic scripture, a translator’s
+rendering, commentary, AI-assisted material, and teacher notes in distinct roles." Read here: Arabic scripture
+is fetched and shown verbatim; a translator's rendering is fetched and attributed to its named translator;
+commentary is licensed and attributed; AI-assisted material is labelled as such, and religious content of that
+kind waits for a named scholar's approval before a learner sees it (A.12.3); teacher notes are attributed to
+the named teacher. No answer carries such a role label yet (row FU-1927). AI-assisted material may draw on
+Quran Foundation content inside the app only; no Quran Foundation content or user data is used to train,
+fine-tune, evaluate or develop a model (the foundation's terms, read whole by the Owner on 2026-11-22).
+
 ## 12. The Economic Organism (the VSB)
 
 Each VSB is an **autonomous, compliant, hybrid Waqf/Trust/Multinational economic entity** that
@@ -1312,6 +1321,38 @@ the domain-level analogue of §10's quality bar:
 3. **Understand Quran** — grasp meaning, context and relevance through tafsir and guidance.
 4. **Teach Quran** — empower educators to guide others.
 
+*Owner restart, 2026-11-22 (A.4a):* Learn Quran includes learning to read: letters, articulation and
+foundational reading. A.4 is adopted unchanged as the admission rule, so by OWNER RULING 2026-11-22 (decision
+1; the recommendation accepted) "live the Quran" stays inside goal 3 and A.6 feature 10, and is not a fifth
+goal.
+
+## A.4a Restart statement (Owner, 2026-11-22) · **[OWNER]**
+
+The Owner set out a QEP Restart Vision on 2026-11-22. `docs/QURAN_EDUCATION_PLATFORM_VISION.md` Part 0
+reproduces it as written, from its title to the end of "Build from Workstation" and its closing line, with its
+local source references named there as Owner-machine references. It opens:
+
+> QEP helps people **learn to read, recite and memorize, understand, and live the Quran**. It gives learners a dependable place to practise, gives teachers tools to support them, and gives scholars control over what the platform publishes as religious instruction. The first release focuses on adult memorization and reference listening. A learner chooses a portion, practises from the named edition, checks written recall, and knows what to revise next.
+>
+> QEP is the Quran education product within Workstation’s Religion domain. The current Workstation implementation and its recorded owner rulings are the starting point for the restart. Access is free at the point of use for individuals and institutions. The long-term aim is to serve learners and teachers across languages, devices, and bandwidth constraints, with children’s experiences introduced through a separate safeguarding and scholarly approval process.
+
+- The restart starts from the current implementation and its recorded rulings and supersedes no ruling (A.13,
+  constraint 4). Where its wording and a dated ruling differ, the ruling holds until the Owner rules again.
+- Scholar control is A.12.3. The scholar roster is empty until the Owner engages a scholar; FU-1838 closes only
+  with a dated plan record of that engagement, or with a ruling that defers it.
+- First release (the Owner, 2026-11-22): adult memorisation and reference listening, which is P5.17 clause 1 and
+  clause 2's reference listening, with local record and replay as the follow-on slice ("A follow-on slice lets
+  an adult record and replay locally beside the reference"). Children are not in it.
+- Children's experiences are introduced "through a separate safeguarding and scholarly approval process": the
+  gate the Owner ruled on 2026-10-13 and 2026-11-20 (the delivery plan's standing rule on children, P5.12 and
+  P5.21), under which P5.21 builds its tools and holds them. OWNER RULING 2026-11-22 (decision 23; the
+  recommendation accepted): both sets of conditions stand, and a dated Owner release record is to be added as
+  a code condition, so the gate cannot open on sign-in and pack approval alone (P5.21; row FU-1929).
+- OWNER RULING 2026-11-22 (decision 2; the recommendation accepted): this restart statement sits beside A.2 and
+  leads the QEP section only; A.2's framing ("an innovative Muslim social media platform") is not withdrawn,
+  and nothing is withdrawn without an explicit ruling. Competitions remain P5.17 clause 5, and emotion
+  inference remains not adopted (A.9.4).
+
 ## A.5 Strategic objectives · **[OWNER]**
 
 Eight objectives, consistent across the detailed sources. Each is stated as the Owner stated it, then read
@@ -1336,7 +1377,10 @@ Quranic narrative and historical settings; virtual mosque; **3D memory palaces**
 spatial-visual context. *Here:* these belong to §7's musculoskeletal facilities — not a separate 3D stack.
 
 **A.5.5 Connected Global Communities.** Peer mentoring, virtual study circles, recitation rooms,
-competitions and virtual events; regional and international leaderboards; group challenges.
+competitions and virtual events; regional and international leaderboards *[superseded by OWNER RULING
+2026-10-12, noted W1236 (2026-11-22), the earlier words kept: the platform ranks no learner (A.6 feature 4);
+restated by the Owner on 2026-11-22 (A.4a: "Show review counts and personal change without streaks or a
+platform-wide learner ranking.")]*; group challenges.
 
 **A.5.6 Sharia & Ethics Compliance.** Scholar-led governance board and regular Sharia audit of curricula,
 AI and content; transparent AI-ethics guidelines; data practices aligned to GDPR; Islamic finance principles
@@ -1356,10 +1400,25 @@ The Jules-era synthesis grouped the Owner's feature lists into exactly fifteen f
 The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to the Owner's own lists.
 Adopted here as the Religion domain's feature register, with **measured status** in Workstation today.
 
+*Restart scope (Owner, 2026-11-22): each feature below also carries the Owner's restart wording for its
+intended experience and delivery condition, quoted as [OWNER 2026-11-22] from
+`docs/QURAN_EDUCATION_PLATFORM_VISION.md` Part 0. The feature names stay the Owner's earlier names, so each
+traces to its source; the restart's names for features 2, 10 and 11 are given beside them.*
+
 **1 · User Authentication & Profile Management.** Identity, MFA, OAuth, RBAC across four roles —
 **learner, teacher, parent, admin** — plus profiles and learning preferences.
 *Status: platform-level auth exists and is the right home. The **parent** and **teacher** roles do not exist
 — and the parent role is what makes feature 15's Parental Insights possible.*
+
+*Restart scope [OWNER 2026-11-22] ("Identity and profiles"): Adult learner and teacher access, account
+recovery, explicit preferences, scoped records, and separately governed guardian relationships. Delivery:
+Start with private practice and verify signed-in ownership before opening persistent or shared journeys.*
+Institutional use ("Mosques, schools, and study groups can use the same core learning tools while controlling
+who can access their own records and spaces.") is, by OWNER RULING 2026-11-22 (decision 3; the recommendation
+accepted), adults-only, with tenant isolation (A.5.8), until the children's gate opens by ruling. OWNER RULING
+2026-11-22 (decision 11): the register's "parent" role is read as a guardian relationship, a separately
+governed link held behind the children's gate and not an RBAC role, and account recovery, which is not built,
+belongs in the sign-in readiness round (row FU-1931).
 
 **2 · AI Tajwīd Coach.** Verse selection, recitation capture, articulation and Tajwīd feedback, error
 highlighting, progress history.
@@ -1376,6 +1435,22 @@ not set). Tajwīd lessons (`POST /api/v1/qep/tajweed/lesson`) are composed, decl
 are WITHHELD until a named scholar approves the exact text (A.12.3): while the roster is empty every lesson returns
 `lesson_plan: null` with the reason, and no outline is shown.*
 
+*Restart scope [OWNER 2026-11-22] ("Tajwīd learning and reference listening"): Teach reviewed rules for the
+declared riwāyah, listen to human examples, and replay locally. Teachers give any personalised recitation
+feedback. Delivery: Reference listening when permissions allow, then local replay and invited teaching.*
+Restart name: Tajwīd learning and reference listening. "A learner can follow an āyah in the named edition,
+hear an approved reference, plan a portion, practise from memory, and return to difficult passages." An
+approved reference is read here as a named human reciter from a source whose register row permits streaming,
+in production only after the publisher's approval. Measured: the listening answer the Quran page reads carries
+no riwayah for the recitation (`components/QEPStudio.tsx`, its `Listen` type); local record and replay are not
+built (COVERAGE_REGISTER row `qep-hear-yourself`: nothing here records); and the test that drives listening
+replaces the publisher's call with a stand-in (`test_w717`), so the real-credential path is unchecked. OWNER
+RULING 2026-11-22 (decision 8): the Owner runs the real-credential pre-production check locally, the
+credentials staying in the Owner's .env and only the outcome recorded (row FU-1925). Quran Foundation audio
+and timings are played to the learner and are never used to test, evaluate or develop a model: the
+foundation's developer terms, read whole by the Owner on 2026-11-22, forbid it (`docs/SOURCES.json`, row
+quran-foundation-developer-terms).
+
 **3 · Memorization Suite.** Flashcards, spaced repetition, review scheduling, progress heatmaps, recall
 testing (display then hide), audio looping and segment selection, memorisation coaching.
 *Status (re-measured 2026-11-10): **DELIVERED and honest**. Real SM-2 in `religious_domain/memorization/engine.py` —
@@ -1390,6 +1465,27 @@ shared wording within up to three surahs (`/hifz/similar`), labelled as not a sc
 or judges, what the learner recalled. One verse of a reference recitation can be played beside a review (feature 2).
 Flashcards, progress heatmaps, audio looping and memorisation coaching are not built.*
 
+*Restart scope [OWNER 2026-11-22] ("Memorization"): Portion plans, hidden-text and typed recall, similar-verse
+drills, and spaced review for trouble spots. Delivery: First release.* In the Owner's words: "Begin with adult
+practice in Ḥafṣ ʿan ʿĀṣim and the 15-line Madinah layout for the portion plan. Confirm that the displayed
+edition, numbering, layout, and declared recitation tradition correspond. Identify the actual coverage and
+withhold unverified mappings or portions." Coverage is read here as which edition, numbering, page and juz
+mapping and riwayah a passage is verified for, and what is withheld. Measured: a page or juz portion is
+recorded as the numbers a person set, and no layout source is licensed (the register's QUL row permits
+nothing), so the correspondence the restart asks for is NOT VERIFIED; the `juz` and `page` that `GET
+/api/v1/qep/ayah/{surah}/{ayah}` returns are not shown on the Quran page; typed recall is reached from the
+review card only (`components/QEPStudio.tsx`); similar verses are shown side by side with where each
+continues, and no practice step is built on them (`components/HifzPractice.tsx`); who set a portion, the
+learner or a teacher, is as the caller states it, unverified (`set_by`). OWNER RULINGS 2026-11-22 (the
+recommendations accepted): page and juz portions stay settable but labelled not mapped until a layout source
+is accepted, and alquran.cloud is accepted only if its terms and metadata, re-read, state the 604-page Madinah
+layout, and the QUL and KFGQPC letters (FU-1188) are pursued in parallel (decision 4; row FU-1922); the
+self-declared "my teacher set this" label is hidden until P5.17 clause 4 exists (decision 5; row FU-1923); a
+hifz method source is reviewed, before any default portion is proposed, by the scholar or institute engaged
+under FU-1838, recorded under a named person (decision 6); and after sign-in only factual events are stored,
+the written-recall similarity being shown at the moment of the check and not stored until the Owner rules
+(decision 10; row FU-1928).
+
 **4 · Gamified Learning & Competitions.** Time-bound recitation and memorisation competitions, global and
 regional leaderboards, XP, badges, streaks, event notification, replay and share.
 *Status (re-measured 2026-11-10): XP is real and persisted, and only a recorded review earns it: `POST
@@ -1402,6 +1498,16 @@ claim is refused 422 and every other award 409 until sign-in exists. Learners ar
 `LEADERBOARD_RETIRED`). No competition, tournament, badge, event notification or replay exists; the Competitions tab
 shows two "PLANNED" preview cards with no participants, and machine-scored recitation contests read "REFUSED
 (A.9.1)" — recitation is never scored.*
+
+*Restart scope [OWNER 2026-11-22] ("Motivation and judged events"): Personal goals, factual review counts,
+circle totals, and events with disclosed criteria and named human judges. Delivery: Personal progress first.
+Judged events follow teaching and a reviewed marking scheme.* A shared circle goal is read here as P5.17
+clause 5's circle total: collective, ranking no member. Ruled 2026-10-14 (P5.21, outside that item): an
+opt-in, adults-only board private to one circle may rank effort, never recitation quality. OWNER RULINGS
+2026-11-22 (decisions 12 and 22): the ruled wording "no placings for children by default" (P5.17 clause 5)
+stands, and the restart's "Children’s placings stay private by default." does not replace it (a private
+placing is still a placing, and no child takes part while the gate is closed); the effort board stays recorded
+and unscheduled until circles exist and have been reviewed.
 
 **5 · Learner-Centric Learning Modules.** Structured curricula — **Noorani Qaida, Tajwīd, Quranic Arabic,
 Tafsir** — as lessons (text, video, interactive), quizzes with immediate feedback, recommended learning
@@ -1418,10 +1524,37 @@ Arabic or Tafsir lessons, no quizzes and no learning paths exist. On request, a 
 translation of the meanings is shown beside a verse; composed explanation (the Religion hub's Tafsir tool) is
 withheld on the floor and, when a model serves, until a named scholar approves it.*
 
+*Restart scope [OWNER 2026-11-22] ("Learner curriculum"): Progress from reading foundations to Tajwīd,
+memorization, and understanding. Use named sources, short reviewed lessons, exercises, and quizzes. Delivery:
+Begin with a small approved curriculum linked to practice.* "A beginner, including someone unfamiliar with
+Arabic script, can learn letters, articulation, and foundational reading from short, reviewed lessons." and
+"explore reviewed lessons or licensed commentary when available" (commentary waits on A.12.1 and FU-1081).
+"Treat each as a distinct learning track with its own licensed sources and reviewer." No track is open today:
+no reading foundations source is registered, the QUL row permits nothing, and commentary waits on FU-1081. The
+archived lesson folders are a structure reference only: the Al-Fātiḥah starter
+(`_archive/outputs/Religion/QuranEducation/curriculum/samples/level_1/lesson_1_al-fatihah/content.md`) is a
+title and a placeholder line, and nothing of it is served. Articulation is taught and never assessed (A.9.1).
+OWNER RULINGS 2026-11-22 (the recommendations accepted): the learner order (reading foundations, then Tajwīd,
+memorisation and understanding) is the learner-facing order; curriculum content comes after memorisation,
+listening and circles; a lesson schema may come earlier, with no content; quizzes are admitted only as
+written-knowledge checks that say nothing about recitation (decision 13); the Owner names an author and
+chooses the texts to seek licences for, each a register row before its track opens, and letter examples wait
+for a source whose row permits the use (decision 14; row FU-1932).
+
 **6 · Educator Platform & Class Management.** Virtual classes, student enrolment, module assignment,
 progress dashboards, grading and feedback, announcements, and AI suggestions to the teacher ("many students
 struggle with lesson X").
 *Status: not built.*
+
+*Restart scope [OWNER 2026-11-22] ("Educator tools"): Create invited classes, assign portions, give notes
+pinned to a word, and record the teacher’s own attestation in scholar-reviewed wording. Delivery: After
+sign-in, role controls, and verified teacher onboarding.* "Start class tools with one educator and an invited
+circle." "The teacher chooses a portion and can see whether an assigned exercise was completed, together with
+any material the learner explicitly shared for review." OWNER RULINGS 2026-11-22: the Owner names the
+educator, and the first stage is capped at one educator and one circle until it has been reviewed (decision
+18); a recording a learner shares with a teacher is kept 30 days from sharing, deletable by the learner at any
+time and deleted automatically when the period ends, and is never Quran Foundation audio re-hosted (decision
+17; row FU-1934). Institutions stay free (2026-10-12).
 
 **7 · Community Engagement Platform.** Forums, Q&A, events with RSVP, **study circles**, **recitation
 rooms**, **Ask a Scholar**, content sharing, and content moderation.
@@ -1429,15 +1562,34 @@ rooms**, **Ask a Scholar**, content sharing, and content moderation.
 run" for its compliance audit rather than a green tick, and the LearnTeach surface says no scholars are
 verified rather than implying a scholar network exists — the correct posture until one does (A.9.6).*
 
+*Restart scope [OWNER 2026-11-22] ("Community"): Moderated study circles, peer support, events, and a
+verified-human Ask a Scholar channel. Delivery: After moderation capacity, access controls, and scholar
+participation are in place.* Moderation is by people. OWNER RULING 2026-11-22 (decision 20): named human
+moderators; no automated pre-screening until the Owner rules on it explicitly; a model is never the ruling of
+record. Until a verified scholar answers, the surface says so (A.9.6), as the LearnTeach surface already says
+that no scholars are verified.
+
 **8 · Video Conferencing & Collaboration.** 1:1 and group live sessions, screen share, collaborative
 whiteboard, recording, live transcription, in-session chat.
 *Status: not built.*
+
+*Restart scope [OWNER 2026-11-22] ("Live teaching"): Human-led one-to-one and group sessions, with shared
+materials and accessibility support. Delivery: After the invited teaching slice. Introduce recording or
+transcription only under a separately approved policy.* OWNER RULING 2026-11-22 (decision 21): live teaching
+is not chartered until P5.17 clause 4 has been reviewed; when it is, it requires a self-hosted or
+approved-environment service, and no recording or transcription without a separate approved policy. Machine
+transcription of a recitation is the unruled listening question (P5.17 clause 3, FU-1067).
 
 **9 · Immersive AR/VR Experiences.** Overlay of articulation points while reciting; walkthroughs of Quranic
 historical settings; virtual mosque; 3D memory palaces.
 *Status: rendered as **planned**, and the buttons say so on click. Honest, and a placeholder. Constitutional
 constraint: an overlay that appears to correct a live recitation would breach A.9.1 — it may **teach**
 articulation, never **assess** it.*
+
+*Restart scope [OWNER 2026-11-22] ("Immersive learning"): Optional articulation visualizations, historical
+settings, and memory aids that use reviewed material. Delivery: Later, when they show an educational benefit
+and have accessible equivalents.* The later phase is as ruled on 2026-10-14 (P5.21: AR/VR as a later phase
+under the same sourcing and approval rules).
 
 **10 · AI Guidance & Fitrah Profiling System.** Conversational Quranic Q&A; the **99-aspect "Fitrah
 Spectrum"** mapped to the Divine Attributes (*Asmāʾ al-Ḥusnā*); guidance conditioned on profile, state and
@@ -1454,12 +1606,27 @@ emotional state (A.9.4). The Fitrah Spectrum is not built and is not unbuilt wor
 (2026-10-05b), and A.9.5 binds it absolutely if it is ever reopened — self-reported only, never a measurement, never
 scored.*
 
+*Restart scope [OWNER 2026-11-22] ("Guided reflection"): Voluntary prompts on worship, character, deeds,
+rights, and relationships. A named scholar approves AI-composed religious material before release. Delivery:
+Private reflection when reviewed. The Fitrah Spectrum is deferred by owner ruling.* Restart name: Guided
+reflection. "choose private prompts on worship, character, deeds, rights, and relationships", read against
+A.7's four pillars: scholar-approved in their exact text; nothing scored, inferred or stored as a trait
+(A.9.4, A.9.5); the Fitrah Spectrum stays a boundary (A.12.4). OWNER RULING 2026-11-22 (decision 19): adult
+private reflection is admitted as a plan item after FU-1838, and an adult's writing is stored only after
+sign-in, private to them, and exportable and deletable (row FU-1935).
+
 **11 · Swarm Intelligence & Collaborative Learning.** Analysis of collective learner behaviour surfacing
 common difficulties, pathways that worked for similar learners, and group study suggestions.
 *Status: not built as a QEP capability, and **must not be built as one** — Workstation has its own swarm and
 orchestration (§6); this is a consumer of that fabric. Note the two distinct meanings the sources conflate:
 population-level optimisation, and multi-agent deliberation offering diverse perspectives on a question.
 They are different systems; build them under different names or not at all.*
+
+*Restart scope [OWNER 2026-11-22] ("Collaborative learning insights"): Help teachers choose exercises using
+permissioned, aggregated facts about common learning needs. Delivery: Consider when there are enough
+appropriate records and a clear teacher use case.* Restart name: Collaborative learning insights. Read here:
+population-level meaning only, on §6's fabric; counts with permission; nobody ranked or profiled; children
+excluded; no Quran Foundation content or user data used to train or evaluate a model.
 
 **12 · Adaptive UI/UX Engine.** Layout, density, font size, theme and navigation adapting to profile and
 stated preference.
@@ -1472,6 +1639,12 @@ chosen age band as planned. The interface never adapts to an inferred emotional 
 registry" on the QEP Intelligence tab (`/api/v1/qep/adaptation/{registry,execute}`) records teaching patterns moved
 between domains and is not part of this feature. The platform-level posture (§9, the W428 explicit profile) remains
 the right substrate.*
+
+*Restart scope [OWNER 2026-11-22] ("Adaptive experience"): Let learners set text size, language, density,
+playback speed, reminders, and guidance preferences. Delivery: Begin with explicit settings. Use the learner’s
+choices and study history for future suggestions.* "user-selected reminder, language, and pacing controls".
+Read here: reminders are opt-in and never streaks; a suggestion uses stated choices and recorded learning
+actions, never an inferred emotional or spiritual state (A.9.4).
 
 **13 · Platform Settings, Globalization & Accessibility.** Language selection with full RTL; themes
 (light, dark, **Islamic**); notification and privacy controls; accessibility (font scaling, high contrast);
@@ -1490,6 +1663,19 @@ fetched and never composed — Pickthall (1930), `GET /api/v1/qep/translation/{s
 verse on request. Certificates: A.12.2 is ruled — QEP issues none in its own name; the record-of-completion path has
 no route and no course exists, so none is issued.*
 
+*Restart scope [OWNER 2026-11-22] ("Access, languages and completion"): Accessible and low-data use, Arabic
+and Urdu RTL, more locales as reviewed, licensed offline content, and a record of completion when a course
+exists. Delivery: Foundation from the first release. A completion record states that it carries no
+credential.* "Design for small screens and limited bandwidth from the outset. Make the provenance and coverage
+of a passage visible beside it." and "Plan offline packs around the rights granted for each asset." Measured:
+the browser smoke run drives the pages at 1280 by 900 (`scripts/browser_smoke.mjs`), and no script in
+`scripts/` sets a viewport narrower than 1280 pixels, so no phone-width run exists. Read here, for when packs
+are built: an asset enters an offline pack only if its register row permits device storage, and its provenance
+travels with it: Tanzil's text may be bundled verbatim with its credit and notice; Quran Foundation content is
+not pre-packaged (its terms allow a week's cache at most, with their stated exceptions); the QUL, KFGQPC and
+EveryAyah rows permit nothing (row FU-1933). The Pickthall rendering is fetched from alquran.cloud
+(`en.pickthall`), and its register row is still missing (FU-1889).
+
 **14 · Donations.** **Free for everyone - individuals and institutions.** No tiers, no subscriptions and no
 institutional billing; **Zakat-eligible** donation funds; a transparent donor dashboard; and
 **Sponsor-a-Student**. *[OWNER RULING 2026-10-12: the Quran platform's only income is donations and the waqf. The words before the
@@ -1506,6 +1692,12 @@ donor to their own scholar; Sponsor-a-Student names and matches no learner. `GET
 (`components/QepDonorStatement.tsx`), which says so when no QEP entity is on the living roster. No real-money rail
 is touched, and there are no tiers or subscriptions.*
 
+*Restart scope [OWNER 2026-11-22] ("Donations and stewardship"): Free individual and institutional access
+funded by donations and waqf. Explore donor reporting, approved Zakāt channels, and sponsorship through the
+trust. Delivery: Funding operations follow governance and source-of-funds decisions.* "Existing Workstation
+contribution code is a virtual-ledger rehearsal, with real-money operation requiring its own authorization and
+verification." "Report allocations and impact with aggregate figures and protect beneficiaries’ identities."
+
 **15 · Admin, Analytics & Platform Governance.** Admin console, moderation, role-based analytics for
 learners, teachers, admins and **parents (a Parental Insights Dashboard with session limits and activity
 digests)**, audit logging, GDPR and Sharia compliance, institutional analytics, and embedding into an
@@ -1517,10 +1709,29 @@ answer says the record is keyed by the id the caller sent and is not tied to a v
 half of governance exists: the scholar-review routes (`/api/v1/scholar-review/*`,
 `agentic_core/api/scholar_review.py`) and the QEP hub's Scholar Review tab add a named scholar (credential recorded
 as stated), show the review queue, record decisions — entered by the Owner and marked attested, not verified, while
-sign-in is off — and present the children's tools as one approval pack. No admin console, moderation, teacher or
-institutional analytics, embedding into another learning platform, or learner export and deletion exists, and there
-is no Parental Insights dashboard: no parent role exists, no children's tool is built, and the hub says its tools
-are for adults.*
+sign-in is off — and present the children's tools as one approval pack. No admin console, moderation, teacher or institutional analytics, or embedding into another learning platform
+exists, and there is no Parental Insights dashboard: no parent role exists, and the hub says its tools are for
+adults. Learner export and deletion are built (W852, FU-1167): `GET /api/v1/qep/learner/{uid}/export` and
+`DELETE /api/v1/qep/learner/{uid}`, each refused 409 while sign-in is off. Five children's tools are built and
+held behind the approval pack's gate (P5.21; `CHILDREN_TOOLS` in
+`agentic_core/religious_domain/approval_pack.py`): memorisation practice, a challenge against the child's own
+past, teaching aids, private written reflection and self-reported check-ins, each run by an adult; none opens
+until sign-in is on and the current pack is approved.* *CORRECTED W1236 (2026-11-22), the earlier words kept:
+"No admin console, moderation, teacher or institutional analytics, embedding into another learning platform,
+or learner export and deletion exists, and there is no Parental Insights dashboard: no parent role exists, no
+children's tool is built, and the hub says its tools are for adults." They were true when measured on
+2026-11-10; W852 built learner export and deletion on 2026-11-12, and W943 to W947 built the five children's
+tools on 2026-11-13, and this status was not re-measured until now.*
+
+*Restart scope [OWNER 2026-11-22] ("Administration and safeguards"): Editorial review, consent, moderation,
+audit history, role-scoped analytics, and learner export and deletion. Delivery: First-release safeguards,
+expanded as teachers, institutions, and families are admitted.* The Quran Foundation's developer privacy
+packet, read whole by the Owner on 2026-11-22, lists a public Privacy Policy and Terms of Use, a separate
+opt-in for religious data, token revocation, deletion within 30 days (90 for backups) and a breach reported
+within 24 hours (`docs/SOURCES.json`, row quran-foundation-developer-terms). OWNER RULING 2026-11-22 (decision
+7; the recommendation accepted): the duties are accepted; the consent and privacy round is built first, the
+Owner signs off the Privacy Policy and Terms as publisher, then production is applied for; until then
+listening stays in pre-production only (row FU-1930).
 
 **The shared area.** Component library, auth utilities, API clients, i18n, logging, shared types, validation,
 standardised AI-service clients, offline utilities, accessibility helpers. **In Workstation these are already
@@ -1545,6 +1756,12 @@ chosen deliberately to evoke calm and focus.
 
 *Status: none of the four pillars is built. Each is subject to A.9.5 and A.12.3 — guidance drawing on sacred
 text needs the scholar-review mechanism before a learner sees it.*
+
+*Restart (Owner, 2026-11-22):* "Voluntary prompts on worship, character, deeds, rights, and relationships. A
+named scholar approves AI-composed religious material before release." The restart's worship, character,
+deeds, and rights and relationships are these four pillars. OWNER RULING 2026-11-22 (decision 19): adult
+private reflection is admitted as a plan item after FU-1838; an adult's writing is stored only after sign-in,
+private to them, and exportable and deletable (row FU-1935).
 
 ## A.8 Governance, ethics and finance · **[OWNER]**
 
@@ -1574,6 +1791,15 @@ with a surplus cap, a Zakat-eligible charity channel and free-at-point-of-use pr
 economic model that is genuinely *its own* rather than the generic default. The eight-attribute executive
 board maps onto §5's living organisation as a Religion-domain board composition.
 
+*Restart (Owner, 2026-11-22):* "Start by involving qualified scholars, teachers, volunteer translators, and
+community partners in decisions on curriculum and access. Verify the institutional and legal arrangements
+before representing them as established." The attribute names describe divisions, never a person. OWNER RULING
+2026-11-22 (decision 24; the recommendation accepted): volunteer translators are for interface localisation
+only, for now; a second rendering of the meanings needs a new ruling, a register row, a named translator and
+scholar review. The rendering ruled on 2026-10-09 and 2026-10-10 stands: Pickthall (1930), on a public-domain
+basis (the delivery plan's words: "THE TRANSLATION EDITION STANDS as chosen: Pickthall, 1930, on a
+public-domain basis.").
+
 *Status (re-measured 2026-11-10): no QEP entity exists. Its economic model is a template, `qep_waqf_trust` in
 `agentic_core/economy/entities.py`: no owner profit and a 5% surplus cap with reinvestment, both from A.8 and not
 adjustable by a round, and the other three proportions a labelled default inside those constraints, in virtual WST.*
@@ -1592,6 +1818,8 @@ W439's backend catch found exactly this — a string comparison over English not
 that states its own scope, plus Tajwīd *teaching* content labelled AI-assisted. If a genuine, validated
 phonetic capability is ever provisioned and scholar-reviewed, this narrowing may be revisited **by Owner
 ruling** — never by an agent deciding the feature list says so.
+*Restated by the Owner on 2026-11-22 (A.4a):* "QEP does **no automated recitation grading, pronunciation
+correction, mistake counting, or synthesized reading of the Quran**."
 
 **A.9.2 Qur'an Arabic is never generated.** §11 rules 1–2: Arabic is fetched from the authoritative source,
 labelled, and injected into prompts as *given material* with an explicit do-not-reproduce instruction;
@@ -1721,6 +1949,11 @@ last. The Qur'an Arabic source remains settled (alquran.cloud, per §11) and is 
 licence on every ayah and surah response, and an edition whose riwayah this platform has not established
 reads NOT DECLARED rather than being assigned one — guessing a riwayah would be the scholarly claim the
 ruling forbids. Recitation audio, Hadith and Tafsir remain unsourced and therefore unserved.*
+*Restart (Owner, 2026-11-22):* "Record source, named edition, script, declared qirāʾah or riwāyah as
+applicable, licence, rights holder or attribution, and the uses the rights cover. Store a stable passage
+identifier and item version." The rights holder or attribution and the uses the rights cover are read from
+that source's `docs/SOURCES.json` row; no answer carries them, or a stable passage identifier, yet (row
+FU-1921).
 
 **A.12.2 Certification authority — RULED 2026-10-05b: QEP ISSUES NO CERTIFICATE IN ITS OWN NAME.** A
 certificate implies a body standing behind it and there is none. A **record of completion** is issued
@@ -1748,6 +1981,14 @@ cover the five Religion research tools was FU-448: the Owner ruled on 2026-10-06
 to the five research tools (closed in W598), and on 2026-10-11 that what a model composes there is withheld
 until a named scholar approves that exact text — those five already withhold on the floor and already refer
 the reader to a qualified scholar.*
+
+**OWNER RULING 2026-11-22 (decisions 15 and 16; the recommendations accepted), the 2026-10-05b words above
+kept:** the gate is extended from AI-composed religious content to every publishable religious lesson,
+including a human-authored one: every publishable lesson carries a versioned review decision. One scholar or
+institute engaged under FU-1838 may cover several tracks, provided each approval is entered under the named
+person who gave it and that person is rostered for that track. The restart adds that the learner "sees the
+material’s source and whether it was AI-assisted" (row FU-1927). The extension is a ruling on the gate; the
+code still gates the AI-composed paths only, and widening it is a later round's (row FU-1932).
 
 **A.12.4 Fitrah Spectrum — RULED 2026-10-05b: DEFERRED, and recorded as a BOUNDARY, not a backlog
 row.** The 99 aspects were never enumerated in any source. The ruling asked was whether it proceeds as a
@@ -1783,6 +2024,12 @@ Recorded because this canon's operating rule is to record what was observed.
    it.**
 4. **Scope was reduced silently and called a revision.** The last attempt deleted three major capabilities
    from its plan without recording a decision. → **Scope reduction is a ruling, never an edit.**
+
+*Ruled 2026-11-22, the QEP restart (A.4a; `docs/QURAN_EDUCATION_PLATFORM_VISION.md` Part 0):* the learner
+order the restart sets (reading foundations, then Tajwīd, memorisation and understanding) is the
+learner-facing order and not the delivery order, which stays the plan's (decision 13); and the ruled wording
+"no placings for children by default" stands beside the restart's "Children’s placings stay private by
+default." (decision 12).
 
 *Full evidence for constraints 1–3 in `docs/QURAN_EDUCATION_PLATFORM_VISION.md` §§2–4, and for constraint 4
 in its §21 (inside the superseded Part VI — read there as evidence of what happened, never as a plan) —

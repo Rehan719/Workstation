@@ -1,21 +1,32 @@
 # Letter: asking the Quranic Audio Dataset's authors whether its recordings may be used for a private test
 
-DRAFTED FOR THE OWNER TO SEND (W1132, FU-1067). Nothing has been sent. Fill in the lines in square brackets, read the
-letter through, and send it from your own address to the corresponding author named on the dataset's paper
-(arXiv 2405.02675). Until a written answer is held that names a licence permitting this use and confirms that every
-recording used is an adult's, given with consent to reuse, nothing from the dataset is downloaded or used. The register
-of sources (docs/SOURCES.json, row quranic-audio-dataset) says the dataset permits nothing yet, and
-scripts/sources_check.py fails if any code reaches its address.
+DRAFTED FOR THE OWNER TO SEND (W1132, FU-1067). SENT BY THE OWNER ON 2026-11-27, at 11:05:27 UK time, from the
+Owner's own address to the four authors of the dataset's paper (arXiv 2405.02675), its first author first, at the
+addresses the paper's author block gave for them that day; none was left out, and none is written here. The paper
+marks no corresponding author, so the letter is addressed to all four (corrected in W1234, read on 2026-11-22). It
+went with no copy and no attachment (W1259). The e-mail was the text below the line with the Owner's name filled in
+and, after the greeting, a line greeting the four authors by name; its body did not carry the To, From and Reply to
+lines, which stay here as the record of whom it went to, with the From and Reply to placeholders left as they were.
+The draft it was sent from was saved through a mail connector that stamps a header marking the drafts it creates as
+AI-generated, so the recipients may see that mark. No answer had arrived at the first check after sending, and
+FU-1283 stays open until a written answer is held. Until a written answer is held that names a licence permitting
+this use and confirms that every recording used is an adult's, given with consent to reuse, nothing from the dataset
+is downloaded or used. The register of sources (docs/SOURCES.json, row quranic-audio-dataset) says the dataset
+permits nothing yet, and scripts/sources_check.py fails if any code reaches its address.
 
 ---
 
-To: the authors of the Quranic Audio Dataset (Salameh et al., 2024)
+To: Raghad Salameh (Innopolis University), Mohamad Al Mdfaa (Skoltech University), Nursultan Askarbekuly
+(Innopolis University) and Manuel Mazzara (Innopolis University), the authors of the Quranic Audio Dataset
+(Salameh et al., 2024)
 From: [your name], for Workstation
 Reply to: [your address]
 
 Subject: The Quranic Audio Dataset: its licence, and a private test that scores nothing
 
 Assalamu alaikum,
+
+Dear Raghad Salameh, Mohamad Al Mdfaa, Nursultan Askarbekuly and Manuel Mazzara,
 
 I am writing for Workstation, a learning platform that is not yet open to the public. Its Quran tools help a person
 memorise and revise. The Arabic is never composed or changed, recitation is never scored, and no learner is ranked.
@@ -27,7 +38,8 @@ wrong place. The test needs recordings of ordinary adult reciters. It would scor
 the dataset's correct and incorrect labels, and would publish or share no recording. Only counts would be reported:
 how often the place was found, and how often it would mislead.
 
-We read the dataset's card and the paper's page on 19 November 2026. The card states no licence for the recordings,
+We read the dataset's card and the paper's page on 19 November 2026, and again
+on 22 November 2026. The card states no licence for the recordings,
 and the paper's page shows CC BY 4.0, which we understand to be the paper's own licence. Each example has a field for
 the reciter's age, and the card's own example reads "Unknown", so we cannot tell whether every participant was an
 adult.
@@ -46,3 +58,4 @@ copy if you withdraw permission.
 With thanks,
 
 [your name]
+Workstation

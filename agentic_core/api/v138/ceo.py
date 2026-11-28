@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from agentic_core.store_paths import DATA_DIR
 from pydantic import BaseModel
-from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
+from agentic_core.ai.ceo.memory_v01 import meeting_log   # W1196 - the avatar and upload memory is retired
 from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
@@ -159,7 +159,7 @@ class ToolRegistry:
         available = list(self.tools.keys())
         return {"available_tools": available, "message": "New tools can be registered in the ToolRegistry class."}
 
-    async def call_meeting(self, agenda: str):
+    async def call_meeting(self, agenda: str, domains: Optional[List[Any]] = None):
         """Deliberate for real, or record nothing.
 
         W404 - this looped six officer titles and wrote
@@ -179,6 +179,13 @@ class ToolRegistry:
         an empty record is honest, a unanimous invented approval is not.
         """
         agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
+        #  W1239 - what the meeting's calls declare, read once from the agenda every one of them carries: nothing, when
+        #  it names religious content (the Owner's ruling 4 of 2026-11-27), else _CEO_DATA_CLASS
+        #  W1241's second review - and from the domains it is given: the chat passes the domain of the entity whose
+        #  scope it answers for, as its own call reads it, so a meeting called from the chat of a religion, care or
+        #  education entity (or one whose record could not be read) declares nothing, as that chat's own call does.
+        #  The meeting hands its officers the agenda and no record.
+        _class1239 = _ceo_call_class(list(domains or []), agenda)
         posted, failed, floor_served = [], [], []
         for agent in agents:
             prompt = (f"You are the {agent} of an AI C-Suite. State your position on this agenda "
@@ -187,7 +194,8 @@ class ToolRegistry:
                       + f"Agenda: {agenda}")
             try:
                 res = await orchestrator.complete(prompt, agent=f"csuite:{agent}", timeout=90,
-                                                  user_text=(agenda or None))   # W651 (FU-675)
+                                                  user_text=(agenda or None),   # W651 (FU-675)
+                                                  data_class=_class1239["data_class"])   # W1239 - what it carries
                 text = (res or {}).get("output", "").strip()
             except Exception:
                 text = ""
@@ -336,7 +344,7 @@ def _cited(answer: str, facts: dict) -> dict:
     return out
 
 
-def _floor_recital(facts: dict) -> str:
+def _floor_recital(facts: dict, notice: bool = False) -> str:
     """W801 (FU-982, ledger v17 R3[9]) - ON THE FLOOR, THE HANDED RECORDS ARE RECITED AS STORED.
 
     The AI CEO is handed the Board's latest directives and the plan's objectives, and the floor's reply framed
@@ -348,15 +356,243 @@ def _floor_recital(facts: dict) -> str:
     _said = [" ".join(str(t).split()) for t in facts.get("_instruction_texts") or [] if str(t).strip()]
     dirs = _said or [" ".join(str(t).split()) for t in facts.get("_directive_texts") or [] if str(t).strip()]
     objs = [" ".join(str(t).split()) for t in facts.get("_objective_titles") or [] if str(t).strip()]
-    if not dirs and not objs:
+    _plan1240 = facts.get("_plan_items")          # W1240 - the plan's open items, or why they are unavailable
+    if not dirs and not objs and not _plan1240:
         return ""
+    #  W1239 - with no model up, the reply above is the fixed notice and not the floor's frame, and the line says so
     lines = ["", "", "## What the CEO was handed (quoted as stored, not answered from)",
-             "The structured floor served the reply above, so nothing in it was reasoned from these records."]
+             ("No model answered: the reply above is a fixed notice, so nothing in it was reasoned from these records."
+              if notice else
+              "The structured floor served the reply above, so nothing in it was reasoned from these records.")]
     if dirs:
         lines.append(f'- Latest Board instruction: "{dirs[0]}"')
     if objs:
         lines.append("- Objectives in the plan: " + "; ".join(objs))
+    if _plan1240:
+        lines += ["", f"### {PLAN_ITEMS_HEADING}"] + _plan_item_lines(_plan1240)
     return "\n".join(lines) + "\n"
+
+
+#  W1240 - THE PLAN'S OPEN ITEMS, AS ITS READER GIVES THEM. plan_followups.plan_now is the reader GET /api/v1/plan/
+#  followups uses; it is run over the register (about 3 MB) and the delivery plan, so its answer is kept until either
+#  file's modification time or size changes. Nothing is ranked or composed here: the next unheld build item and the
+#  first open items are taken in the plan's own order, with the slot, title and hold the reader gives each.
+_PLAN_ITEMS_SHOWN = 5
+_PLAN_ITEMS_CACHE: Dict[str, Any] = {"key": None, "value": None}
+PLAN_ITEMS_HEADING = "Plan's open items, quoted as stored, in the plan's own order"
+
+
+def _plan_open_items() -> Dict[str, Any]:
+    """W1240 - {available: True, next_unheld, open_items, open_total, basis}, or {available: False, reason}.
+
+    next_unheld is plan_now's next_unheld (the first open build item no hold keeps open), as {slot, title}; open_items
+    are the first _PLAN_ITEMS_SHOWN of plan_now's open_items, each {slot, title, held_until} (held_until only while the
+    item it names is open). A missing file or an unreadable plan is said as unavailable, never as an empty list."""
+    from agentic_core import plan_followups as _fu
+    try:
+        _key = tuple((str(p), p.stat().st_mtime_ns, p.stat().st_size) for p in (_fu.REGISTER, _fu.PROMPT))
+    except OSError as exc:
+        _name = os.path.basename(str(exc.filename or "")) or "a plan document"
+        return {"available": False,
+                "reason": (f"{_name} is not in this server's files" if isinstance(exc, FileNotFoundError) else
+                           f"{_name} could not be read ({exc.strerror or type(exc).__name__})")}
+    if _PLAN_ITEMS_CACHE["key"] == _key:
+        return _PLAN_ITEMS_CACHE["value"]
+    try:
+        _now = _fu.plan_now(_fu.load(_fu.REGISTER), _fu.read_doc(_fu.PROMPT))
+    except Exception as exc:                                  # noqa: BLE001 - said as unavailable, with why
+        _value: Dict[str, Any] = {"available": False,
+                                  "reason": f"the plan could not be read ({type(exc).__name__}: {str(exc)[:120]})"}
+    else:
+        if not _now.get("readable"):
+            _value = {"available": False, "reason": "the delivery plan holds no item its reader can read"}
+        else:
+            _nu = _now.get("next_unheld")
+            _value = {"available": True,
+                      "next_unheld": {"slot": _nu["slot"], "title": _nu["title"]} if _nu else None,
+                      "open_items": [{"slot": o["slot"], "title": o["title"],
+                                      "held_until": o["held_until"] if o.get("held") else None}
+                                     for o in (_now.get("open_items") or [])[:_PLAN_ITEMS_SHOWN]],
+                      "open_total": len(_now.get("open_items") or []),
+                      "basis": ("read with plan_followups.plan_now from docs/FOLLOWUPS.json and "
+                                "docs/FABLE_DELIVERY_PROMPT.md, in the plan's own order; each title as that reader "
+                                "gives it (the item's line without a leading bracketed note, to its first sentence, "
+                                "at most 110 characters); nothing is ranked")}
+    _PLAN_ITEMS_CACHE.update(key=_key, value=_value)
+    return _value
+
+
+def _plan_item_lines(plan: Dict[str, Any]) -> List[str]:
+    """W1240 - the plan's items as "- " lines, quoted as stored: the next unheld build item, then the first open items."""
+    if not plan.get("available"):
+        return [f"- unavailable: {plan.get('reason')}"]
+    def _q(it):
+        _t = " ".join(str(it.get("title") or "").split())
+        return f'{it["slot"]} "{_t}"' if _t else f"{it['slot']} (its line names no title)"
+    out = [f"- next unheld build item: {_q(plan['next_unheld'])}" if plan.get("next_unheld") else
+           "- next unheld build item: none (every open build item is held, or none is open)"]
+    _shown = plan.get("open_items") or []
+    out.append(f"- the first {len(_shown)} of {plan.get('open_total', len(_shown))} open items:")
+    for it in _shown:
+        out.append(f"- {_q(it)}" + (f" (held until {it['held_until']})" if it.get("held_until") else ""))
+    return out
+
+
+def _plan_items_recited(plan: Optional[Dict[str, Any]]) -> Optional[int]:
+    """W1240 - how many distinct plan items the lines quote; None when the plan was unavailable."""
+    if not plan or not plan.get("available"):
+        return None
+    _slots = {it["slot"] for it in plan.get("open_items") or []}
+    if plan.get("next_unheld"):
+        _slots.add(plan["next_unheld"]["slot"])
+    return len(_slots)
+
+
+#  W1239 - whether the chat asks for an external model: the stream_meta call passes this value, and
+#  _model_for_this_call reads it, so the two cannot disagree. The switch (AI_ALLOW_EXTERNAL) is read, never set.
+#  W1241 - IT ASKS (OWNER RULING 2026-11-22: an external small model, with the Owner's own key and a spend cap set at
+#  the provider). It changes nothing until the Owner acts: the switch is off by default, and no provider's key is set
+#  by this repository. What the call carries is declared below (_CEO_DATA_CLASS, W1239).
+_CEO_PREFERS_EXTERNAL = True
+#  W1239 - WHAT THE CHAT'S CALLS CARRY, DECLARED: the question typed (or the meeting's agenda), with the platform's
+#  instructions and records composed around it, which is person_entered (agentic_core/ai/data_class.py), a class that
+#  is not barred. A call that declares no class is never sent out (W899). A call that carries what stays on the
+#  platform declares nothing (_ceo_call_class, below).
+_CEO_DATA_CLASS = "person_entered"
+#  W1239 - WHAT STAYS ON THE PLATFORM, WHATEVER THE CHAT WOULD DECLARE. The Owner's ruling 4 of 2026-11-27: religion
+#  and care stay on the floor even with the external switch on, and children's education stays on the floor. What the
+#  chat hands a model can carry either: a Board directive records the domain it was deliberated in, and the platform's
+#  own scope is handed the latest directives of every entity; an entity's scope is handed that entity's plan; the
+#  question, the meeting's agenda and the C-Suite's debate are free text. So a call declares _CEO_DATA_CLASS only when
+#  no record it carries is of a domain kept here and the religious-content screen flags nothing it sends; otherwise it
+#  declares nothing, and a call that declares nothing is never sent out (agentic_core/ai/data_class.py). Care is kept
+#  by its domain: no screen here reads care material in free text. A screen can flag, never clear.
+_CEO_KEPT_IN_DOMAINS = {
+    "religion": "religious content is not sent outside the platform",
+    "religious": "religious content is not sent outside the platform",
+    "care": "care and health material is not sent outside the platform",
+    "health": "care and health material is not sent outside the platform",
+    "education": "education material may carry children's data, which is not sent outside the platform",
+}
+
+
+def _scope_domain(scope: str) -> Optional[str]:
+    """W1239 - the domain of the entity whose scope the chat answers for: "" for the platform's own scope, and None
+    when the entity's record could not be read, which keeps the call on the platform."""
+    if scope == "workstation":
+        return ""
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        return str((_load_vsb(scope) or {}).get("domain") or "")
+    except Exception:                              # noqa: BLE001 - not read is not known to be clear
+        return None
+
+
+def _ceo_call_class(domains: List[Any], *texts: Any) -> Dict[str, Any]:
+    """W1239 - what one call declares: {"data_class", "kept", "basis"}. data_class is _CEO_DATA_CLASS, or None when the
+    call carries what stays on the platform; kept is then why, in plain words for the reader (None otherwise); basis
+    is the record's sentence either way.
+
+    domains are those of the records the call carries (each handed-in directive's, and its scope's entity's; None for
+    one that could not be read). texts are what it sends. The screen is the religious-content screen
+    (subject_screen.screen_religious_content) where the tree holds it, else the curriculum screen (screen_subject); a
+    screen that raises keeps the call on the platform."""
+    def _kept(why: str) -> Dict[str, Any]:
+        return {"data_class": None, "kept": why,
+                "basis": f"nothing is declared, so no external provider is sent this call: {why}"}
+    if any(d is None for d in domains):
+        return _kept("the domain of a record it carries could not be read, so it is kept on the platform")
+    _in = sorted({str(d).strip().lower() for d in domains} & set(_CEO_KEPT_IN_DOMAINS))
+    if _in:
+        return _kept(f"it carries records of the {' and '.join(_in)} domain{'s' if len(_in) > 1 else ''}, and "
+                     + "; ".join(dict.fromkeys(_CEO_KEPT_IN_DOMAINS[d] for d in _in)))
+    try:
+        from agentic_core.religious_domain import subject_screen as _ss
+        _scr = (getattr(_ss, "screen_religious_content", None) or _ss.screen_subject)(*texts)
+    except Exception as exc:                       # noqa: BLE001 - a screen that could not run keeps the call in
+        return _kept(f"the religious-content screen could not be run ({type(exc).__name__}), so it is kept on the "
+                     "platform")
+    if _scr.get("flagged"):
+        _named = ", ".join(list(_scr.get("matched") or [])[:3]) or "Arabic-script text"
+        return _kept(f"what it carries names religious content ({_named}), and religious content is not sent "
+                     "outside the platform")
+    return {"data_class": _CEO_DATA_CLASS, "kept": None,
+            "basis": (f"declared {_CEO_DATA_CLASS}: no record it carries is of a domain kept on the platform, and the "
+                      "religious-content screen flagged nothing it sends, which is not a finding that it holds "
+                      "nothing religious: a screen can flag, never clear")}
+
+
+def _model_for_this_call() -> dict:
+    """W1239 - whether a model can answer this chat, read before the call with the helpers the gateway's rules rest on.
+
+    A local model is up when the local runtime answers with a model pulled (model_resource.ollama_up and local_models,
+    both off under AI_DISABLE_LOCAL) and its breaker is closed. An external model is counted for this call only when
+    the switch is on (model_resource.external_allowed), this chat asks for one (_CEO_PREFERS_EXTERNAL) and a
+    provider's key is set. This decides only whether the stream holds its tokens: what is tried is the gateway's to
+    decide, and a model's reply is shown whole whenever one served, so a race, or a rule that sends the call out
+    without its asking, shows the reply late, never loses it. The basis says each fact, not a cause. The switch is
+    read here and never set."""
+    from agentic_core.ai.native import model_resource as _mr
+    from agentic_core.organism.self_healing import self_healer as _sh
+    _disabled = os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes")
+    _up = bool(_mr.ollama_up())
+    _listed = _mr.local_models() if _up else []
+    _open = bool(_sh.is_open("ollama"))
+    local = _up and bool(_listed) and not _open
+    _switch = bool(_mr.external_allowed())
+    _keyed = bool(getattr(gateway, "anthropic_key", None) or getattr(gateway, "openai_key", None))
+    external = _switch and _CEO_PREFERS_EXTERNAL and _keyed
+    if _disabled:
+        _lw = "the local model is turned off on this server (AI_DISABLE_LOCAL)"
+    elif not _up:
+        _lw = "no local model answered: the local runtime is not reachable here, or holds no model"
+    elif not _listed:
+        _lw = "the local runtime lists no model"
+    elif _open:
+        _lw = "the local model's breaker is open after failed calls"
+    else:
+        _lw = f"the local runtime lists {len(_listed)} model(s)"
+    _ew = ("the external-AI switch is off" if not _switch else
+           "the external-AI switch is on; "
+           + ("this chat asks for an external model" if _CEO_PREFERS_EXTERNAL else
+              "this chat does not ask for an external model")
+           + ("; a provider's key is set" if _keyed else "; no provider's key is set"))
+    return {"local": local, "external": bool(external), "basis": f"{_lw}; {_ew}"}
+
+
+def _no_model_notice(facts: dict, recited: bool, kept: Optional[str] = None) -> str:
+    """W1239 - WHAT THE CHAT SAYS WHEN NO MODEL CAN ANSWER: a fixed notice in plain words, in place of the structured
+    floor's frame. On a server with no model the floor filled "## Assessment / ## Priorities / ## Next actions" with
+    the request's most frequent words and said "WITHHELD — no domain was declared": a frame that answered nothing that
+    was asked. The notice says no model is connected, so this is not an answer; what the CEO holds from its records;
+    and how a model is added, which is the Owner's decision either way. When the message carried what stays on the
+    platform (kept, from _ceo_call_class), it says no model here can answer this message, since an external model may
+    be connected and is not sent it, and it ends with why the message stays."""
+    d, o = int(facts.get("directives") or 0), int(facts.get("objectives") or 0)
+    unread = [str(u) for u in facts.get("_unread") or []]
+    if unread:
+        held = (f"they could not all be read here ({' and '.join(unread)} could not be read), so what it holds is "
+                f"not known in full")
+    elif d or o:
+        held = (f"{d} Board directive{'' if d == 1 else 's'} and {o} business-plan objective{'' if o == 1 else 's'} "
+                f"for this scope" + ("; what it was handed is quoted below as stored" if recited else ""))
+    elif facts.get("scope", "workstation") == "workstation":
+        held = "none recorded on this server (no Board directive and no business-plan objective for this scope)"
+    else:
+        #  an entity's scope is handed only that entity's records, so its none is the scope's, not the server's
+        held = "none recorded for this entity's scope (no Board directive and no business-plan objective)"
+    said = (("No AI model on this server can answer this message, so this is not an answer to your question.\n\n"
+             if kept else
+             "No AI model is connected on this server, so this is not an answer to your question.\n\n")
+            + f"What the CEO holds from its records: {held}.\n\n"
+            "A model can be added in one of two ways, and each is the Owner's decision: a local model, run on a "
+            "machine large enough to hold one, or an external model, used with the Owner's own key and the "
+            "external-AI switch turned on. The Owner has chosen the second (2026-11-22): this chat asks for an "
+            "external model, and the gateway tries one once the Owner's key is set and the Owner turns the switch "
+            "on.\n")
+    #  W1239 - a message that carries what stays on the platform says so, whatever the switch says (ruling 4)
+    return said + (f"\nThis message stays on the platform whatever the external-AI switch says, so no external "
+                   f"model is sent it: {kept}.\n" if kept else "")
 
 
 def _ungrounded_sections(answer: str, facts: dict) -> list:
@@ -389,7 +625,7 @@ def _ungrounded_sections(answer: str, facts: dict) -> list:
     return out
 
 
-def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
+def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str], debate: bool = True) -> tuple:
     """W451 (P1.3, ledger 1.3) — the AI CEO answers from the §5 chain, not from a persona: the
     Board's directives for this scope, the living plan's adherence and phases, the scope's business
     plan, and the REAL C-Suite meeting log. Returns (grounding_text, facts) — facts travel in the
@@ -419,6 +655,8 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         facts["_directive_texts"] = [_directive_text(r) for r in rows[-3:][::-1]]
         #  W801 (FU-982 R3[9]) - the Owner's own words, kept apart from the composed directive, for the floor's recital
         facts["_instruction_texts"] = [str(r.get("instruction") or "").strip()[:240] for r in rows[-3:][::-1]]
+        #  W1239 - the domain each handed-in directive was deliberated in, read for what the call may declare
+        facts["_domains"] = [str(r.get("domain") or "") for r in rows[-3:]]
         if rows:
             parts.append("## Board directives (most recent first)\n" + "\n".join(
                 f"- {_directive_text(r)}" for r in rows[-3:][::-1]))
@@ -426,6 +664,7 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
             parts.append("## Board directives\n- none recorded for this scope")
     except Exception:
         parts.append("## Board directives\n- unavailable")
+        facts["_unread"] = list(facts.get("_unread") or []) + ["the Board's directives"]   # W1239 - not "none"
     try:
         from agentic_core.api import living_plan as _lp
         # refuter F4 — get_plan is an async route; read the scorecard the plan module itself scores from
@@ -450,10 +689,23 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
                                                      for o in objs[:5]) if objs else "- objectives: none yet"))
     except Exception:
         parts.append("## Business plan\n- unavailable")
+        facts["_unread"] = list(facts.get("_unread") or []) + ["the business plan"]        # W1239 - not "none"
+    #  W1240 - the plan's open items, quoted as stored, in the plan's own order (or why they are unavailable)
+    _plan1240 = _plan_open_items()
+    facts["_plan_items"] = _plan1240
+    facts["plan_items"] = _plan_items_recited(_plan1240)
+    facts["plan_items_basis"] = _plan1240.get("basis") or f"unavailable: {_plan1240.get('reason')}"
+    parts.append(f"## {PLAN_ITEMS_HEADING}\n" + "\n".join(_plan_item_lines(_plan1240)))
+    #  W1241's second review - debate is False for a call that may go to an external model: the log is not handed
+    #  then, and the grounding says so (generate_ceo_stream says why)
     try:
-        facts["debate_entries"] = len(meeting_log.log)
-        debate = meeting_log.get_recent_debate()
-        parts.append("## Recent C-Suite debate (real meeting log)\n" + (debate if debate and debate.strip() else "- none held yet"))
+        if not debate:
+            parts.append("## Recent C-Suite debate\n- not handed to a call that may go to an external model")
+        else:
+            facts["debate_entries"] = len(meeting_log.log)
+            _minuted1241 = meeting_log.get_recent_debate()
+            parts.append("## Recent C-Suite debate (real meeting log)\n"
+                         + (_minuted1241 if _minuted1241 and _minuted1241.strip() else "- none held yet"))
     except Exception:
         parts.append("## Recent C-Suite debate\n- unavailable")
     #  W593 (P2.20 a.iii) — THE GROUNDING IS CONTEXT, NOT A LIST OF SECTIONS TO WRITE. Every part above is
@@ -525,10 +777,18 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
         if "vitals" in low:
             tool_output = await tool_registry.call_tool("get_system_vitals")
         elif "meeting" in low or "debate" in low:
-            tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
+            #  W1241's second review - the meeting reads the domain of the entity whose scope this chat answers for
+            tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt, domains=[_scope_domain(scope)])
     except Exception:
         tool_output = None
-    grounding, facts = _ceo_grounding(prompt, scope, owner_id)
+    #  W1239 - whether a model can answer this chat (read here, before the grounding, since W1241's second review)
+    _model1239 = _model_for_this_call()
+    #  W1241's second review - NO MINUTED DEBATE ON A CALL THAT MAY GO OUT. The grounding hands the C-Suite's recent
+    #  debate only while no external model can be counted for this call (the switch off, or no provider's key set).
+    #  The meeting log is the platform's, one for every scope and every person, and it holds the minutes of meetings
+    #  kept on the platform (one called from the chat of a religion, care or education entity, or on an agenda the
+    #  screen flags), while the class below is read from this call's scope, the directives it is handed and its text.
+    grounding, facts = _ceo_grounding(prompt, scope, owner_id, debate=not _model1239["external"])
     full_prompt = (
         # W574 (M1 R3.7) — this said "the owner's digital-twin Chief". No twin model is trained
         # (§17.4 Mode 2 is planned, P3.4); the Chief is the Owner's standing charter and stored
@@ -554,15 +814,46 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
     # prompt is not a guarantee, so the output is MEASURED rather than trusted: a section the
     # grounding says is empty may not come back with content under it.
     _answer: list = []
+    #  W1239 - WITH NO MODEL UP, THE FLOOR'S FRAME IS NOT SHOWN. Its tokens are held; when the floor served, a fixed
+    #  notice is streamed in their place, and served_by stays native (the amber badge). If a model served after all
+    #  (a race with the check, or a rule that sends the call out without its asking), its held reply is shown whole.
+    #  With a model up nothing here changes. _model1239 is read above the grounding (W1241's second review).
+    #  W1239 - WHAT THIS CALL DECLARES, read from what it carries (the Owner's ruling 4 of 2026-11-27). The name the
+    #  stream_meta call passes is bound here, for this call only: the module's _CEO_DATA_CLASS when nothing it carries
+    #  is kept on the platform, else None, which declares nothing, so no external provider is sent it. An external
+    #  model is counted for this call only when the call may go to one.
+    _class1239 = _ceo_call_class(list(facts.get("_domains") or []) + [_scope_domain(scope)], full_prompt)
+    _CEO_DATA_CLASS = _class1239["data_class"]
+    _hold1239 = not (_model1239["local"] or (_model1239["external"] and _CEO_DATA_CLASS is not None))
+    _held1239: list = []
+    #  W1241 - NO RECALL ON A CALL THAT MAY GO OUT (W1241's review). With recall on, the gateway puts the person's
+    #  recalled interactions before the prompt (gateway._augment), and what it recalls was stored from earlier calls,
+    #  a kept one's prompt among them (a call the floor served is stored as "User: <its prompt>"). The class above is
+    #  read from this call's own records and text alone, so the chat recalls only while its call cannot go to an
+    #  external model: the switch off, no provider's key set, or nothing declared.
+    _recall1241 = not (_model1239["external"] and _CEO_DATA_CLASS is not None)
     try:
-        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True,
-                                            user_text=(prompt or None)):   # W640 - the question typed
+        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=_recall1241,
+                                            user_text=(prompt or None),     # W640 - the question typed
+                                            prefer_external=_CEO_PREFERS_EXTERNAL,    # W1239 - the one value
+                                            data_class=_CEO_DATA_CLASS):              # W1239 - what it carries
             if "token" in ev:
+                if _hold1239:
+                    _held1239.append(str(ev["token"]))
+                    continue
                 _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
             elif ev.get("done"):
+                _notice1239 = _hold1239 and ev.get("served_by") == "native"
+                if _hold1239 and not _notice1239 and _held1239:
+                    _answer.extend(_held1239)
+                    yield f"data: {json.dumps({'content': ''.join(_held1239), 'done': False})}\n\n"
                 #  W801 (FU-982 R3[9]) - on the floor, what the CEO was handed, quoted as stored, after the reply
-                _recital801 = _floor_recital(facts) if ev.get("served_by") == "native" else ""
+                _recital801 = _floor_recital(facts, notice=_notice1239) if ev.get("served_by") == "native" else ""
+                if _notice1239:
+                    _said1239 = _no_model_notice(facts, recited=bool(_recital801), kept=_class1239["kept"])
+                    _answer = [_said1239]
+                    yield f"data: {json.dumps({'content': _said1239, 'done': False})}\n\n"
                 if _recital801:
                     yield f"data: {json.dumps({'content': _recital801, 'done': False})}\n\n"
                 _grounding801 = _cited("".join(_answer), facts)
@@ -570,10 +861,13 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     _grounding801["recited"] = {"directives": 1 if (facts.get("_instruction_texts")
                                                                      or facts.get("_directive_texts")) else 0,
                                                 "objectives": len([t for t in facts.get("_objective_titles") or []
-                                                                   if str(t).strip()])}
+                                                                   if str(t).strip()]),
+                                                #  W1240 - the plan's items quoted; null when they were unavailable
+                                                "plan_items": _plan_items_recited(facts.get("_plan_items"))}
                     _grounding801["recited_basis"] = ("quoted as stored after the floor's reply; a recited record "
                                                       "was not answered from, and `cited` counts only what the "
-                                                      "reply itself named")
+                                                      "reply itself named. The plan's open items are quoted from the "
+                                                      "plan's reader in the plan's own order; none is ranked")
                 yield "data: " + json.dumps({**_reply_evidence(ev.get('served_by')), 
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
@@ -581,6 +875,16 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     "model_tokens": ev.get("model_tokens"), "model_tokens_basis": ev.get("model_tokens_basis"),   # W776 (FU-1105)
                     "grounding": _grounding801,
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
+                    #  W1239 - the class declared for what the call carried, and what each provider's check decided
+                    "data_class": ev.get("data_class"),
+                    #  W1239 - why nothing was declared, when the call carried what stays on the platform (ruling 4)
+                    **({"kept_on_platform": _class1239["basis"]} if _CEO_DATA_CLASS is None else {}),
+                    #  W1239 - the notice was said in place of the floor's frame, and why
+                    **({"no_model": {"local": False, "external_for_this_call": False,
+                                     "basis": _model1239["basis"] + (f"; this call declares nothing: {_class1239['kept']}"
+                                                                     if _class1239["kept"] else ""),
+                                     "said": "a fixed notice in place of the structured floor's frame"}}
+                       if _notice1239 else {}),
                 }) + "\n\n"
     except Exception as exc:
         # honest terminal frame — never a canned answer, never a silent stop

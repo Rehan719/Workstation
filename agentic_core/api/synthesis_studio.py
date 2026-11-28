@@ -294,7 +294,7 @@ async def synthesise(req: SynthesiseRequest,
     _own753 = _eos753(user, "")
     owner_id = _own753["owner_id"]
     synthesis_id = uuid.uuid4().hex[:12]
-    start = time.time()
+    start = time.perf_counter()
     results: dict[str, str] = {}
     provenance: dict[str, dict] = {}     # W627 (FU-529) - who served each stage, kept for the durable record
 
@@ -347,7 +347,7 @@ async def synthesise(req: SynthesiseRequest,
             "status": "active",
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "stages": results,
-            "duration_seconds": round(time.time() - start, 1),
+            "duration_seconds": round(time.perf_counter() - start, 1),
         }
         #  W627 (FU-529) - the durable record says who wrote its stages. Saved as an 'active' VSB with no
         #  provenance, nine floor scaffolds read as a synthesised enterprise.
@@ -395,7 +395,7 @@ async def synthesise(req: SynthesiseRequest,
         except Exception:
             pass
 
-        duration_ms = int((time.time() - start) * 1000)
+        duration_ms = int((time.perf_counter() - start) * 1000)
         yield f'data: {json.dumps({"stage": "done", "synthesis_id": synthesis_id, "entity_id": entity_id, "solution_name": solution_name, "duration_ms": duration_ms, "stages_completed": len(_CASCADE_STAGES), "entity_status": entity.get("status"), "status_basis": entity.get("status_basis"), "first_screen": (entity.get("first_screen") or {}).get("overall")})}\n\n'
 
     return StreamingResponse(

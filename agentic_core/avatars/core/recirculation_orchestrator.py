@@ -234,6 +234,9 @@ class AvatarRecirculationOrchestrator:
                                      "HALTED cycle and not an unmeasured one")}
 
         start_time = time.time()
+        #  W1210 (FU-1847) - two readings: the wall clock names the cycle (cycle_id below), and perf_counter, a
+        #  monotonic clock, times it, so a clock set back or forward meanwhile does not change its duration
+        start_mono = time.perf_counter()
         session_id = f"sess_{self.state.avatar_id[-8:]}"
 
         ctx = {
@@ -270,7 +273,7 @@ class AvatarRecirculationOrchestrator:
             ctx["state"]["reflect"], _r = await self._measure_stage("REFLECT", self._stage_reflect(ctx))
             stage_records.append(_r)
 
-            total_duration = time.time() - start_time
+            total_duration = time.perf_counter() - start_mono
             _breached = [r["stage"] for r in stage_records if r["breached"]]
             ctx["stages"] = stage_records
             await self.ueg.log_event("AVATAR_CYCLE_METABOLIC", {

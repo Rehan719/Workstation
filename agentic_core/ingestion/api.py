@@ -10,7 +10,6 @@ import uuid
 import json
 
 from agentic_core.store_paths import DATA_DIR
-from agentic_core.ai.ceo.memory_v01 import memory_v01
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ingest", tags=["Content Ingestion"])
@@ -18,7 +17,7 @@ router = APIRouter(prefix="/ingest", tags=["Content Ingestion"])
 # §15.6 (W495, FU-124) — TRANSCRIPTION_MOCK IS DELETED.
 #
 # It was a filename-pattern lookup table whose output was registered as a file's `extracted_text` with
-# status INGESTED, written into memory_v01 (the store the AI CEO and the avatars read) and fed into every
+# status INGESTED, written into memory_v01 (the avatar and upload memory, retired since W1196) and fed into every
 # synthesis prompt as "Knowledge base". Nothing was transcribed; no transcription engine exists in this
 # codebase. An upload whose NAME contained "recitation" was given this as its content:
 #
@@ -149,15 +148,12 @@ class IngestionManager:
             extraction_basis = (f"NOT EXTRACTED — no reader is wired for '{_ext or 'this type'}'. The "
                                 f"file is stored as an attachment only.")
 
-        # 3. Long-term memory takes only what was actually READ. Unextracted files used to enter
-        #    memory_v01 as their invented text, which the AI CEO and the avatars then recalled as
-        #    knowledge, and synthesis pasted into prompts as "Knowledge base".
-        if status == "EXTRACTED" and extracted_text.strip():
-            #  W885 (FU-1061) - under sign-in the text is its sender's to recall: added with no owner it went into the
-            #  platform's shared namespace, which every person's generation reads
-            from agentic_core.auth.core import auth_enabled as _auth_on885
-            memory_v01.add_exchange(f"INGEST: {file.filename}", extracted_text,
-                                    owner_id=owner_id if _auth_on885() else None)
+        # 3. No memory store is written here. Before W495 unextracted files entered memory_v01 as their
+        #    invented text, and synthesis pasted it into prompts as "Knowledge base"; until W1196 an
+        #    extracted file's text was still added to memory_v01, the avatar and upload memory, which no
+        #    production caller read back and which the Owner retired on 2026-11-22 (P3.32). What was
+        #    actually READ is kept in the registry row's preview below, and only that counts as the
+        #    knowledge base, which synthesis and the career tools read when the file is selected.
 
         # 4. Registry Entry
         entry = {
@@ -262,13 +258,17 @@ async def delete_ingested_content(file_id: str, user: dict | None = Depends(get_
     `{"status": "DELETED"}`. Two copies survived it:
       · the uploaded bytes at DATA_DIR/uploads/{file_id}_{filename}, whose only pointer was the row just
         removed — so they became unreachable and uncountable rather than merely kept;
-      · the extracted text in memory_v01, the store the AI CEO and the avatars read, so a "deleted" file's
-        content could still be recalled into a generation.
+      · the extracted text in memory_v01, the avatar and upload memory (said then to be read by the AI CEO and
+        the avatars; no production caller read it).
 
-    The bytes are now removed. The memory exchange is NOT removable by file id — memory_v01 keys its rows by
-    their own ids and holds no index from a file to them — so this response SAYS the text may still be
-    recalled instead of claiming a deletion it did not perform. Answering DELETED over a recallable copy is
-    the over-claim this whole programme exists to remove.
+    The bytes are now removed. Since W1196 an upload writes no memory store: the Owner retired the avatar and
+    upload memory on 2026-11-22 (P3.32). What may remain is elsewhere, and this route cannot reach it: a
+    generation that read this file's text (synthesis and the career tools put a selected file's text into the
+    prompt) left that prompt in the interaction log and in the AI's recall memory (VectorMemory, 'User: ...'),
+    and neither holds an index from a file to its rows. So this response SAYS what may remain instead of
+    claiming a deletion it did not perform, and never says that nothing remains. Answering DELETED over a
+    recallable copy is the over-claim this whole programme exists to remove. P4.2's deletion drill owns
+    those two stores.
     """
     if user is not None and not isinstance(user, dict):
         user = None
@@ -305,11 +305,17 @@ async def delete_ingested_content(file_id: str, user: dict | None = Depends(get_
         # THE LIMIT, on the response rather than in a docstring nobody reads
         "extracted_text_may_still_be_recalled": _recalled,
         "what_remains": (
-            ("the text extracted from this file was added to the AI's long-term memory at upload and CANNOT "
-             "be removed by file id: that store keys its rows by their own ids and holds no index from a "
-             "file to them, so this deletion does not reach it. Until such an index exists, treat the "
-             "content as still recallable.") if _recalled else
-            "nothing was extracted from this file, so no text entered the AI's memory from it"),
-        "not_claimed": ("this is REMOVED, not DELETED: the registry row and the bytes are gone and the "
-                        "memory rows are not, and calling that a deletion would overstate it"),
+            ("no memory store took this file's text at upload (the avatar and upload memory is retired, "
+             "W1196), but it may remain elsewhere: a generation that read this file kept its prompt, with "
+             "the file's text, in the interaction log and in the AI's recall memory (VectorMemory). Those "
+             "copies CANNOT be removed by file id: neither store holds an index from a file to its rows, "
+             "so this deletion does not reach them. Treat the content as possibly still recallable "
+             "there.") if _recalled else
+            ("nothing was extracted from this file, so no text entered a prompt or a memory store from it; "
+             + ("its registry row and its uploaded bytes are what this removal reached" if removed_bytes else
+                "its registry row is what this removal reached; no uploaded bytes were found to remove"))),
+        "not_claimed": ("this is REMOVED, not DELETED: the registry row "
+                        + ("and the bytes are" if removed_bytes else "is") + " gone, and what a "
+                        "generation kept of this file in the interaction log or the AI's recall memory is "
+                        "not touched; calling that a deletion would overstate it"),
     }

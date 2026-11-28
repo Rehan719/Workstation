@@ -838,6 +838,157 @@ RESERVED_LIMITS = {
         "the ask and the document are too far apart, or a word between them ends the ask's reach",
 }
 
+#  ── SCREEN 7, AT FOUR MORE DOORS: legal.specialist.reserved_kind over the words of the Generator, the Synthesis
+#  Studio, a refine and a fabric composition's run (W1195b, P5.18 clause 4) ──────────────────────────────────────
+#  The same screen as RESERVED, read over those doors' own populations: a specification, a studio's instructions,
+#  a refine's instruction, a composition's objective. Written and labelled by W1195b's builder before the screen
+#  was run on any of them (2026-11-22): out of sample, but not blind, since the builder had read the screen's
+#  patterns. 'for' is an explicit ask to prepare a reserved document; every other row is 'not-for', among them
+#  requests about one of the documents that ask for something else. RESERVED_AT_DOORS_LIMITS are the asks the
+#  screen does not read, each with its reason, held by test_w1195b to the opposite of their label. The last
+#  group is the legal review's: ordinary requests the screen refused until W1195b stopped it reading a reserved
+#  document named as another document's subject; they were labelled after that, so they are in-sample. The
+#  group before it holds that change's own rules, one request each, written after it (in-sample too).
+RESERVED_AT_DOORS = [
+    #  the Generator's specification
+    ('A Python function that parses a CSV of property listings and returns the median price per postcode', 'not-for'),
+    ('Write a README for a land survey data pipeline', 'not-for'),
+    ('Create a landing page for an estate agency in Truro', 'not-for'),
+    ('Generate a JSON schema for a property listing with address, bedrooms and tenure', 'not-for'),
+    ('Draft a blog post about first-time buyers and stamp duty', 'not-for'),
+    ("Write a marketing email for a lettings agency's new tenant portal", 'not-for'),
+    ('Produce a SQL migration adding a transfers table with from_account, to_account and amount', 'not-for'),
+    ('Create a React component that shows a mortgage repayment calculator', 'not-for'),
+    ('Write unit tests for the bank transfer service', 'not-for'),
+    ('Draft a privacy policy for a house-sharing app', 'not-for'),
+    ('Make a slide outline for a talk on the history of the Land Registry', 'not-for'),
+    ('Write a short story about a family moving into an old farmhouse', 'not-for'),
+    ('Prepare a checklist for viewing a flat to rent', 'not-for'),
+    ('Generate a config file to register the house sensors with the hub', 'not-for'),
+    ('Write a Python function to register a property in the database', 'not-for'),
+    ('Draft a tenancy welcome pack for new tenants of a six-month let', 'not-for'),
+    ('Create a spreadsheet template for tracking rent payments on three flats', 'not-for'),
+    ('Write a job description for a conveyancing assistant', 'not-for'),
+    ("Draft an FAQ page for a mortgage broker's website", 'not-for'),
+    ('Produce API documentation for the /transfers endpoint', 'not-for'),
+    ("Write a poem about selling my grandmother's house", 'not-for'),
+    ('Create a lesson plan on how land ownership is recorded in England', 'not-for'),
+    ('Draft a letter to my landlord asking for the boiler to be fixed', 'not-for'),
+    ('Make a data model for a lease management system', 'not-for'),
+    ('Write a cover letter for a paralegal role in a property firm', 'not-for'),
+    ("Draft a shareholders' agreement for a two-founder startup", 'not-for'),
+    ('Write a contract for website design services', 'not-for'),
+    ('Create a TypeScript type for a deed record in our document archive', 'not-for'),
+    ('Write a function that validates UK postcodes like TR1 2LS', 'not-for'),
+    ('Draft a one-page brief for a house extension architect', 'not-for'),
+    ('Draft the TR1 transfer of my flat to my son', 'for'),
+    ('Please prepare a transfer deed for the cottage', 'for'),
+    ('Write a legal charge over my house in favour of my sister', 'for'),
+    ('Can you draft a contract for the sale of my flat', 'for'),
+    ("Fill in form TP1 for the part of the garden I'm selling", 'for'),
+    ('I need a mortgage deed for the loan on our house', 'for'),
+    ('Draft a 10 year lease of the shop on the high street', 'for'),
+    ("Code to validate a TR1 form's fields", 'not-for'),   # about a document, asking for something else
+    ('A schema for a land registry application form', 'not-for'),   # about a document, asking for something else
+    #  the Synthesis Studio's instructions
+    ('Focus on the main themes and give a balanced summary', 'not-for'),
+    ('A report on how the housing market changed in Cornwall since 2020', 'not-for'),
+    ('Summarise these files for a board meeting, two pages at most', 'not-for'),
+    ('Write an executive summary of the attached lease negotiations', 'not-for'),
+    ('Compare the three mortgage offers in the files and say which is cheapest', 'not-for'),
+    ('Draft a briefing on the planning objections to the new estate', 'not-for'),
+    ('Turn these interview notes into a case study about a housing charity', 'not-for'),
+    ('Prepare a literature review on land value taxation', 'not-for'),
+    ('Make a presentation on our property portfolio performance', 'not-for'),
+    ('A report on how a transfer of a house is registered', 'not-for'),   # about a document, asking for something else
+    ('A report on registering a property with the Land Registry', 'not-for'),   # about a document, asking for something else
+    ('Write a plain-English guide to what a legal charge is', 'not-for'),   # about a document, asking for something else
+    ('Explain the difference between a TR1 and a TP1 for a training session', 'not-for'),   # about a document, asking for something else
+    ('Draft a timeline of the sale of the farm from these emails', 'not-for'),
+    ('Create a simulation of a negotiation between a buyer and a seller of a house', 'not-for'),
+    ('Write a memo on the risks in the attached commercial lease', 'not-for'),
+    ('Produce a report on rent arrears across the portfolio', 'not-for'),
+    ('Draft the transfer of the house into both our names from these notes', 'for'),
+    ('Prepare a contract for the sale of the land described in the files', 'for'),
+    ('Please complete the AP1 for the transfer in these documents', 'for'),
+    ('Write a lease of the warehouse for 15 years using the attached terms', 'for'),
+    #  a refine's instruction
+    ('Make it shorter', 'not-for'),
+    ('Make it more formal and add a confidentiality clause', 'not-for'),
+    ('Add a section on payment terms', 'not-for'),
+    ('Translate it into Welsh', 'not-for'),
+    ('Change the parties to Alpha Ltd and Beta Ltd', 'not-for'),
+    ('Remove the mortgage paragraph', 'not-for'),
+    ('Add the property address: 4 Lemon Street, Truro TR1 2LS', 'not-for'),
+    ('Make the tone friendlier for tenants', 'not-for'),
+    ('Add a clause about the transfer of intellectual property', 'not-for'),
+    ("Turn this into a letter to the buyer's solicitor", 'not-for'),
+    ('Shorten the recitals and number the clauses', 'not-for'),
+    ('Add a schedule listing the fixtures and fittings', 'not-for'),
+    ('Rewrite this as a TR1 transfer of the flat', 'for'),
+    ('Now draft it as a legal charge over the house', 'for'),
+    ('Turn it into a contract for the sale of the land', 'for'),
+    ('Make it a lease of the shop for 20 years', 'for'),
+    ('Please redraft this as a transfer deed', 'for'),
+    ('Check it against what a TR1 needs', 'not-for'),   # about a document, asking for something else
+    #  a fabric composition's objective
+    ('Produce a market analysis for a new coworking space', 'not-for'),
+    ('Generate a product launch plan and a press release', 'not-for'),
+    ('Research and summarise renewable energy grants for farms', 'not-for'),
+    ('Build a content calendar for a property management company', 'not-for'),
+    ('Draft onboarding documents for new letting agents', 'not-for'),
+    ('Analyse tenant complaints and propose fixes', 'not-for'),
+    ('Create training material on anti-money-laundering checks for estate agents', 'not-for'),
+    ('Write a business plan for a house-flipping company', 'not-for'),
+    ("Execute the 'property pack' configuration for synthesis.", 'not-for'),
+    ('Prepare a due diligence summary for buying a small hotel', 'not-for'),
+    ('Draft the transfer deed for 12 Mill Lane and register it', 'for'),
+    ('Prepare the TR1 and AP1 for my house sale', 'for'),
+    ('Create a mortgage deed and a legal charge for the bridging loan', 'for'),
+    #  W1195b's builder, after its legal review: ordinary requests only the change's own rules leave unread, written after it (in-sample)
+    ('Write a few words on a legal charge for our website', 'not-for'),   # about a document, asking for something else
+    ('Prepare a comparison table of the TR1 and the TP1', 'not-for'),   # about a document, asking for something else
+    ('Write a lesson plan, the TR1 and its parts', 'not-for'),   # about a document, asking for something else
+    #  W1195b's legal review: ordinary requests the screen refused before W1195b changed it, labelled after (in-sample)
+    ('Write an explainer on what a legal charge is', 'not-for'),   # about a document, asking for something else
+    ('Prepare a TR1 explainer for clients', 'not-for'),   # about a document, asking for something else
+    ('Write a blog post on transfer deeds', 'not-for'),   # about a document, asking for something else
+    ('Create a lesson on a contract for the sale of land', 'not-for'),   # about a document, asking for something else
+    ('Draft a TR1 cover letter to the Land Registry', 'not-for'),   # about a document, asking for something else
+    ('I need help understanding my TR1', 'not-for'),   # about a document, asking for something else
+    ('Write a revision sheet on the contract for the sale of land', 'not-for'),   # about a document, asking for something else
+    ('Prepare a case study on a lease of land for more than three years for a law course', 'not-for'),   # about a document, asking for something else
+    ('Make the TR1 summary shorter', 'not-for'),   # about a document, asking for something else
+    ('Write a TR1 summary at the top', 'not-for'),   # about a document, asking for something else
+    ('Make it a mortgage deed explainer for clients', 'not-for'),   # about a document, asking for something else
+    ('Write an article on what a mortgage deed does', 'not-for'),   # about a document, asking for something else
+    ('Write a short note on what a transfer deed is', 'not-for'),   # about a document, asking for something else
+    ('Write a paragraph on a lease of land for more than three years', 'not-for'),   # about a document, asking for something else
+    ('Prepare a quiz on the TR1 form', 'not-for'),   # about a document, asking for something else
+    ('Write a mortgage deed explainer', 'not-for'),   # about a document, asking for something else
+    ('Prepare a legal charge glossary entry', 'not-for'),   # about a document, asking for something else
+    ('Draft a transfer deed FAQ', 'not-for'),   # about a document, asking for something else
+    ('Produce a TR1 walkthrough video script', 'not-for'),   # about a document, asking for something else
+    ('Create a contract for the sale of land comparison table', 'not-for'),   # about a document, asking for something else
+    ('Make a TR1 infographic', 'not-for'),   # about a document, asking for something else
+    ('Write a TR1 form tutorial for paralegal students', 'not-for'),   # about a document, asking for something else
+    ('Prepare a mortgage deed training slide', 'not-for'),   # about a document, asking for something else
+    ('I need a TR1 explainer', 'not-for'),   # about a document, asking for something else
+    ('I want a transfer deed summary', 'not-for'),   # about a document, asking for something else
+    ('Draft a legal charge explainer for our website', 'not-for'),   # about a document, asking for something else
+    ('Prepare a newsletter article on a transfer of land', 'not-for'),   # about a document, asking for something else
+    ('Write a contract for the sale of land summary', 'not-for'),   # about a document, asking for something else
+    ('Produce a lease of land for more than three years overview', 'not-for'),   # about a document, asking for something else
+    ('Write the transfer of a flat chapter of my textbook', 'not-for'),   # about a document, asking for something else
+]
+
+RESERVED_AT_DOORS_LIMITS = {
+    'Rewrite this as a TR1 transfer of the flat':
+        "'rewrite' is not a drafting verb the screen reads ('redraft' is), so no ask is read",
+    'Turn it into a contract for the sale of the land':
+        "'turn it into' is not an ask the screen reads",
+}
+
 
 def _table(name, rows, fn):
     #  W809 (FU-1154) - a table of no phrasing measures no screen; "0/0 as intended" would read as a pass
@@ -889,6 +1040,8 @@ def main():
     results.append(_table("legal.boundaries", BOUNDARY, lambda t: _boundaries.recognises(t) is not None))
     from agentic_core.legal import specialist as _specialist  # W1195 (P5.18 clause 4) - the seventh screen
     results.append(_table("legal.reserved", RESERVED, lambda t: _specialist.reserved_kind(t) is not None))
+    results.append(_table("legal.reserved at four more doors (W1195b)", RESERVED_AT_DOORS,
+                          lambda t: _specialist.reserved_kind(t) is not None))
 
     print()
     print("=" * 84)

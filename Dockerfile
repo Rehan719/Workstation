@@ -47,6 +47,11 @@ RUN grep -v -E '^(torch|torchsde|triton|nvidia-[a-z0-9-]+|cuda-[a-z0-9-]+)==' re
 # W896 (FU-1168) - no `COPY src ./src`: src/'s three live modules moved into agentic_core, the rest to _archive/.
 COPY agentic_core ./agentic_core
 COPY config ./config
+# W1251 - the three checks the routes run, and only those. GET /api/v1/registers/sources, /coverage and /perimeter
+# and GET /api/v1/care/tools load each by path (agentic_core/api/registers.py::_script), the same check the suite
+# runs; the image held no scripts/, so each answered 503. Every script a route loads is copied here, or is named in
+# registers.py's NOT_IN_THE_IMAGE with what the route says in its place (test_w1251).
+COPY scripts/sources_check.py scripts/coverage_register.py scripts/auth_perimeter.py ./scripts/
 # W1128 (FU-1156) - what the routes read besides the code: the plan, the register and the sources (docs/), the law
 # corpus and the other knowledge (knowledge/), the product catalogue (products/), and the built pages.
 # .dockerignore keeps every private folder out of the build context, whatever a working copy holds.
@@ -70,4 +75,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/health' % os.environ.get('PORT', '8000'), timeout=4)" || exit 1
 
-CMD ["sh", "-c", "uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]
+# W1235 - exec: sh expands ${PORT} and then becomes uvicorn, so uvicorn is PID 1 and takes the SIGTERM
+# `docker stop` sends. Without it sh was PID 1, passed nothing on, and Docker killed the container after
+# ten seconds (exit 137, FU-1095's drill on 2026-11-22).
+CMD ["sh", "-c", "exec uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port ${PORT}"]

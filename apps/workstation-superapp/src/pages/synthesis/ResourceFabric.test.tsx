@@ -11,6 +11,11 @@
 // W1029 - and three actions read their answer before they use it. The simulation took a refusal's {detail} as the
 // simulation and said nothing, and "save params to the design" and the retirement never read their answer, so a
 // refusal was read as saved or retired. Each refusal here is the route's own (ResourceFabric.refusals.fixture.json).
+//
+// W1209 (FU-1842) - and the capacity chip a simulation draws. It said 'admits N · over capacity' in amber for a
+// composition of five resources, which runs one stage at a time. Two simulate answers are served here, captured from
+// the live route on a fresh store: five sequential resources, and a composition holding the org cascade with
+// csuite_roles CSO,CFO,CTO. The cascade's grant is read from the capture, since it is the organism's at capture time.
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -147,6 +152,40 @@ describe('ResourceFabric, each saved composition\'s lifecycle, rendered', () => 
     fireEvent.click(screen.getByRole('button', { name: /Model before commit/ }));
     expect(await screen.findByText(refused.simulate_refused.body.detail)).toBeTruthy();
     expect(screen.queryByText(/commit-ready|gate could not assess/)).toBeNull();
+  });
+
+  it('the capacity chip says the stages run one at a time, and what the org cascade is granted, never over capacity', async () => {
+    const resource = captured.resources.resources[0];
+    const seq = captured.simulate_sequential;
+    const casc = captured.simulate_cascade;
+    expect(seq.model.pipeline.length).toBe(5);
+    expect(seq.model.organism_capacity.stage_concurrency).toBe(1);
+    expect(seq.model.organism_capacity.cascade).toBeNull();
+    const granted = casc.model.organism_capacity.cascade.granted_parallel;
+    const grant = granted === 1 ? 'one C-Suite pair at a time' : `up to ${granted} C-Suite pairs at once`;
+    for (const [answer, cascade] of [[seq, false], [casc, true]] as const) {
+      serve(undefined, undefined, { simulate: { status: 200, body: answer } });
+      const view = mount();
+      const card = (await screen.findAllByText(resource.name)).map(el => el.closest('button')).find(Boolean);
+      fireEvent.click(card!);
+      fireEvent.click(screen.getByRole('button', { name: /Model before commit/ }));
+      const chip = await screen.findByTestId('fabric-capacity');
+      const said = chip.textContent ?? '';
+      expect(said).toContain(`§8 capacity: ${answer.model.organism_capacity.projected_posture} · stages run one at a time`);
+      expect(said).not.toMatch(/over capacity|fits|admits/);
+      expect(chip.className).toContain('text-violet-300');
+      expect(chip.className).not.toContain('amber');
+      expect(chip.getAttribute('title')).toContain(answer.model.organism_capacity.stage_concurrency_basis);
+      expect(chip.getAttribute('title')).not.toContain('homeostatically governed at execution time');
+      if (cascade) {
+        expect(within(chip).getByTestId('fabric-cascade-grant').textContent).toBe(` · the org cascade: ${grant}`);
+        expect(chip.getAttribute('title')).toContain(casc.model.organism_capacity.cascade.basis);
+      } else {
+        expect(within(chip).queryByTestId('fabric-cascade-grant')).toBeNull();
+      }
+      view.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('a refused save says the API\'s own sentence, and the designs are not read again as if it were saved', async () => {

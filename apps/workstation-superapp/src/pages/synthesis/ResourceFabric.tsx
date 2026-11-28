@@ -108,10 +108,14 @@ interface Simulation {
     // W641 (FU-670, FU-674) — selected resources whose engine the fabric will NOT run, with the server's reason
     engines_not_run_by_fabric?: { id: string; name: string; state: string; reason: string }[];
     engines_not_run_basis?: string;
-    // §7→§8 — projected living-organism capacity for this config's cognitive load (read-only, pre-commit).
+    // §7→§8 — the living organism's state beside this configuration (read-only, pre-commit). W1209 (FU-1842): a
+    // composition's stages run one at a time (stage_concurrency 1), and cascade is the org cascade's grant, present
+    // only when the composition holds it.
     organism_capacity?: {
-      projected_posture?: string; admitted_max_parallel?: number; demand_nodes?: number;
-      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; energy_ratio?: number | null; energy_acts?: boolean };
+      projected_posture?: string; stage_concurrency?: number; stage_concurrency_basis?: string;
+      cascade?: { requested_parallel: number; demand_nodes: number; granted_parallel: number; held_by_work_budget: boolean; basis: string } | null;
+      work_budget?: { holds?: boolean; basis?: string } | null;
+      organism?: { mode?: string; circadian?: string; energy_ratio?: number | null; energy_acts?: boolean };
     } | null;
   };
   simulation: {
@@ -665,13 +669,18 @@ export const ResourceFabric: React.FC = () => {
                   </span>); })()
               )}
               {sim.model.organism_capacity && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.model.organism_capacity.fits_current_capacity ? 'bg-violet-500/15 text-violet-300' : 'bg-amber-500/15 text-amber-400'}`}
+                <span data-testid="fabric-capacity" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
                   /* W506 (FU-265d) — the ATP figure is simulated and this tooltip presented it as
                      capacity 'now'. The immune and circadian terms are live; that one is not. */
-                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, work budget left ${sim.model.organism_capacity.organism?.energy_ratio != null ? Math.round((sim.model.organism_capacity.organism?.energy_ratio ?? 0) * 100) + '%' : 'unknown'} (${sim.model.organism_capacity.organism?.energy_acts ? 'the budget is switched on, so below 30% it holds the run to one node at a time' : 'the budget is switched off, so it limits nothing'}), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
-                  §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
-                  {/* W756 (FU-1114) — while the work budget holds, the reason the figure is 1 */}
-                  {(sim.model.organism_capacity as any).work_budget?.holds && <span data-testid="fabric-work-budget-reason"> · held at 1 by the work budget: {(sim.model.organism_capacity as any).work_budget.basis}</span>}
+                  /* W1209 (FU-1842) — this drew 'admits N · over capacity' in amber, the resource count against the
+                     grant for four parallel nodes. A composition's stages run one at a time and nothing caps them;
+                     only the org cascade runs officer pairs at once, under its own grant. The tooltip says what
+                     governs each, in the server's words. */
+                  title={`§8 living-organism state now — mode ${sim.model.organism_capacity.organism?.mode}, the platform's work budget left ${sim.model.organism_capacity.organism?.energy_ratio != null ? Math.round((sim.model.organism_capacity.organism?.energy_ratio ?? 0) * 100) + '%' : 'unknown'} (${sim.model.organism_capacity.organism?.energy_acts ? "the budget is switched on: below 30%, or once it is spent, it holds this composition's org cascade to one C-Suite pair at a time, and its stages run one at a time whatever it reads" : 'the budget is switched off, so it limits nothing'}), ${sim.model.organism_capacity.organism?.circadian}. ${sim.model.organism_capacity.stage_concurrency_basis ?? ''}${sim.model.organism_capacity.cascade ? '. The org cascade: ' + sim.model.organism_capacity.cascade.basis : ''}.`}>
+                  §8 capacity: {sim.model.organism_capacity.projected_posture} · stages run one at a time
+                  {sim.model.organism_capacity.cascade && <span data-testid="fabric-cascade-grant"> · the org cascade: {sim.model.organism_capacity.cascade.granted_parallel === 1 ? 'one C-Suite pair at a time' : `up to ${sim.model.organism_capacity.cascade.granted_parallel} C-Suite pairs at once`}</span>}
+                  {/* W756 (FU-1114) — while the work budget holds, its reason; W1209 — the platform's, and it limits only the org cascade */}
+                  {sim.model.organism_capacity.work_budget?.holds && <span data-testid="fabric-work-budget-reason"> · the platform's work budget; in this composition it holds only the org cascade: {sim.model.organism_capacity.work_budget.basis}</span>}
                 </span>
               )}
               {/* P3.30 r6 (ledger v16 R4.15) - the tooltip above says the energy figure is simulated; this says it

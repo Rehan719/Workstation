@@ -255,7 +255,7 @@ async def run_cycle(req: CycleRequest):
     Introspect → CEO triage → C-Suite verdicts → CoE/BTO roadmap.
     """
     cycle_id = uuid.uuid4().hex[:10]
-    start = time.time()
+    start = time.perf_counter()
 
     # 1. Introspection (sensory)
     state = _introspect()
@@ -372,7 +372,7 @@ async def run_cycle(req: CycleRequest):
     roadmap = {
         "cycle_id": cycle_id,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "duration_ms": int((time.time() - start) * 1000),
+        "duration_ms": int((time.perf_counter() - start) * 1000),
         "introspection": state,
         "ceo_directives": directives,
         "previous_cycle": previous_cycle,          # W828 (FU-907)

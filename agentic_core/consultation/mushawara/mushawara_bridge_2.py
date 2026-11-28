@@ -27,7 +27,7 @@ class MushawaraBridge2:
         return await self.deliberate(query, engines, mode=mode)
 
     async def deliberate(self, query, engines, mode="sync"):
-        start = time.time()
+        start = time.perf_counter()
         if mode == "sync": ps = await asyncio.gather(*[self._get_p(query, e) for e in engines])
         else: ps = [await self._get_p(query, e) for e in engines]
         agg = await self.agg.synthesize(ps)
@@ -79,7 +79,7 @@ class MushawaraBridge2:
             _reason = f"all {len(_verdicts)} perspective(s) returned a passing constitutional verdict"
         res = {"status": _status, "reason": _reason, "status_basis": _reason,
                "coverage": {"screened_by": _coverage, "coverage_limit": _limit, "unscreened": _unscreened},
-               "outcome": agg, "duration_ms": (time.time()-start)*1000}
+               "outcome": agg, "duration_ms": (time.perf_counter()-start)*1000}
         if self.ueg: await self.ueg.log_minimisation_event("mushawara_complete", res)
         return res
     async def _get_p(self, q, et):

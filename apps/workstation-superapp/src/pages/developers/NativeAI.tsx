@@ -12,6 +12,9 @@ interface Status {
   posture: string; external_allowed: boolean; owned_resources_available: string[];
   selection_order: string[]; guarantee: string; resources: ModelResource[];
   active_model?: string; active_model_label?: string; is_real_model?: boolean;
+  // W1242c - what serves next, by what a call declares (read now, nothing called)
+  next_to_serve?: { declared_class: { resource: string; is_model: boolean; basis: string };
+                    no_class: { resource: string; is_model: boolean; basis: string }; basis: string };
   mode?: string; floor_active?: boolean; floor_note?: string | null;
   floor_active_basis?: string;   // W458 — the row the verdict was computed from
 }
@@ -762,6 +765,18 @@ export const NativeAI: React.FC = () => {
               </span>
               <span className="text-[9px] font-bold uppercase text-slate-500">serving: {status.active_model} · {status.mode}</span>
             </div>
+            {/* W1242c - next to serve, by what a call declares: with the switch on and no local model, a call that
+                declares a class that may leave goes to the external provider, and one that declares none to the floor */}
+            {status.next_to_serve && (
+              <div className="mt-2 space-y-0.5" data-testid="native-status-next">
+                <p className="text-[10px] text-slate-300" data-testid="native-status-next-declared">
+                  Next to serve a call that declares what it carries: {status.next_to_serve.declared_class.resource} — {status.next_to_serve.declared_class.basis}.
+                </p>
+                <p className="text-[10px] text-slate-300" data-testid="native-status-next-undeclared">
+                  Next to serve a call that declares nothing: {status.next_to_serve.no_class.resource} — {status.next_to_serve.no_class.basis}.
+                </p>
+              </div>
+            )}
             {status.floor_active && status.floor_note && (
               <p className="text-[11px] text-slate-400 leading-relaxed mt-2">{status.floor_note}</p>
             )}

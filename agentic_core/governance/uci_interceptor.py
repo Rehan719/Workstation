@@ -103,7 +103,7 @@ class RecirculationPreflight:
                 raise PermissionError(f"UCI v16: Immune Defense blocked {threat['source']}")
 
         # 5. High-Fidelity Execution
-        start_ts = time.time()
+        start_ts = time.perf_counter()
         try:
             #  W637 — THE CALLER'S ACTION IS WHAT RUNS. A branch here replaced it, for any context carrying a
             #  "signature tech" key, with a suite that executed nothing and returned a constant fidelity and a
@@ -121,7 +121,7 @@ class RecirculationPreflight:
             output = await self.regulator.repair({"error": str(e), "context": context}, tier="HDR")
             await self.ueg.log_minimisation_event("uci_self_healing", {"error": str(e)})
 
-        latency = (time.time() - start_ts) * 1000
+        latency = (time.perf_counter() - start_ts) * 1000
 
         # 6. Hallucination Sandbox & Critique
         if isinstance(output, str):

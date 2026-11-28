@@ -15,6 +15,9 @@ import { PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import captured from './GenesisJourney.fixture.json';
 import { GenesisJourney } from './GenesisJourney';
 
+// W1242b - with every call floor-served the page says first, in the route's plain words, that no model answered, what
+// was saved and how a model is added; folds the fallback's frames, each behind its own toggle; and keeps the technical
+// labels in closed disclosures. A model-served answer (no_model null) folds nothing.
 // the rail's six tiles, in order, and the verification entry each reads (the rank tile reads its candidates)
 const RAIL: (string | null)[] = ['concept', 'research', null, 'design', 'operations', 'commercialisation'];
 
@@ -27,6 +30,10 @@ function serve(edit?: (j: any) => void) {
     if (url === '/api/v1/genesis/journey' && init?.method === 'POST') return reply(200, journey);
     if (url === '/api/v1/economy/entity-types') return reply(200, captured.entity_types);
     if (url === '/api/v1/genesis/price') return reply(200, captured.price);          // the price panel's own read
+    //  W1242c - the two-step establish: the stream is refused here, so the page takes the blocking establish, as it does
+    //  on any stream failure, and is answered as the route answered the capture
+    if (url === '/api/v1/genesis/establish/stream') return reply(503, { detail: 'the establish stream is not served here' });
+    if (url === '/api/v1/genesis/establish' && init?.method === 'POST') return reply(200, captured.establish);
     return reply(200, {});
   }));
   return journey;
@@ -151,6 +158,64 @@ describe('GenesisJourney, the stage rail and the rank stage, rendered', () => {
     }
     expect(screen.getByTestId('rank-selection-basis').textContent)
       .toBe(`${j.stage_5_model_simulate_rank.selection_basis} — nothing is carried into Design: the journey stops here.`);
+  });
+
+  it('a journey no model answered says so first, in plain words, and folds what the fallback produced', async () => {
+    const j = serve();
+    await runJourney();
+    const nm = j.no_model;
+    expect(Object.keys(j.ai_provenance.served_by)).toEqual(['native']);
+    expect(nm.all_calls_floor_served).toBe(j.ai_provenance.served_by.native);
+    expect(screen.getByTestId('genesis-no-model-said').textContent).toBe(nm.said);
+    expect(nm.said.startsWith('No AI model is connected, so these steps could not write anything.')).toBe(true);
+    expect(screen.getByTestId('genesis-no-model-saved').textContent).toBe(nm.saved);
+    expect(screen.getByTestId('genesis-no-model-how').textContent).toBe(nm.how);
+    // near the top: before the export card, the technical disclosure and every stage
+    const notice = screen.getByTestId('genesis-no-model');
+    for (const later of [screen.getByText('Export the journey (§4.9) as a deliverable'), screen.getByTestId('genesis-technical-details'),
+      screen.getByText('Phase 1 · Conceptualisation')]) {
+      expect(notice.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // folded: phase 1's three sections, research and operations each have a toggle, and no frame is drawn
+    const toggles = screen.getAllByTestId('floor-fold-toggle');
+    expect(toggles.map(t => t.textContent)).toEqual(Array(5).fill('Show what the fallback produced'));
+    expect(screen.queryAllByTestId('floor-fold-text')).toHaveLength(0);
+    expect(document.body.textContent).not.toContain(j.phase_1_conceptualisation.cognitive_cascade.trim().slice(0, 80));
+    fireEvent.click(toggles[0]);
+    expect(screen.getByTestId('floor-fold-text').textContent).toBe(j.phase_1_conceptualisation.cognitive_cascade);
+    expect(toggles[0].textContent).toBe('Hide what the fallback produced');
+    expect(screen.getAllByTestId('floor-fold-text')).toHaveLength(1);           // each heading opens on its own
+    // the technical labels are kept, each in a closed disclosure
+    for (const id of ['rail-why-1', 'genesis-technical-details', 'rank-method-details', 'rank-measured-details',
+      'engines-used-basis', 'journey-intent-gate', 'journey-engines-basis']) {
+      const d = screen.getByTestId(id).closest('details');
+      expect(d).not.toBeNull();
+      expect(d?.open).toBe(false);
+    }
+    expect(within(screen.getByTestId('genesis-technical-details')).getByText(/0\/0 verified/)).toBeTruthy();
+    expect(screen.getByTestId('journey-intent-gate').textContent).toContain(`checkpoint ${j.governance.checkpoint}`);
+  });
+
+  // W1242c - once the journey is established in a second step, the notice is the establishment's: it names the entity
+  it('after a two-step establish the notice names the entity that keeps the founder\'s words', async () => {
+    const j = serve();
+    await runJourney();
+    expect(screen.getByTestId('genesis-no-model-saved').textContent).toBe(j.no_model.saved);
+    const est = captured.establish;
+    expect(est.no_model.saved.startsWith(`What was saved: your own words, in the entity ${est.vsb_id}, which is registered`)).toBe(true);
+    fireEvent.click(screen.getByText('Establish VSB IDBO Entity'));
+    await waitFor(() => expect(screen.getByTestId('genesis-no-model-saved').textContent).toBe(est.no_model.saved));
+    expect(screen.getByTestId('genesis-no-model-said').textContent).toBe(est.no_model.said);
+    expect(screen.getByTestId('genesis-no-model-how').textContent).toBe(est.no_model.how);
+    expect(screen.getAllByTestId('genesis-no-model')).toHaveLength(1);
+  });
+
+  it('a journey a model answered shows no notice and folds nothing', async () => {
+    const j = serve(x => { x.no_model = null; x.ai_provenance.served_by = { 'ollama:w1242-local': 14 }; });
+    await runJourney();
+    expect(screen.queryByTestId('genesis-no-model')).toBeNull();
+    expect(screen.queryAllByTestId('floor-fold-toggle')).toHaveLength(0);
+    expect(document.body.textContent).toContain(j.phase_1_conceptualisation.concept.trim().slice(0, 80));
   });
 
   it('a stage the journey recorded no verification for says not known, never ran', async () => {

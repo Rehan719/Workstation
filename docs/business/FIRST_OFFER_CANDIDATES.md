@@ -11,6 +11,7 @@ do not lead, and a notes template. Nothing here has been put to a customer. No p
 - Every statement carries a label: [observed] is read from this tree on 2026-11-13; [inference] is reasoned from what was observed; [hypothesis] is a claim the interviews are meant to test; [owner decision] is the Owner's to make. [observed]
 - NOT MEASURED means nothing in this tree, and no conversation with a person, shows the cell either way. It is not a guess at a low value. [observed]
 - The tools named below run on the deterministic floor unless a model is available. External models stay off unless the Owner switches them on. [observed]
+- The Domain tools are free, for individuals and for institutions, by the Owner's ruling (plan item P5.16), so the willingness-to-pay questions below ask what a person spends today, in money or in time, and never put a price on the tool. [owner-defined, 2026-10-12]
 
 ## The three candidates
 
@@ -28,7 +29,7 @@ do not lead, and a notes template. Nothing here has been put to a customer. No p
 | Who checks the output | The person, who may not be able to | The person | A teacher, by training |
 | Personal data it holds | A person's own dispute: never sent to an external model (test_w899) | A person's work history | A piece of work; children do not use the tools (test_w712) |
 | Help from a person, built in | Yes: a question about one's own case is routed to people (test_w874) | No | No |
-| Would anyone pay | NOT MEASURED | NOT MEASURED | NOT MEASURED |
+| Would anyone use it again | NOT MEASURED | NOT MEASURED | NOT MEASURED |
 | How often the need recurs | NOT MEASURED | NOT MEASURED | NOT MEASURED |
 | What a person uses today | NOT MEASURED | NOT MEASURED | NOT MEASURED |
 
@@ -37,9 +38,9 @@ do not lead, and a notes template. Nothing here has been put to a customer. No p
 
 ## The leading hypothesis
 
-- Teachers and tutors who plan lessons against a named framework will use, and pay for, a tool that drafts the plan and the feedback for them to check, because they check it anyway. [hypothesis]
+- Teachers and tutors who plan lessons against a named framework will use a tool that drafts the plan and the feedback for them to check, and come back to it, because they check it anyway. [hypothesis]
 - It is chosen because the person who reads the output is trained to judge it, and because a wrong draft costs a re-read, not a missed deadline. [inference]
-- It would be refuted by any of these: teachers say they would not use a draft they must check line by line; the floor's output without a model is not good enough to start from; or the person who would pay is a school whose buying route this business cannot reach. [hypothesis]
+- It would be refuted by any of these: teachers say they would not use a draft they must check line by line; the floor's output without a model is not good enough to start from; or a school does not let its staff use a free outside tool for planning. [hypothesis]
 - Which candidate is offered first is the Owner's call, made after the interviews. [owner decision]
 
 ## Who the offer is not for

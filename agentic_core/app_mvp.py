@@ -203,6 +203,16 @@ async def _horizon_observe(request, call_next):
             pass                      # (membrane._record counts its own failures; this guards the import)
 
 
+#  W1202 (FU-1835) - THE REQUEST GUARD, THE OUTERMOST LAYER. Added after the CORS middleware and after
+#  _horizon_observe, so it runs before both: Starlette runs the layer added last first. It acts only where the
+#  release machine's startup script names the page origins it serves (WORKSTATION_PAGE_ORIGINS, read at each
+#  request), and is off everywhere else, the Owner's own machine and the test suite included. There it refuses a
+#  host name other than the machine's own, and a write or a stream socket from a page of another origin. A request
+#  it refuses reaches neither CORS nor the membrane, so the membrane does not observe it (agentic_core/request_guard.py).
+from agentic_core.request_guard import OriginHostGuard as _OriginHostGuard  # noqa: E402
+app.add_middleware(_OriginHostGuard)
+
+
 #  W683 - the caller dependency, imported BEFORE the first mount so every router below can be mounted behind it.
 #  (The later imports of the same names are kept: they are the same objects.)
 from fastapi import Depends as _Depends

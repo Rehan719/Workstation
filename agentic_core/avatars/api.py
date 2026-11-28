@@ -14,9 +14,11 @@ chain of correct refusals, which is why P3.16's bar holds the avatar wiring on t
 engines having a model path (P3.20–P3.24) rather than on the loop working.
 This module instead implements a smaller, genuinely functional chat/voice/vision
 pipeline, reusing the already-real `agentic_core.ai.gateway.gateway` (Ollama, with
-OpenAI used automatically the moment a valid OPENAI_API_KEY is configured) and the
-real `memory_v01` ChromaDB store, while reusing `AvatarState` from the existing
-avatar_engine for genuine per-session identity.
+OpenAI used automatically the moment a valid OPENAI_API_KEY is configured), whose
+recall reads VectorMemory (agentic_core/ai/memory.py), while reusing `AvatarState` from
+the existing avatar_engine for genuine per-session identity. A message is no longer
+written into the avatar and upload memory (memory_v01), which the Owner retired on
+2026-11-22 (W1196, P3.32).
 
 Vision (image understanding) is IN-HOUSE-FIRST: `/chat` analyses an attached image with a LOCAL
 Ollama vision model (e.g. `llava` / `llama3.2-vision` / `moondream`, set via OLLAMA_VISION_MODEL) —
@@ -40,7 +42,6 @@ from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
-from agentic_core.ai.ceo.memory_v01 import memory_v01
 from agentic_core.avatars.core.avatar_engine import AvatarState
 
 logger = logging.getLogger(__name__)
@@ -302,7 +303,7 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
     import time as _time
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     model = os.getenv("OLLAMA_VISION_MODEL", "llava")
-    _t0, _ok, _tokens, out = _time.time(), False, None, None
+    _t0, _ok, _tokens, out = _time.perf_counter(), False, None, None
     try:
         async with httpx.AsyncClient(timeout=float(os.getenv("OLLAMA_VISION_TIMEOUT", "30"))) as client:
             r = await client.post(ollama_url, json={
@@ -324,7 +325,7 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
     try:
         from agentic_core.api.operational_excellence import record_outcome
         record_outcome("model_attempt", "avatar:vision", served_by=f"ollama:{model}", is_external=False,
-                       duration_ms=int((_time.time() - _t0) * 1000), success=_ok, tokens=_tokens)
+                       duration_ms=int((_time.perf_counter() - _t0) * 1000), success=_ok, tokens=_tokens)
     except Exception:
         pass
     return out
@@ -645,8 +646,8 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
 
     history.append({"role": "user", "content": request.message})
     history.append({"role": "assistant", "content": response_text})
-    memory_v01.add_exchange(f"AVATAR[{request.context}]: {request.message}", response_text,
-                            owner_id=_owner)   # W343 — tenant-stamped
+    #  W1196 (FU-1843) - the exchange is no longer written into memory_v01, the avatar and upload memory the Owner
+    #  retired on 2026-11-22; the gateway's interaction log and VectorMemory keep this call as they did
 
     return ChatResponse(
         session_id=session_id,

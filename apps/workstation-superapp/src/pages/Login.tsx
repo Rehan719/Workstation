@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { KeyRound, Loader2, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
-import { clearToken, setToken, whoami, WhoAmI } from '../lib/auth';
+import { clearToken, returnPath, setRefreshToken, setToken, whoami, WhoAmI } from '../lib/auth';   // W1253: returnPath, setRefreshToken
 import { apiJson, axiosDetail, bodyOrNull, errorMessage } from '../lib/api';   // W927 - a read is used only on a 2xx
 
 // §14 (W296) — the FRONT DOOR: the multi-user journey can begin. Honest at every edge:
@@ -11,6 +11,11 @@ import { apiJson, axiosDetail, bodyOrNull, errorMessage } from '../lib/api';   /
 //    form; everyone else is told to ask the Owner, never shown a fake signup.
 export const Login: React.FC = () => {
   const nav = useNavigate();
+  //  W1253 - why the person is here, and where a sign-in sends them back to: a session that ended says so, and the
+  //  page they were on is where they go, only ever a path on this site (returnPath)
+  const [sp] = useSearchParams();
+  const ended = sp.get('session') === 'ended';
+  const back = returnPath(sp.get('next'));
   const [who, setWho] = useState<WhoAmI | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -62,8 +67,9 @@ export const Login: React.FC = () => {
       if (!r.ok) { const d = await bodyOrNull(r); setError(r.status === 401 ? 'Invalid username or password.' : refusal(r, d)); setBusy(false); return; }
       const d = await r.json();
       setToken(d.access_token);
+      setRefreshToken(d.refresh_token);   // W1253 - so a session that runs out is renewed in place, not ended
       setWho(await whoami());
-      nav('/');
+      nav(back);                          // W1253 - back to the page the person was on
     } catch (e) { setError(errorMessage(e)); }
     setBusy(false);
   };
@@ -91,6 +97,21 @@ export const Login: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">Workstation IDBO · Access</p>
         <h1 className="text-4xl font-black tracking-tight text-white uppercase italic">Sign in</h1>
       </header>
+
+      {/* W1253 - a session that ended says so, in plain words, and what happens once the person signs in again */}
+      {ended && who?.mode !== 'authenticated' && (
+        <Card className="p-5 border-sky-500/30 bg-sky-500/5">
+          <div role="status" data-testid="session-ended" className="space-y-1">
+            <p className="text-sm text-sky-200 font-bold">Your session ended. Sign in again to carry on.</p>
+            {back !== '/' && (
+              <p data-testid="session-ended-back" className="text-[11px] text-slate-300 leading-relaxed">
+                Once you are signed in you will go back to the page you were on. What you were typing in the Genesis idea
+                box or in an enterprise's Converse box is still there.
+              </p>
+            )}
+          </div>
+        </Card>
+      )}
 
       {who?.mode === 'auth-off' && (
         <Card className="p-5 border-amber-500/30 bg-amber-500/5">

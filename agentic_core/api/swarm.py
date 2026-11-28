@@ -128,7 +128,7 @@ async def delegate_task(req: DelegateRequest, user: dict | None = Depends(get_cu
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling
     refuse_faith_ruling(f"{req.task} {req.context}", "delegation")
     run_id = uuid.uuid4().hex[:10]
-    start = time.time()
+    start = time.perf_counter()
     #  W1094 (FU-1273) - the person this delegation is kept for: with sign-in on, the one signed in
     from agentic_core.auth.core import auth_enabled as _auth1094
     _owner1094 = user.get("username") if (_auth1094() and isinstance(user, dict)) else None
@@ -142,7 +142,7 @@ async def delegate_task(req: DelegateRequest, user: dict | None = Depends(get_cu
 
     @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _dq(prompt: str, agent: str) -> str:
-        _t0 = time.time()
+        _t0 = time.perf_counter()
         res = await gateway.query_meta(prompt, agent=agent, augment=False, owner_id=_owner1094,   # W1094
                                        user_text=(req.task or None))   # W640 - the person's own words
         sb = res.get("served_by", "native")
@@ -152,7 +152,7 @@ async def delegate_task(req: DelegateRequest, user: dict | None = Depends(get_cu
             from agentic_core.api.operational_excellence import record_outcome
             record_outcome("ai_call", f"agent:{agent}", served_by=sb,
                            is_external=bool(res.get("is_external")),
-                           duration_ms=int((time.time() - _t0) * 1000),
+                           duration_ms=int((time.perf_counter() - _t0) * 1000),
                            # W495 (FU-125, S7.3) - no quality gate assesses a single AI call, so
                            # this records that it PRODUCED output and claims no verdict
                            success=bool((res.get("output") or "").strip()),
@@ -262,7 +262,7 @@ async def delegate_task(req: DelegateRequest, user: dict | None = Depends(get_cu
         "ai_provenance": provenance,
         "quality": _quality,
         "homeostasis": homeo,
-        "duration_ms": int((time.time() - start) * 1000),
+        "duration_ms": int((time.perf_counter() - start) * 1000),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     from agentic_core.config import StoreUnavailable as _SU1094
@@ -598,6 +598,21 @@ async def accept_delivery(run_id: str, req: AcceptDeliveryRequest,
     return {"accepted": True, **rec}
 
 
+#  W1209 (FU-1842) - THE CASCADE'S DEMAND AND ITS REQUEST, SAID ONCE: the roles it engages (known C-Suite officers
+#  only, the CEO being the apex; when none is recognised, the default five), the honest demand of W278 (3 apex tiers +
+#  an officer and its CoE per role + the optional CoEs + BTO, build and catalogue + 6 appraisals) and the parallelism
+#  it asks the controller for (one officer pair per role, at most 4). cascade_orchestration runs on it, and the
+#  fabric's preview projects the cascade's grant from it, so the preview cannot project a formula the run does not use.
+_DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
+
+
+def cascade_demand(csuite_roles, coe_specialisms) -> tuple:
+    """(roles, demand_nodes, requested_parallel) for a cascade asked for these C-Suite roles and CoE specialisms."""
+    roles = ([r for r in (csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or list(_DEFAULT_CSUITE))[:9]
+    demand = 3 + 2 * len(roles) + len((coe_specialisms or [])[:3]) + 3 + 6
+    return roles, demand, min(4, len(roles))
+
+
 @router.post("/cascade")
 async def cascade_orchestration(req: CascadeRequest,
                                user: dict | None = Depends(get_current_user)):
@@ -614,7 +629,7 @@ async def cascade_orchestration(req: CascadeRequest,
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(req.mission, "mission")
     run_id = uuid.uuid4().hex[:10]
-    start = time.time()
+    start = time.perf_counter()
     # W452 (P1.4) — a cascade scoped to a VSB consults its Mode 3 review gates before a single
     # tier runs: a pending or rejected human review is a 409 with the gate named.
     #  W829 (FU-1118) - an INTERNAL call (a VSB's repository cascade, a contract delivery, a composition's org
@@ -658,13 +673,11 @@ async def cascade_orchestration(req: CascadeRequest,
     # officer+CoE pairs run CONCURRENTLY (bounded by the granted parallelism); under a protective
     # posture (granted 1) the run stays fully sequential — the organism's state genuinely shapes
     # how the organisation works. Fail-closed (W742): a controller that cannot answer grants 1, as below.
-    _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
-    _sel_probe = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
-    _honest_demand = 3 + 2 * len(_sel_probe[:9]) + len((req.coe_specialisms or [])[:3]) + 3 + 6
+    #  W1209 (FU-1842) - the roles, the demand and the request from cascade_demand, which the fabric preview reads too
+    _sel_probe, _honest_demand, _requested1209 = cascade_demand(req.csuite_roles, req.coe_specialisms)
     try:
         from agentic_core.ai.native.homeostasis import homeostasis
-        homeo = homeostasis.assess(demand_nodes=_honest_demand,
-                                   requested_parallel=min(4, len(_sel_probe[:9])))
+        homeo = homeostasis.assess(demand_nodes=_honest_demand, requested_parallel=_requested1209)
     except Exception:
         homeo = None
     _granted = max(1, int((homeo or {}).get("max_parallel", 1)))
@@ -722,7 +735,7 @@ async def cascade_orchestration(req: CascadeRequest,
 
     @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _q(prompt: str, agent: str) -> str:
-        _qt0 = time.time()
+        _qt0 = time.perf_counter()
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what
         # they asked for is stored where even they cannot recall it. `user` is in scope here by
         # closure from cascade_orchestration; the identical call in _dq() threads the person delegate_task()
@@ -740,7 +753,7 @@ async def cascade_orchestration(req: CascadeRequest,
             from agentic_core.api.operational_excellence import record_outcome
             record_outcome("ai_call", f"agent:{agent}", served_by=sb,
                            is_external=bool(res.get("is_external")),
-                           duration_ms=int((time.time() - _qt0) * 1000),
+                           duration_ms=int((time.perf_counter() - _qt0) * 1000),
                            owner_id=(_book_owner829 or _owner_id),     # S18.6 (W743); the VSB's, W829
                            vsb_id=_book_vsb829,                         # W829 (FU-1118) - the scope's VSB
                            # W495 (FU-125, S7.3) - no quality gate assesses a single AI call, so
@@ -1240,7 +1253,7 @@ async def cascade_orchestration(req: CascadeRequest,
     try:
         from agentic_core.vbs.registry import bms, ems
         _insights = len(management_systems.get("document_control", {})) + len(appraisals)
-        _energy_wh = round(max(0.1, (time.time() - start) / 60.0), 3)   # duration-derived ESTIMATE
+        _energy_wh = round(max(0.1, (time.perf_counter() - start) / 60.0), 3)   # duration-derived ESTIMATE
         _unit = await bms.calculate_unit_economics(_insights, _energy_wh)
         _roi = _unit.get("roi")
         management_systems["bms"] = {
@@ -1354,7 +1367,7 @@ async def cascade_orchestration(req: CascadeRequest,
     except Exception:
         pass
 
-    duration_ms = int((time.time() - start) * 1000)
+    duration_ms = int((time.perf_counter() - start) * 1000)
     biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"Chief+Board+CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE+BTO+BuildToOrder, {duration_ms}ms")
 
     # §5 (W280) — a cascade bound to a plan objective DELIVERS it: on a QMS-passed run a review

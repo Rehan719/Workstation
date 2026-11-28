@@ -6,6 +6,17 @@ from typing import Dict, Any, List, Optional
 from agentic_core.vbs.dcms import DocumentControlManagementSystem
 
 
+#  W1206 (FU-1846; P5.10 clause 1) - A STORE READ TOLERANTLY INTO AN OBJECT IS NEVER WRITTEN BACK FROM IT. _state is
+#  filled by read_json_reported, which answers an unreadable store with its prefix or the defaults; writing that
+#  back replaced the history it could not read (FU-395's class, through an attribute). While _store_unreadable is
+#  set every write is refused and said.
+WRITES_REFUSED_BASIS = (
+    "nothing is written to the QMS store while it cannot be read whole: it keeps its bytes, and a gate run, defect, "
+    "correction, re-verification or disposition recorded since is held in this process only and is lost when it "
+    "ends. The store is read once, at first use, so the refusal lasts until the platform is restarted with the "
+    "store repaired")
+
+
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
@@ -82,6 +93,8 @@ class QualityManagementSystem:
         # because a truncated store makes the non-conformance rate look BETTER: the defects that cannot be
         # read are exactly the ones missing from the numerator.
         self._store_unreadable: Optional[str] = None
+        #  W1206 (FU-1846) - the last write refused because the store could not be read whole: reason, writer, when
+        self.last_write_refused: Optional[Dict[str, Any]] = None
 
     # ── persistent state (lazy: data_path resolves the live DATA_DIR at first use) ──
     def _load_state(self) -> Dict[str, Any]:
@@ -95,9 +108,28 @@ class QualityManagementSystem:
         return self._state
 
     def _save_state(self) -> None:
+        """Write _state whole. W1206 (FU-1846): refused with StoreUnavailable while the store could not be read
+        whole, because _state is then a prefix or the defaults, and the store keeps its bytes."""
         if self._state is not None:
-            from agentic_core.config import atomic_write_json, data_path
+            from agentic_core.config import StoreUnavailable, atomic_write_json, data_path
+            if self._store_unreadable:
+                raise StoreUnavailable(data_path(self._store_name), self._store_unreadable)
             atomic_write_json(data_path(self._store_name), self._state)
+
+    def _save_or_refuse(self, writer: str) -> Optional[str]:
+        """W1206 (FU-1846) - save, or record why the save was refused and return it. A gate's verdict and a
+        defect writer's answer are still returned (never break a delivery on a QMS hiccup), and nothing is
+        written. The refusal is said on the summary (last_write_refused) and on each defect writer's answer
+        (write_refused); a gate's verdict is a bool, so a refused gate write is said only on the summary and by
+        the gate route that lifts it."""
+        from agentic_core.config import StoreUnavailable
+        try:
+            self._save_state()
+        except StoreUnavailable as e:
+            self.last_write_refused = {"reason": str(e), "writer": writer, "at": _now()}
+            self.logger.error("QMS: %s refused its write: %s", writer, e)
+            return str(e)
+        return None
 
     @property
     def defects(self) -> List[Dict[str, Any]]:
@@ -161,7 +193,7 @@ class QualityManagementSystem:
             })
             st["defects"] = st["defects"][-500:]   # bounded list; defects_total keeps the true count
             self.logger.warning(f"QMS: Quality Gate FAILED ({label}). Coverage: {coverage}")
-        self._save_state()
+        self._save_or_refuse("run_quality_gates")      # W1206 - refused while unreadable; the verdict returns
 
         return passed
 
@@ -216,8 +248,8 @@ class QualityManagementSystem:
         }
         st["defects"].append(d)
         st["defects"] = st["defects"][-500:]
-        self._save_state()
-        return d
+        _refused = self._save_or_refuse("open_reported_defect")
+        return {**d, "write_refused": _refused} if _refused else d
 
     # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
     def correct_defect(self, defect_id: str, correction: str, actor: str = "owner") -> Optional[Dict[str, Any]]:
@@ -230,8 +262,8 @@ class QualityManagementSystem:
                 d["correction"] = str(correction)[:2000]
                 d["corrected_at"] = _now()
                 d["corrected_by"] = actor
-                self._save_state()
-                return d
+                _refused = self._save_or_refuse("correct_defect")
+                return {**d, "write_refused": _refused} if _refused else d
         return None
 
     def reverify_defect(self, defect_id: str, metadata: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -272,8 +304,8 @@ class QualityManagementSystem:
                     st["attested_reverifications"] = int(st.get("attested_reverifications", 0)) + 1
                 d["reverified_at"] = _now()
                 d["status"] = "closed" if passed else "open"
-                self._save_state()
-                return {"defect": d, "passed": passed}
+                _refused = self._save_or_refuse("reverify_defect")
+                return {"defect": d, "passed": passed, **({"write_refused": _refused} if _refused else {})}
         return None
 
     #  W853 (FU-1038; OWNER RULING 2026-10-12) - a defect leaves the loop without a re-verification only as one of
@@ -294,8 +326,8 @@ class QualityManagementSystem:
                                 **({"retired_route": retired_route} if retired_route else {}),
                                 **({"source_check": source_check} if source_check else {}),
                                 "basis": DISPOSITIONS[how]}
-                self._save_state()
-                return d
+                _refused = self._save_or_refuse("dispose_defect")
+                return {**d, "write_refused": _refused} if _refused else d
         return None
 
     def defect_summary(self) -> Dict[str, Any]:
@@ -320,7 +352,10 @@ class QualityManagementSystem:
                 # W534 (FU-298) — present only when the store could NOT be read whole, which is the
                 # convention the four converted readers set: absent means read whole.
                 **({"store_incomplete": self._store_unreadable,
-                    "counts_are_incomplete": True} if self._store_unreadable else {}),
+                    "counts_are_incomplete": True,
+                    #  W1206 (FU-1846) - and nothing is written to it
+                    "writes_refused": True, "writes_refused_basis": WRITES_REFUSED_BASIS,
+                    "last_write_refused": self.last_write_refused} if self._store_unreadable else {}),
                 # W489 — what the rate is OVER, and what it deliberately leaves out
                 "what_if_gates": int(st.get("what_if_gates", 0)),
                 #  W733 (FU-986) - defects a person reported: counted apart, never in the rate
@@ -377,10 +412,16 @@ class QualityManagementSystem:
         return h
 
     def document_control_status(self) -> Dict[str, Any]:
-        """The QMS's document-control posture — proves the DCMS is owned and operating under the QMS."""
+        """The QMS's document-control posture — proves the DCMS is owned and operating under the QMS.
+
+        W1205 (FU-1845) - when the DCMS ledger could not be read whole, store_incomplete says why (and how the Owner
+        repairs it) and writes_refused says no version is appended until it reads whole; registered_artifacts is
+        then what was read before the problem. Both are absent when the ledger was read whole."""
+        _why = getattr(self.dcms, "refusal", None)
         return {
             "owned_subsystem": "DCMS (Document Control Management System)",
             "controlled_documents": self.controlled_documents,
             "registered_artifacts": len(self.dcms.registry),
             "audit_integrity": self.dcms.get_audit_integrity(),
+            **({"store_incomplete": _why, "writes_refused": True} if _why else {}),
         }

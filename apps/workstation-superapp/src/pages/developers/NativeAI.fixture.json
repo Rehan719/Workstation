@@ -16,6 +16,25 @@
     ],
     "active_model": "native",
     "active_model_label": "native",
+    "next_to_serve": {
+     "declared_class": {
+      "resource": "native",
+      "is_model": false,
+      "basis": "a call that declares a class that may leave (ai/data_class.py): the deterministic floor serves it: no in-house model is reachable, and no external provider may be used now (the switch is off, no key is set, its breaker is open or the hourly cap is full)"
+     },
+     "no_class": {
+      "resource": "native",
+      "is_model": false,
+      "basis": "a call that declares no class: the deterministic floor serves it: no in-house model is reachable, and a call that declares no class is never sent outside the platform"
+     },
+     "order_declared_class": [
+      "native"
+     ],
+     "order_no_class": [
+      "native"
+     ],
+     "basis": "read now from the registry's order, the recorded health, the breakers and the hourly cap, on the query path; nothing was called, so a resource listed here can still fail, and then the next one, and last the floor, answers"
+    },
     "is_real_model": false,
     "mode": "deterministic_floor",
     "mode_predicted": "deterministic_floor",
@@ -391,7 +410,7 @@
      {
       "path": "/api/v1/native-ai/lifecycle/promote",
       "level": "configuration",
-      "rests_on": "a named model is made the default on a recorded evaluation of its build on the pinned probe set (W841); the promotion itself measures nothing",
+      "rests_on": "a named model is made the default by an administrator on a recorded evaluation of its build on the pinned probe set (W841) and on the licence text the runtime holds for that build (W1203); the promotion itself measures nothing",
       "stated_in_its_own_answer": true
      },
      {

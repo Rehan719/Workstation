@@ -5,6 +5,7 @@ import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, Refr
 import { useNavigate } from 'react-router-dom';
 import { provenanceBadge } from '../lib/api';
 import { refusalOf } from '../lib/stream';   // W1024 - a refused answer, said by its status and reason
+import { RichText } from '../components/RichText';   // W1238 - a reply is shown as formatted text, not raw markdown
 
 // W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
 // and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
@@ -12,7 +13,9 @@ import { refusalOf } from '../lib/stream';   // W1024 - a refused answer, said b
 // grounding counted none. The card already said "grounded in 0 directives" beside three invented
 // bullets; a count a reader has to cross-check against prose is not a disclosure.
 type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any; groundingConflicts?: any[] };
-const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I am handed the record for this scope, and every answer says who served it and which records it actually names.';
+// W1239 - the greeting said "I am handed the record for this scope" on a server that holds none. It says the records
+// are handed when there are any, and that with no model connected the chat says so instead of answering.
+const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite. I am handed whatever this scope\'s records hold, which on a new server may be nothing, and every answer says who served it, how many records I was handed and which of them it names. When no AI model is connected, I say so instead of answering.';
 
 export const CEOChat: React.FC = () => {
   const navigate = useNavigate();
@@ -273,17 +276,19 @@ export const CEOChat: React.FC = () => {
                   {m.role === 'user' ? <User size={24} /> : <Bot size={24} />}
                 </div>
                 <div className="space-y-3">
-                   <div className={`p-6 rounded-[2rem] text-sm font-bold leading-relaxed shadow-xl ${
+                   <div data-testid="ceo-message" className={`p-6 rounded-[2rem] text-sm font-bold leading-relaxed shadow-xl ${
                      m.role === 'user'
                        ? 'bg-highlight/10 border border-highlight/20 text-white rounded-tr-none'
                        : 'bg-surface/80 border border-white/10 text-slate-200 rounded-tl-none'
                    }`}>
-                     {m.content}
+                     {/* W1238 - a reply is rendered as formatted text: printed as {m.content}, the floor's frame reached the
+                         reader as raw markdown. A person's own words are shown as typed. */}
+                     {m.role === 'assistant' ? <RichText text={m.content} /> : m.content}
                    </div>
                    {m.role === 'assistant' && m.servedBy !== undefined && (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return (
                      <div className="flex flex-wrap items-center gap-2 ml-2">
                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
-                       {m.grounding && <span data-testid="ceo-grounding-cited" className="text-[9px] text-slate-500" title={[m.grounding.cited_basis, m.grounding.recited_basis].filter(Boolean).join(' · ') || 'what the answer was handed'}>{/* W627 (FU-526) — handed is not used: the chip says what the answer NAMES */}handed {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · the answer names {m.grounding.cited?.directives ?? 0} and {m.grounding.cited?.objectives ?? 0}{/* W801 (FU-982 R3[9]) - on the floor the records are recited after the reply, and said apart from what it named */}{m.grounding.recited ? ` · recited as stored, not answered from: ${m.grounding.recited.directives ?? 0} and ${m.grounding.recited.objectives ?? 0}` : ''} · scope {m.grounding.scope}</span>}
+                       {m.grounding && <span data-testid="ceo-grounding-cited" className="text-[9px] text-slate-500" title={[m.grounding.cited_basis, m.grounding.recited_basis].filter(Boolean).join(' · ') || 'what the answer was handed'}>{/* W627 (FU-526) — handed is not used: the chip says what the answer NAMES */}handed {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · the answer names {m.grounding.cited?.directives ?? 0} and {m.grounding.cited?.objectives ?? 0}{/* W801 (FU-982 R3[9]) - on the floor the records are recited after the reply, and said apart from what it named */}{m.grounding.recited ? ` · recited as stored, not answered from: ${m.grounding.recited.directives ?? 0} and ${m.grounding.recited.objectives ?? 0}` : ''}{/* W1240 - the plan's open items recited, or that they could not be read */}{m.grounding.recited && m.grounding.recited.plan_items !== undefined ? (m.grounding.recited.plan_items === null ? ' · the plan\'s items: unavailable' : ` · the plan's items recited: ${m.grounding.recited.plan_items}`) : ''} · scope {m.grounding.scope}</span>}
                        {/* W574 (M1 R3.2) — the answer printed a "## Board directives" section with
                            three bullets while the chip beside it said "grounded in 0 directives".
                            A count the reader has to cross-check against the prose is not a
